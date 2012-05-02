@@ -1,0 +1,1 @@
+<Project name="sdlang"><Folder name="src"><File path="src\sdlang.d"></File></Folder><Folder name="misc"><File path="LICENSE.txt"></File><File path="stbuild.conf"></File></Folder></Project>
