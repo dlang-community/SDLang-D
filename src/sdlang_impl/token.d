@@ -7,6 +7,7 @@ import std.datetime;
 import std.variant;
 
 import sdlang_impl.symbol;
+import sdlang_impl.util;
 
 ///.
 alias Algebraic!(
@@ -25,13 +26,13 @@ struct Token
 	Symbol symbol; /// The "type" of this token
 	Value value; /// Only valid when 'symbol' is symbol!"Value", otherwise null
 	string data; /// Original text from source
-	int line; /// Zero-indexed
-	int col;  /// Zero-indexed, Tab counts as 1
+	Location location;
 
 	@disable this();
-	this(Symbol symbol) ///.
+	this(Symbol symbol, Location location) ///.
 	{
-		this.symbol = symbol;
+		this.symbol   = symbol;
+		this.location = location;
 		value = null;
 	}
 }

@@ -41,18 +41,26 @@ int main(string[] args)
 	
 	auto filename = args[1];
 	auto source = cast(string)read(filename);
-	
-	auto s = symbol!"Value";
-	auto t = Token(s);
 	auto lexer = Lexer(source, filename);
 	
 	foreach(tok; lexer)
 		writeln(
-			"[", tok.line, ":", tok.col, "] ",
+			tok.location.toString, ": ",
 			tok.symbol.name, "(", toString(tok.value.type), "): ",
 			tok.data
 		);
 	
+	try
+	{
+		lexer.eatWhite();
+	}
+	catch(SDLangException e)
+	{
+		stderr.writeln(e.msg);
+		return 1;
+	}
+	writeln(lexer.location, ": Code starts here");
+	writeln(lexer.ch, lexer.source[lexer.pos..$]);
 	return 0;
 }
 
