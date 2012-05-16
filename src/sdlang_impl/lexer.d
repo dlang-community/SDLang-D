@@ -23,11 +23,11 @@ struct Lexer
 	/+private+/ dchar  ch;  // Current character
 	/+private+/ size_t pos; // Position *after* current character (an index into source)
 	private dchar  nextCh;  // Lookahead character
-	private size_t nextPos; // Position *after* lookahead character
+	private size_t nextPos; // Position *after* lookahead character (an index into source)
 	private bool   hasNextCh;  // If false, then there's no more lookahead, just EOF
 	
 	///.
-	this(string source, string filename=null)
+	this(string source=null, string filename=null)
 	{
 		if( source.startsWith( ByteOrderMarks[BOM.UTF8] ) )
 			source = source[ ByteOrderMarks[BOM.UTF8].length .. $ ];
@@ -43,6 +43,7 @@ struct Lexer
 		nextCh = source.decode(nextPos);
 		advanceChar();
 		location = Location(filename, 0, 0);
+		popFront();
 	}
 	
 	///.
@@ -52,19 +53,108 @@ struct Lexer
 	}
 	
 	///.
+	Token _front = Token(symbol!"Error", Location());
 	@property Token front()
 	{
-		pos = source.length;
-		//TODO: Implement this
-		if(empty)
-			return Token(symbol!"EOF", location);
-		return Token(symbol!"Error", location);
+		return _front;
 	}
-	
+
+	// Poor-man's yield, but fast.
+	// Only to be used in popFront.
+	private template yield(alias symbolName)
+	{
+		enum yield = "
+			{
+				_front = makeToken!"~symbolName.stringof~";
+				advanceChar();
+				return;
+			}
+		";
+	}
+
 	///.
 	void popFront()
 	{
-		//TODO: Implement this
+		//TODO: Finish implementing this
+
+		eatWhite();
+
+		// -- Main Lexer -------------
+		
+		enum State
+		{
+			normal,
+			rawString,
+		}
+		
+		auto startCh  = ch;
+		auto startPos = pos;
+		State state = State.normal;
+		while(true)
+		{
+			final switch(state)
+			{
+			case State.normal:
+				
+				if(ch == '=')
+					mixin(yield!"=");
+				
+				else if(ch == '{')
+					mixin(yield!"{");
+				
+				else if(ch == '}')
+					mixin(yield!"}");
+				
+				else if(ch == ':')
+					mixin(yield!":");
+				
+				else if(ch == ';' || ch == '\n')
+					mixin(yield!"EOL");
+				
+				else if(ch == '`')
+					state = State.rawString;
+
+				else
+					mixin(yield!"Error");
+									
+				break;
+
+			case State.rawString:
+				if(ch == '`')
+					mixin(yield!"Value");
+				break;
+
+			//case State.normal:
+			//	break;
+			}
+
+			if(hasNextCh)
+				advanceChar();
+			else
+			{
+				// Reached EOF
+
+				/+if(state == State.backslash)
+					throw new SDLangException(
+						location,
+						"Error: No newline after line-continuation backslash"
+					);
+
+				else if(state == State.blockComment)
+					throw new SDLangException(
+						location,
+						"Error: Unterminated block comment"
+					);
+
+				else+/
+					mixin(yield!"EOF"); // Done, reached EOF
+			}
+		}
+	}
+	
+	private Token makeToken(string symbolName)()
+	{
+		return Token(symbol!symbolName, location);
 	}
 	
 	/// Advance one code point
@@ -93,6 +183,8 @@ struct Lexer
 	/// Advances past whitespace and comments
 	/+private+/ void eatWhite()
 	{
+		// -- Comment/Whitepace Lexer -------------
+
 		enum State
 		{
 			normal,

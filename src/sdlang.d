@@ -41,26 +41,33 @@ int main(string[] args)
 	
 	auto filename = args[1];
 	auto source = cast(string)read(filename);
-	auto lexer = Lexer(source, filename);
-	
-	foreach(tok; lexer)
-		writeln(
-			tok.location.toString, ": ",
-			tok.symbol.name, "(", toString(tok.value.type), "): ",
-			tok.data
-		);
-	
+
+	auto lexer = Lexer();
 	try
 	{
-		lexer.eatWhite();
+		lexer = Lexer(source, filename);
+		
+		foreach(tok; lexer)
+		{
+			writeln(
+				tok.location.toString, ":\t",
+				tok.symbol.name, "(", tok.value? toString(tok.value.type) : "{null}", "): ",
+				tok.data
+			);
+			
+			if(tok.symbol.name == "Error")
+				break;
+		}
 	}
 	catch(SDLangException e)
 	{
 		stderr.writeln(e.msg);
 		return 1;
 	}
-	writeln(lexer.location, ": Code starts here");
-	writeln(lexer.ch, lexer.source[lexer.pos..$]);
+
+	//writeln(lexer.location, ": The rest starts here");
+	//writeln(lexer.ch, lexer.source[lexer.pos..$]);
+
 	return 0;
 }
 

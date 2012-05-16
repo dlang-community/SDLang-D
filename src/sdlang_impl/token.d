@@ -17,22 +17,27 @@ alias Algebraic!(
 	Date, DateTime, Duration,
 	void[],
 	typeof(null),
-) Value;
+) _Value;
+
+class Value
+{
+	_Value v;
+	alias v this;
+}
 
 /// This only represents terminals. Nonterminals aren't
 /// constructed since the AST is directly built during parsing.
 struct Token
 {
-	Symbol symbol; /// The "type" of this token
+	Symbol symbol = sdlang_impl.symbol.symbol!"Error"; /// The "type" of this token
+	Location location;
 	Value value; /// Only valid when 'symbol' is symbol!"Value", otherwise null
 	string data; /// Original text from source
-	Location location;
 
 	@disable this();
 	this(Symbol symbol, Location location) ///.
 	{
 		this.symbol   = symbol;
 		this.location = location;
-		value = null;
 	}
 }

@@ -41,17 +41,21 @@ private Symbol _symbol(string name)
 /// template above.
 struct Symbol
 {
-	immutable string name; ///.
+	private string _name;
+	@property string name() ///.
+	{
+		return _name;
+	}
 	
 	@disable this();
 	private this(string name) ///.
 	{
-		this.name = name;
+		this._name = name;
 	}
 
 	///.
 	string toString()
 	{
-		return name;
+		return _name;
 	}
 }
