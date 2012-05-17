@@ -15,7 +15,7 @@ import sdlang_impl.util;
 alias sdlang_impl.util.startsWith startsWith;
 
 ///.
-struct Lexer
+class Lexer
 {
 	string source; ///.
 	Location location; ///.

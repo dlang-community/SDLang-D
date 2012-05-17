@@ -42,10 +42,10 @@ int main(string[] args)
 	auto filename = args[1];
 	auto source = cast(string)read(filename);
 
-	auto lexer = Lexer();
+	Lexer lexer;
 	try
 	{
-		lexer = Lexer(source, filename);
+		lexer = new Lexer(source, filename);
 		
 		foreach(tok; lexer)
 		{
@@ -65,7 +65,7 @@ int main(string[] args)
 		return 1;
 	}
 
-	//writeln(lexer.location, ": The rest starts here");
+	writeln(lexer.location, ": The rest starts here");
 	//writeln(lexer.ch, lexer.source[lexer.pos..$]);
 
 	return 0;
