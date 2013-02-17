@@ -2,7 +2,7 @@
 SDLib-D is licensed under The zlib/libpng License:
 ---------------------------------------------------
 
-Copyright (c) 2012 Nick Sabalausky
+Copyright (c) 2012-2013 Nick Sabalausky
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages

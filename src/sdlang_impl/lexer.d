@@ -20,8 +20,8 @@ class Lexer
 	string source; ///.
 	Location location; ///.
 
-	/+private+/ dchar  ch;  // Current character
-	/+private+/ size_t pos; // Position *after* current character (an index into source)
+	private dchar  ch;  // Current character
+	private size_t pos; // Position *after* current character (an index into source)
 	private dchar  nextCh;  // Lookahead character
 	private size_t nextPos; // Position *after* lookahead character (an index into source)
 	private bool   hasNextCh;  // If false, then there's no more lookahead, just EOF
@@ -181,7 +181,7 @@ class Lexer
 	}
 
 	/// Advances past whitespace and comments
-	/+private+/ void eatWhite()
+	private void eatWhite()
 	{
 		// -- Comment/Whitepace Lexer -------------
 
