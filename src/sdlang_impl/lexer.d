@@ -25,6 +25,8 @@ class Lexer
 	private dchar  nextCh;  // Lookahead character
 	private size_t nextPos; // Position *after* lookahead character (an index into source)
 	private bool   hasNextCh;  // If false, then there's no more lookahead, just EOF
+
+	private Location tokenStart; // The starting location of the token being lexed
 	
 	///.
 	this(string source=null, string filename=null)
@@ -90,6 +92,7 @@ class Lexer
 		auto startCh  = ch;
 		auto startPos = pos;
 		State state = State.normal;
+		tokenStart = location;
 		while(true)
 		{
 			final switch(state)
@@ -154,9 +157,10 @@ class Lexer
 	
 	private Token makeToken(string symbolName)()
 	{
-		return Token(symbol!symbolName, location);
+		return Token(symbol!symbolName, tokenStart);
 	}
 	
+	/// Check the lookahead character
 	private bool lookahead(dchar ch)
 	{
 		return hasNextCh && nextCh == ch;
