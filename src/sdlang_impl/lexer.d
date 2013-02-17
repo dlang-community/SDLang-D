@@ -157,6 +157,11 @@ class Lexer
 		return Token(symbol!symbolName, location);
 	}
 	
+	private bool lookahead(dchar ch)
+	{
+		return hasNextCh && nextCh == ch;
+	}
+
 	/// Advance one code point
 	private void advanceChar()
 	{
@@ -208,12 +213,12 @@ class Lexer
 
 				else if(ch == '/' || ch == '-')
 				{
-					if(hasNextCh && nextCh == ch)
+					if(lookahead(ch))
 					{
 						advanceChar();
 						state = State.lineComment;
 					}
-					else if(ch == '/' && hasNextCh && nextCh == '*')
+					else if(ch == '/' && lookahead('*'))
 					{
 						advanceChar();
 						state = State.blockComment;
@@ -238,14 +243,14 @@ class Lexer
 				break;
 			
 			case State.lineComment:
-				if(hasNextCh && nextCh == '\n')
+				if(lookahead('\n'))
 					state = State.normal;
 				break;
 			
 			case State.blockComment:
 				if(ch == '*')
 				{
-					if(hasNextCh && nextCh == '/')
+					if(lookahead('/'))
 					{
 						advanceChar();
 						state = State.normal;
