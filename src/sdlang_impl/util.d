@@ -19,18 +19,21 @@ struct Location
 	string file; /// Filename (including path)
 	int line; /// Zero-indexed
 	int col;  /// Zero-indexed, Tab counts as 1
+	size_t index; /// Index into the source
 	
-	this(int line, int col=0)
+	this(int line, int col, int index)
 	{
-		this.line = line;
-		this.col  = col;
+		this.line  = line;
+		this.col   = col;
+		this.index = index;
 	}
 	
-	this(string file, int line, int col=0)
+	this(string file, int line, int col, int index)
 	{
-		this.file = file;
-		this.line = line;
-		this.col  = col;
+		this.file  = file;
+		this.line  = line;
+		this.col   = col;
+		this.index = index;
 	}
 	
 	string toString()

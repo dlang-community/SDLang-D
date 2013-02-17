@@ -44,7 +44,7 @@ class Lexer
 		hasNextCh = true;
 		nextCh = source.decode(nextPos);
 		advanceChar();
-		location = Location(filename, 0, 0);
+		location = Location(filename, 0, 0, 0);
 		popFront();
 	}
 	
@@ -157,7 +157,9 @@ class Lexer
 	
 	private Token makeToken(string symbolName)()
 	{
-		return Token(symbol!symbolName, tokenStart);
+		auto tok = Token(symbol!symbolName, tokenStart);
+		tok.data = source[tokenStart.index..pos];
+		return tok;
 	}
 	
 	/// Check the lookahead character
@@ -176,6 +178,8 @@ class Lexer
 		}
 		else
 			location.col++;
+
+		location.index = pos;
 
 		pos = nextPos;
 		ch  = nextCh;
