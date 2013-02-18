@@ -52,7 +52,7 @@ int main(string[] args)
 			writeln(
 				tok.location.toString, ":\t",
 				tok.symbol.name, "(", tok.value? toString(tok.value.type) : "{null}", ")",
-				tok.symbol == symbol!"EOL"? "" : (":\t"~tok.data)
+				tok.symbol == symbol!"EOL"? "" : (":\t|"~tok.data~"|")
 			);
 			
 			if(tok.symbol.name == "Error")

@@ -10,15 +10,21 @@ import std.algorithm;
 
 ///.
 static immutable validSymbolNames = [
-	"EOF",
 	"Error",
-	"Ident",
-	"Value",
+	"EOF",
 	"EOL",
+
 	":",
 	"=",
 	"{",
 	"}",
+
+	"true",
+	"false",
+	"null",
+
+	"Ident",
+	"Value",
 ];
 
 /// Use this to create a Symbol. Ex: symbol!"Value" or symbol!"="

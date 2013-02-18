@@ -4,6 +4,11 @@
 # a tag having only a name
 my_tag
 
+true f false on off null
+tru fals o of nul
+true_ false_ on_ off_ null_
+truX or
+
 # three tags acting as name value pairs
 first_name "Akiko"
 last_name "Johnson"
