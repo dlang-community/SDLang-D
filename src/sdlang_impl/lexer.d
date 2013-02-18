@@ -65,11 +65,11 @@ class Lexer
 		return _front;
 	}
 
-	// Poor-man's yield, but fast.
-	// Only to be used in popFront.
-	private template yield(alias symbolName)
+	// Kind of a poor-man's yield, but fast.
+	// Only to be used inside popFront.
+	private template accept(alias symbolName)
 	{
-		enum yield = "
+		enum accept = "
 			{
 				_front = makeToken!"~symbolName.stringof~";
 				advanceChar();
@@ -113,19 +113,19 @@ class Lexer
 			case State.normal:
 				
 				if(ch == '=')
-					mixin(yield!"=");
+					mixin(accept!"=");
 				
 				else if(ch == '{')
-					mixin(yield!"{");
+					mixin(accept!"{");
 				
 				else if(ch == '}')
-					mixin(yield!"}");
+					mixin(accept!"}");
 				
 				else if(ch == ':')
-					mixin(yield!":");
+					mixin(accept!":");
 				
 				else if(ch == ';' || ch == '\n')
-					mixin(yield!"EOL");
+					mixin(accept!"EOL");
 				
 				else if(ch == 't' && !isEndOfIdent())
 					state = State.ident_true;
@@ -149,13 +149,13 @@ class Lexer
 					state = State.rawString;
 
 				else
-					mixin(yield!"Error");
+					mixin(accept!"Error");
 									
 				break;
 
 			case State.rawString:
 				if(ch == '`')
-					mixin(yield!"Value");
+					mixin(accept!"Value");
 				break;
 
 			case State.ident_true:
@@ -163,7 +163,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   state = State.ident; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(yield!"true");
+				case KeywordResult.Accept:   mixin(accept!"true");
 				}
 				if(state == State.ident)
 					goto case State.ident;
@@ -174,7 +174,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   state = State.ident; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(yield!"false");
+				case KeywordResult.Accept:   mixin(accept!"false");
 				}
 				if(state == State.ident)
 					goto case State.ident;
@@ -186,7 +186,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   failedKeywordOn = true; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(yield!"true");
+				case KeywordResult.Accept:   mixin(accept!"true");
 				}
 
 				if(!failedKeywordOff)
@@ -194,7 +194,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   failedKeywordOff = true; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(yield!"false");
+				case KeywordResult.Accept:   mixin(accept!"false");
 				}
 				
 				if(isEndOfIdent() || (failedKeywordOn && failedKeywordOff))
@@ -209,7 +209,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   state = State.ident; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(yield!"null");
+				case KeywordResult.Accept:   mixin(accept!"null");
 				}
 				if(state == State.ident)
 					goto case State.ident;
@@ -217,7 +217,7 @@ class Lexer
 
 			case State.ident:
 				if(isEndOfIdent())
-					mixin(yield!"Ident");
+					mixin(accept!"Ident");
 				break;
 			}
 
@@ -240,7 +240,7 @@ class Lexer
 					);
 
 				else+/
-					mixin(yield!"EOF"); // Done, reached EOF
+					mixin(accept!"EOF"); // Done, reached EOF
 			}
 		}
 	}
