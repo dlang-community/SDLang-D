@@ -19,10 +19,6 @@ static immutable validSymbolNames = [
 	"{",
 	"}",
 
-	"true",
-	"false",
-	"null",
-
 	"Ident",
 	"Value",
 ];

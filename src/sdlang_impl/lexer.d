@@ -163,7 +163,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   state = State.ident; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"true");
+				case KeywordResult.Accept:   mixin(accept!"Value");
 				}
 				if(state == State.ident)
 					goto case State.ident;
@@ -174,7 +174,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   state = State.ident; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"false");
+				case KeywordResult.Accept:   mixin(accept!"Value");
 				}
 				if(state == State.ident)
 					goto case State.ident;
@@ -186,7 +186,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   failedKeywordOn = true; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"true");
+				case KeywordResult.Accept:   mixin(accept!"Value");
 				}
 
 				if(!failedKeywordOff)
@@ -194,7 +194,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   failedKeywordOff = true; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"false");
+				case KeywordResult.Accept:   mixin(accept!"Value");
 				}
 				
 				if(isEndOfIdent() || (failedKeywordOn && failedKeywordOff))
@@ -209,7 +209,7 @@ class Lexer
 				{
 				case KeywordResult.Failed:   state = State.ident; break;
 				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"null");
+				case KeywordResult.Accept:   mixin(accept!"Value");
 				}
 				if(state == State.ident)
 					goto case State.ident;
