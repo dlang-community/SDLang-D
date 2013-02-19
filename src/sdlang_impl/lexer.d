@@ -79,215 +79,6 @@ class Lexer
 		").replace("\n", "");
 	}
 
-	///.
-	void popFront()
-	{
-		//TODO: Finish implementing this
-		// -- Main Lexer -------------
-
-		eatWhite();
-
-		if(!hasNextCh)
-			mixin(accept!"EOF");
-		
-		tokenStart    = location;
-		tokenLength   = 1;
-		tokenLength32 = 1;
-		isEndOfIdentCached = false;
-		
-		if(ch == '=')
-			mixin(accept!"=");
-		
-		else if(ch == '{')
-			mixin(accept!"{");
-		
-		else if(ch == '}')
-			mixin(accept!"}");
-		
-		else if(ch == ':')
-			mixin(accept!":");
-		
-		//TODO: Should this include all isNewline()? (except for \r, right?)
-		else if(ch == ';' || ch == '\n')
-			mixin(accept!"EOL");
-		
-		else if(ch == 't' && !isEndOfIdent())
-			parseIdentTrue();
-
-		else if(ch == 'f' && !isEndOfIdent())
-			parseIdentFalse();
-
-		else if(ch == 'o' && !isEndOfIdent())
-			parseIdentOnOff();
-
-		else if(ch == 'n' && !isEndOfIdent())
-			parseIdentNull();
-
-		else if(isAlpha(ch) || ch == '_')
-			parseIdent();
-
-		else if(ch == '"')
-			parseRegularString();
-
-		else if(ch == '`')
-			parseRawString();
-
-		else
-			mixin(accept!"Error");
-	}
-	
-	private void parseIdentTrue()
-	{
-		assert(ch == 't' && !isEndOfIdent());
-
-		while(!isEndOfIdent())
-		{
-			if(!advanceChar(ErrorOnEOF.No))
-				mixin(accept!"Ident");
-			
-			final switch(checkKeyword("true", &isEndOfIdent))
-			{
-			case KeywordResult.Accept:   mixin(accept!"Value");
-			case KeywordResult.Continue: break;
-			case KeywordResult.Failed:   parseIdent(); return;
-			}
-		}
-
-		mixin(accept!"Ident");
-	}
-
-	private void parseIdentFalse()
-	{
-		assert(ch == 'f' && !isEndOfIdent());
-		
-		while(!isEndOfIdent())
-		{
-			if(!advanceChar(ErrorOnEOF.No))
-				mixin(accept!"Ident");
-			
-			final switch(checkKeyword("false", &isEndOfIdent))
-			{
-			case KeywordResult.Accept:   mixin(accept!"Value");
-			case KeywordResult.Continue: break;
-			case KeywordResult.Failed:   parseIdent(); return;
-			}
-		}
-
-		mixin(accept!"Ident");
-	}
-
-	private void parseIdentOnOff()
-	{
-		assert(ch == 'o' && !isEndOfIdent());
-		
-		bool failedKeywordOn  = false;
-		bool failedKeywordOff = false;
-
-		while(!isEndOfIdent())
-		{
-			if(!advanceChar(ErrorOnEOF.No))
-				mixin(accept!"Ident");
-			
-			if(!failedKeywordOn)
-			{
-				final switch(checkKeyword("on", &isEndOfIdent))
-				{
-				case KeywordResult.Accept:   mixin(accept!"Value");
-				case KeywordResult.Continue: break;
-				case KeywordResult.Failed:   failedKeywordOn = true; break;
-				}
-			}
-
-			if(!failedKeywordOff)
-			{
-				final switch(checkKeyword("off", &isEndOfIdent))
-				{
-				case KeywordResult.Accept:   mixin(accept!"Value");
-				case KeywordResult.Continue: break;
-				case KeywordResult.Failed:   failedKeywordOff = true; break;
-				}
-			}
-			
-			if(failedKeywordOn && failedKeywordOff)
-			{
-				parseIdent();
-				return;
-			}
-		}
-
-		parseIdent();
-	}
-
-	private void parseIdentNull()
-	{
-		assert(ch == 'n' && !isEndOfIdent());
-		
-		while(!isEndOfIdent())
-		{
-			if(!advanceChar(ErrorOnEOF.No))
-				mixin(accept!"Ident");
-			
-			final switch(checkKeyword("null", &isEndOfIdent))
-			{
-			case KeywordResult.Accept:   mixin(accept!"Value");
-			case KeywordResult.Continue: break;
-			case KeywordResult.Failed:   parseIdent(); return;
-			}
-		}
-
-		mixin(accept!"Ident");
-	}
-
-	private void parseIdent()
-	{
-		assert(isAlpha(ch) || ch == '_');
-		
-		bool hasMore = true;
-		while(hasMore && !isEndOfIdent())
-			hasMore = advanceChar(ErrorOnEOF.No);
-
-		mixin(accept!"Ident");
-	}
-	
-	private void parseRegularString()
-	{
-		assert(ch == '"');
-		
-		do
-		{
-			advanceChar(ErrorOnEOF.Yes);
-
-			if(ch == '\\')
-			{
-				advanceChar(ErrorOnEOF.Yes);
-				if(isNewline(ch))
-					eatWhite();
-				else
-					advanceChar(ErrorOnEOF.Yes);
-			}
-
-			else if(isNewline(ch))
-				throw new SDLangException(
-					location,
-					"Error: Unescaped newlines are only allowed in raw strings, not regular strings."
-				);
-
-		} while(ch != '"');
-		
-		mixin(accept!"Value");
-	}
-
-	private void parseRawString()
-	{
-		assert(ch == '`');
-		
-		do
-			advanceChar(ErrorOnEOF.Yes);
-		while(ch != '`');
-		
-		mixin(accept!"Value");
-	}
-	
 	private Token makeToken(string symbolName)()
 	{
 		auto tok = Token(symbol!symbolName, tokenStart);
@@ -416,6 +207,222 @@ class Lexer
 		return true;
 	}
 
+	///.
+	void popFront()
+	{
+		//TODO: Finish implementing this
+		// -- Main Lexer -------------
+
+		eatWhite();
+
+		if(!hasNextCh)
+			mixin(accept!"EOF");
+		
+		tokenStart    = location;
+		tokenLength   = 1;
+		tokenLength32 = 1;
+		isEndOfIdentCached = false;
+		
+		if(ch == '=')
+			mixin(accept!"=");
+		
+		else if(ch == '{')
+			mixin(accept!"{");
+		
+		else if(ch == '}')
+			mixin(accept!"}");
+		
+		else if(ch == ':')
+			mixin(accept!":");
+		
+		//TODO: Should this include all isNewline()? (except for \r, right?)
+		else if(ch == ';' || ch == '\n')
+			mixin(accept!"EOL");
+		
+		else if(ch == 't' && !isEndOfIdent())
+			parseIdentTrue();
+
+		else if(ch == 'f' && !isEndOfIdent())
+			parseIdentFalse();
+
+		else if(ch == 'o' && !isEndOfIdent())
+			parseIdentOnOff();
+
+		else if(ch == 'n' && !isEndOfIdent())
+			parseIdentNull();
+
+		else if(isAlpha(ch) || ch == '_')
+			parseIdent();
+
+		else if(ch == '"')
+			parseRegularString();
+
+		else if(ch == '`')
+			parseRawString();
+
+		else
+			mixin(accept!"Error");
+	}
+	
+	/// Parse Ident or 'true'
+	private void parseIdentTrue()
+	{
+		assert(ch == 't' && !isEndOfIdent());
+
+		while(!isEndOfIdent())
+		{
+			if(!advanceChar(ErrorOnEOF.No))
+				mixin(accept!"Ident");
+			
+			final switch(checkKeyword("true", &isEndOfIdent))
+			{
+			case KeywordResult.Accept:   mixin(accept!"Value");
+			case KeywordResult.Continue: break;
+			case KeywordResult.Failed:   parseIdent(); return;
+			}
+		}
+
+		mixin(accept!"Ident");
+	}
+
+	/// Parse Ident or 'false'
+	private void parseIdentFalse()
+	{
+		assert(ch == 'f' && !isEndOfIdent());
+		
+		while(!isEndOfIdent())
+		{
+			if(!advanceChar(ErrorOnEOF.No))
+				mixin(accept!"Ident");
+			
+			final switch(checkKeyword("false", &isEndOfIdent))
+			{
+			case KeywordResult.Accept:   mixin(accept!"Value");
+			case KeywordResult.Continue: break;
+			case KeywordResult.Failed:   parseIdent(); return;
+			}
+		}
+
+		mixin(accept!"Ident");
+	}
+
+	/// Parse Ident or 'on' or 'off'
+	private void parseIdentOnOff()
+	{
+		assert(ch == 'o' && !isEndOfIdent());
+		
+		bool failedKeywordOn  = false;
+		bool failedKeywordOff = false;
+
+		while(!isEndOfIdent())
+		{
+			if(!advanceChar(ErrorOnEOF.No))
+				mixin(accept!"Ident");
+			
+			if(!failedKeywordOn)
+			{
+				final switch(checkKeyword("on", &isEndOfIdent))
+				{
+				case KeywordResult.Accept:   mixin(accept!"Value");
+				case KeywordResult.Continue: break;
+				case KeywordResult.Failed:   failedKeywordOn = true; break;
+				}
+			}
+
+			if(!failedKeywordOff)
+			{
+				final switch(checkKeyword("off", &isEndOfIdent))
+				{
+				case KeywordResult.Accept:   mixin(accept!"Value");
+				case KeywordResult.Continue: break;
+				case KeywordResult.Failed:   failedKeywordOff = true; break;
+				}
+			}
+			
+			if(failedKeywordOn && failedKeywordOff)
+			{
+				parseIdent();
+				return;
+			}
+		}
+
+		parseIdent();
+	}
+
+	/// Parse Ident or 'null'
+	private void parseIdentNull()
+	{
+		assert(ch == 'n' && !isEndOfIdent());
+		
+		while(!isEndOfIdent())
+		{
+			if(!advanceChar(ErrorOnEOF.No))
+				mixin(accept!"Ident");
+			
+			final switch(checkKeyword("null", &isEndOfIdent))
+			{
+			case KeywordResult.Accept:   mixin(accept!"Value");
+			case KeywordResult.Continue: break;
+			case KeywordResult.Failed:   parseIdent(); return;
+			}
+		}
+
+		mixin(accept!"Ident");
+	}
+
+	/// Parse Ident
+	private void parseIdent()
+	{
+		assert(isAlpha(ch) || ch == '_');
+		
+		bool hasMore = true;
+		while(hasMore && !isEndOfIdent())
+			hasMore = advanceChar(ErrorOnEOF.No);
+
+		mixin(accept!"Ident");
+	}
+	
+	/// Parse regular string
+	private void parseRegularString()
+	{
+		assert(ch == '"');
+		
+		do
+		{
+			advanceChar(ErrorOnEOF.Yes);
+
+			if(ch == '\\')
+			{
+				advanceChar(ErrorOnEOF.Yes);
+				if(isNewline(ch))
+					eatWhite();
+				else
+					advanceChar(ErrorOnEOF.Yes);
+			}
+
+			else if(isNewline(ch))
+				throw new SDLangException(
+					location,
+					"Error: Unescaped newlines are only allowed in raw strings, not regular strings."
+				);
+
+		} while(ch != '"');
+		
+		mixin(accept!"Value");
+	}
+
+	/// Parse raw string
+	private void parseRawString()
+	{
+		assert(ch == '`');
+		
+		do
+			advanceChar(ErrorOnEOF.Yes);
+		while(ch != '`');
+		
+		mixin(accept!"Value");
+	}
+	
 	/// Advances past whitespace and comments
 	private void eatWhite()
 	{
