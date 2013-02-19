@@ -37,6 +37,12 @@ examples
 123.44A
 #123.44BA
 
+timespan 12:14:42
+timespan 00:09:12
+timespan 00:00:01.023
+timespan 23d:05:21:23
+timespan 23d:05:21:23.532
+
 # three tags acting as name value pairs
 first_name "Akiko"
 last_name "Johnson"

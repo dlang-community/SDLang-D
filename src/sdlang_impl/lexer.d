@@ -478,8 +478,8 @@ class Lexer
 		mixin(accept!"Value");
 	}
 	
-	/// Parse [0-9]+, but don't actually generate a token.
-	/// This is used by the other numeric parsing fuinctions.
+	/// Parse [0-9]+, but without emitting a token.
+	/// This is used by the other numeric parsing functions.
 	private void parseNumericFragment()
 	{
 		if(ch < '0' || ch > '9')
@@ -489,6 +489,52 @@ class Lexer
 		{
 			if(!advanceChar(ErrorOnEOF.No))
 				return;
+		}
+	}
+
+	/// Parse time span fragment (after the initial numeric fragment was parsed),
+	/// but without emitting a token.
+	/// This is used by some of the other numeric parsing functions.
+	private void parseTimeSpanFragment()
+	{
+		assert(ch == ':' || ch == 'd');
+		
+		// Parsed days?
+		bool hasDays = ch == 'd';
+		if(hasDays)
+		{
+			if(!lookahead(':'))
+				throw new SDLangException(location, "Error: Invalid time span.");
+			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
+			advanceChar(ErrorOnEOF.Yes); // Skip ':'
+			
+			// Parse hours
+			parseNumericFragment();
+			if(!lookahead(':'))
+				throw new SDLangException(location, "Error: Invalid time span.");
+			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+		}
+		
+		advanceChar(ErrorOnEOF.Yes); // Skip ':'
+
+		// Parse minutes
+		parseNumericFragment();
+		if(!lookahead(':'))
+			throw new SDLangException(location, "Error: Invalid time span.");
+		advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+		advanceChar(ErrorOnEOF.Yes); // Skip ':'
+
+		// Parse seconds
+		parseNumericFragment();
+		
+		// Has milliseconds?
+		if(lookahead('.'))
+		{
+			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+			advanceChar(ErrorOnEOF.Yes); // Skip '.'
+			
+			// Parse milliseconds
+			parseNumericFragment();
 		}
 	}
 
@@ -529,10 +575,10 @@ class Lexer
 		}
 		
 		// Some time span?
-		else if(lookahead(':'))
+		else if(lookahead(':') || lookahead('d'))
 		{
 			advanceChar(ErrorOnEOF.No);
-			mixin(accept!"Error"); //TODO
+			parseTimeSpan();
 		}
 
 		// Integer (32-bit signed)
@@ -540,7 +586,7 @@ class Lexer
 			mixin(accept!"Value");
 	}
 	
-	/// Parse any floating-point literal (after the initial fragment was parsed)
+	/// Parse any floating-point literal (after the initial numeric fragment was parsed)
 	private void parseFloatingPoint()
 	{
 		assert(ch == '.');
@@ -586,6 +632,16 @@ class Lexer
 		// Double float (64-bit signed) without suffix
 		else
 			mixin(accept!"Value");
+	}
+
+	/// Parse time span (after the initial numeric fragment was parsed)
+	private void parseTimeSpan()
+	{
+		assert(ch == ':' || ch == 'd');
+		
+		parseTimeSpanFragment();
+		
+		mixin(accept!"Value");
 	}
 
 	/// Advances past whitespace and comments
