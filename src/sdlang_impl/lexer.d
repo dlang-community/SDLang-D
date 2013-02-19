@@ -290,7 +290,7 @@ class Lexer
 		else if(ch == '[')
 			parseBinary();
 
-		else if(ch >= '0' && ch <= '9')
+		else if(ch == '-' || (ch >= '0' && ch <= '9'))
 			parseNumeric();
 
 		else
