@@ -22,16 +22,15 @@ class Lexer
 	string source; ///.
 	Location location; ///.
 
-	private dchar  ch;  // Current character
-	private size_t pos; // Position *after* current character (an index into source)
-	private dchar  nextCh;  // Lookahead character
-	private size_t nextPos; // Position *after* lookahead character (an index into source)
+	private dchar  ch;         // Current character
+	private dchar  nextCh;     // Lookahead character
+	private size_t nextPos;    // Position of lookahead character (an index into source)
 	private bool   hasNextCh;  // If false, then there's no more lookahead, just EOF
+	private size_t posAfterLookahead; // Position after lookahead character (an index into source)
 
 	private Location tokenStart;    // The starting location of the token being lexed
 	private size_t   tokenLength;   // Length so far of the token being lexed, in UTF-8 code units
 	private size_t   tokenLength32; // Length so far of the token being lexed, in UTF-32 code units
-	private string   tokenData;     // Slice of source representing the token being lexed
 	
 	///.
 	this(string source=null, string filename=null)
@@ -47,7 +46,7 @@ class Lexer
 		
 		// Prime everything
 		hasNextCh = true;
-		nextCh = source.decode(nextPos);
+		nextCh = source.decode(posAfterLookahead);
 		advanceChar(ErrorOnEOF.Yes); //TODO: Emit EOL on parsing empty string
 		location = Location(filename, 0, 0, 0);
 		popFront();
@@ -56,7 +55,7 @@ class Lexer
 	///.
 	@property bool empty()
 	{
-		return pos == source.length;
+		return nextPos == source.length;
 	}
 	
 	///.
@@ -172,7 +171,7 @@ class Lexer
 		{
 			if(ch == keyword32[tokenLength32-1] && dgIsAtEnd())
 			{
-				assert(source[tokenStart.index..pos] == to!string(keyword32));
+				assert(source[tokenStart.index..nextPos] == to!string(keyword32));
 				return KeywordResult.Accept;
 			}
 			else
@@ -210,11 +209,11 @@ class Lexer
 		else
 			location.col++;
 
-		location.index = pos;
+		location.index = nextPos;
 
-		pos = nextPos;
-		ch  = nextCh;
-		if(pos == source.length)
+		nextPos = posAfterLookahead;
+		ch      = nextCh;
+		if(nextPos == source.length)
 		{
 			nextCh = dchar.init;
 			hasNextCh = false;
@@ -222,10 +221,9 @@ class Lexer
 		}
 
 		tokenLength32++;
-		tokenLength = pos - tokenStart.index;
-		tokenData   = source[tokenStart.index..pos];
+		tokenLength = nextPos - tokenStart.index;
 		
-		nextCh = source.decode(nextPos);
+		nextCh = source.decode(posAfterLookahead);
 		isEndOfIdentCached = false;
 		return true;
 	}
