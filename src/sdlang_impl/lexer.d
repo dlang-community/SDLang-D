@@ -479,6 +479,7 @@ class Lexer
 	}
 	
 	/// Parse anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
+	//TODO: How does spec handle invalid suffix like "12a"? An error? Or a value and ident?
 	private void parseNumeric()
 	{
 		assert(ch == '-' || (ch >= '0' && ch <= '9'));
@@ -492,7 +493,7 @@ class Lexer
 		
 		parseNumericFragment();
 		
-		// Long integer (64 bits signed)?
+		// Long integer (64-bit signed)?
 		if(lookahead('L') || lookahead('l'))
 		{
 			advanceChar(ErrorOnEOF.No);
@@ -503,7 +504,7 @@ class Lexer
 		else if(lookahead('.'))
 		{
 			advanceChar(ErrorOnEOF.No);
-			mixin(accept!"Error"); //TODO
+			parseFloatingPoint();
 		}
 		
 		// Some date?
@@ -520,20 +521,64 @@ class Lexer
 			mixin(accept!"Error"); //TODO
 		}
 
-		// Integer (32 bits signed)
-		mixin(accept!"Value");
+		// Integer (32-bit signed)
+		else
+			mixin(accept!"Value");
 	}
 	
+	/// Parse any floating-point literal (after the initial fragment was parsed)
+	private void parseFloatingPoint()
+	{
+		assert(ch == '.');
+		advanceChar(ErrorOnEOF.No);
+		
+		parseNumericFragment();
+		
+		// Float (32-bit signed)?
+		if(lookahead('F') || lookahead('f'))
+		{
+			advanceChar(ErrorOnEOF.No);
+			mixin(accept!"Value");
+		}
+
+		// Double float (64-bit signed) with suffix?
+		else if(lookahead('D') || lookahead('d'))
+		{
+			advanceChar(ErrorOnEOF.No);
+			mixin(accept!"Value");
+		}
+
+		// Decimal (128+ bits signed)?
+		//TODO: Does spec allow mixed-case suffix?
+		else if(lookahead('B') || lookahead('b'))
+		{
+			advanceChar(ErrorOnEOF.No);
+			if(lookahead('D') || lookahead('d'))
+			{
+				advanceChar(ErrorOnEOF.No);
+				mixin(accept!"Value");
+			}
+
+			//TODO: How does spec actually handle this case?
+			else
+			{
+				throw new SDLangException(
+					location,
+					"Error: Invalid floating point suffix."
+				);
+			}
+		}
+
+		// Double float (64-bit signed) without suffix
+		else
+			mixin(accept!"Value");
+	}
+
 	/// Parse [0-9]+, but don't actually generate a token
 	private void parseNumericFragment()
 	{
 		if(ch < '0' || ch > '9')
-		{
-			throw new SDLangException(
-				location,
-				"Error: Unexpected character after negative sign. Only 0-9 allowed."
-			);
-		}
+			throw new SDLangException(location, "Error: Expected a digit 0-9.");
 		
 		while(!isEndOfNumericFragment())
 		{

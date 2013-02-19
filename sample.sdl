@@ -28,6 +28,15 @@ upload from="ikayzo.org" data=[
     vFSDFR3df789GSfsb2edf
 ]
 
+examples
+123
+123L or 123l
+123.43F or 123.43f
+123.43 or 123.43d or 123.43D
+123.44BD or 123.44bd
+123.44A
+123.44BA
+
 # three tags acting as name value pairs
 first_name "Akiko"
 last_name "Johnson"
