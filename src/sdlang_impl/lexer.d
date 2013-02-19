@@ -92,6 +92,7 @@ class Lexer
 	private enum LexerState
 	{
 		normal,
+		regularString,
 		rawString,
 		ident_true,   // ident or true
 		ident_false,  // ident or false
@@ -136,6 +137,7 @@ class Lexer
 				else if(ch == ':')
 					mixin(accept!":");
 				
+				//TODO: Should this include all isNewline()? (except for \r, right?)
 				else if(ch == ';' || ch == '\n')
 					mixin(accept!"EOL");
 				
@@ -154,6 +156,12 @@ class Lexer
 				else if(isAlpha(ch) || ch == '_')
 					mixin(gotoState!"LexerState.ident");
 
+				else if(ch == '"')
+				{
+					advanceChar();
+					mixin(gotoState!"LexerState.regularString");
+				}
+
 				else if(ch == '`')
 				{
 					advanceChar();
@@ -162,6 +170,26 @@ class Lexer
 
 				else
 					mixin(accept!"Error");
+
+			case LexerState.regularString:
+
+				if(ch == '\\')
+				{
+					advanceChar();
+					if(isNewline(ch))
+						eatWhite();
+				}
+
+				else if(ch == '"')
+					mixin(accept!"Value");
+
+				else if(isNewline(ch))
+					throw new SDLangException(
+						location,
+						"Error: Unescaped newlines are only allowed in raw strings, not regular strings."
+					);
+
+				break;
 
 			case LexerState.rawString:
 				if(ch == '`')
@@ -220,7 +248,7 @@ class Lexer
 				/+if(state == LexerState.backslash)
 					throw new SDLangException(
 						location,
-						"Error: No newline after line-continuation backslash"
+						"Error: Missing newline after line-continuation backslash"
 					);
 
 				else if(state == LexerState.blockComment)
@@ -248,6 +276,12 @@ class Lexer
 		return hasNextCh && nextCh == ch;
 	}
 
+	private bool isNewline(dchar ch)
+	{
+		//TODO: Not entirely sure if this list is 100% complete and correct per spec.
+		return ch == '\n' || ch == '\r' || ch == lineSep || ch == paraSep;
+	}
+	
 	/// Does lookahead character indicate the end of an ident?
 	private bool isEndOfIdentCached = false;
 	private bool _isEndOfIdent;
@@ -314,6 +348,7 @@ class Lexer
 	/// Advance one code point
 	private void advanceChar()
 	{
+		//TODO: Should this include all isNewline()? (except for \r, right?)
 		if(ch == '\n')
 		{
 			location.line++;
@@ -381,13 +416,15 @@ class Lexer
 					}
 					else
 						return; // Done
-				}				
+				}
+				//TODO: Should this include all isNewline()? (except for \r, right?)
 				else if(ch == '\n' || !isWhite(ch))
 					return; // Done
 
 				break;
 			
 			case State.backslash:
+				//TODO: Should this include all isNewline()? (except for \r, right?)
 				if(ch == '\n')
 					state = State.normal;
 
@@ -399,6 +436,7 @@ class Lexer
 				break;
 			
 			case State.lineComment:
+				//TODO: Should this include all isNewline()? (except for \r, right?)
 				if(lookahead('\n'))
 					state = State.normal;
 				break;
@@ -426,7 +464,7 @@ class Lexer
 				if(state == State.backslash)
 					throw new SDLangException(
 						location,
-						"Error: No newline after line-continuation backslash"
+						"Error: Missing newline after line-continuation backslash"
 					);
 
 				else if(state == State.blockComment)

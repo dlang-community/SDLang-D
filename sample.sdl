@@ -3,6 +3,9 @@
  { ` ndxowq cnw k` }  : ; : 
 FOO
 {` ndxowq cnw k`}:;:foo:;
+"Aki\ ko"
+"Aki\
+ko""Aki\"ko"
 # a tag having only a name
 my_tag
 
