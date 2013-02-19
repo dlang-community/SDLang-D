@@ -70,7 +70,11 @@ int main(string[] args)
 			);
 			
 			if(tok.symbol.name == "Error")
+			{
+				writeln(lexer.location, ": The rest starts here");
+				//writeln(lexer.ch, lexer.source[lexer.pos..$]);
 				break;
+			}
 		}
 	}
 	catch(SDLangException e)
@@ -78,9 +82,6 @@ int main(string[] args)
 		stderr.writeln(e.msg);
 		return 1;
 	}
-
-	writeln(lexer.location, ": The rest starts here");
-	//writeln(lexer.ch, lexer.source[lexer.pos..$]);
 
 	return 0;
 }
