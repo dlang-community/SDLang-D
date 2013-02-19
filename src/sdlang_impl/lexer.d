@@ -291,34 +291,34 @@ class Lexer
 		}
 		
 		else if(ch == 't' && !isEndOfIdent())
-			parseIdentTrue();
+			lexIdentTrue();
 
 		else if(ch == 'f' && !isEndOfIdent())
-			parseIdentFalse();
+			lexIdentFalse();
 
 		else if(ch == 'o' && !isEndOfIdent())
-			parseIdentOnOff();
+			lexIdentOnOff();
 
 		else if(ch == 'n' && !isEndOfIdent())
-			parseIdentNull();
+			lexIdentNull();
 
 		else if(isAlpha(ch) || ch == '_')
-			parseIdent();
+			lexIdent();
 
 		else if(ch == '"')
-			parseRegularString();
+			lexRegularString();
 
 		else if(ch == '`')
-			parseRawString();
+			lexRawString();
 		
 		else if(ch == '\'')
-			parseCharacter();
+			lexCharacter();
 
 		else if(ch == '[')
-			parseBinary();
+			lexBinary();
 
 		else if(ch == '-' || isDigit(ch))
-			parseNumeric();
+			lexNumeric();
 
 		else
 		{
@@ -327,8 +327,8 @@ class Lexer
 		}
 	}
 	
-	/// Parse Ident or 'true'
-	private void parseIdentTrue()
+	/// Lex Ident or 'true'
+	private void lexIdentTrue()
 	{
 		assert(ch == 't' && !isEndOfIdent());
 
@@ -344,7 +344,7 @@ class Lexer
 			{
 			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", true));
 			case KeywordResult.Continue: break;
-			case KeywordResult.Failed:   parseIdent(); return;
+			case KeywordResult.Failed:   lexIdent(); return;
 			}
 		}
 
@@ -352,8 +352,8 @@ class Lexer
 		mixin(accept!"Ident");
 	}
 
-	/// Parse Ident or 'false'
-	private void parseIdentFalse()
+	/// Lex Ident or 'false'
+	private void lexIdentFalse()
 	{
 		assert(ch == 'f' && !isEndOfIdent());
 		
@@ -369,7 +369,7 @@ class Lexer
 			{
 			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", false));
 			case KeywordResult.Continue: break;
-			case KeywordResult.Failed:   parseIdent(); return;
+			case KeywordResult.Failed:   lexIdent(); return;
 			}
 		}
 
@@ -377,8 +377,8 @@ class Lexer
 		mixin(accept!"Ident");
 	}
 
-	/// Parse Ident or 'on' or 'off'
-	private void parseIdentOnOff()
+	/// Lex Ident or 'on' or 'off'
+	private void lexIdentOnOff()
 	{
 		assert(ch == 'o' && !isEndOfIdent());
 		
@@ -415,16 +415,16 @@ class Lexer
 			
 			if(failedKeywordOn && failedKeywordOff)
 			{
-				parseIdent();
+				lexIdent();
 				return;
 			}
 		}
 
-		parseIdent();
+		lexIdent();
 	}
 
-	/// Parse Ident or 'null'
-	private void parseIdentNull()
+	/// Lex Ident or 'null'
+	private void lexIdentNull()
 	{
 		assert(ch == 'n' && !isEndOfIdent());
 		
@@ -440,7 +440,7 @@ class Lexer
 			{
 			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", null));
 			case KeywordResult.Continue: break;
-			case KeywordResult.Failed:   parseIdent(); return;
+			case KeywordResult.Failed:   lexIdent(); return;
 			}
 		}
 	
@@ -448,8 +448,8 @@ class Lexer
 		mixin(accept!"Ident");
 	}
 
-	/// Parse Ident
-	private void parseIdent()
+	/// Lex Ident
+	private void lexIdent()
 	{
 		assert(isAlpha(ch) || ch == '_');
 		
@@ -461,8 +461,8 @@ class Lexer
 		mixin(accept!"Ident");
 	}
 	
-	/// Parse regular string
-	private void parseRegularString()
+	/// Lex regular string
+	private void lexRegularString()
 	{
 		assert(ch == '"');
 		
@@ -491,8 +491,8 @@ class Lexer
 		mixin(accept!("Value", null));
 	}
 
-	/// Parse raw string
-	private void parseRawString()
+	/// Lex raw string
+	private void lexRawString()
 	{
 		assert(ch == '`');
 		
@@ -505,8 +505,8 @@ class Lexer
 		mixin(accept!("Value", value));
 	}
 	
-	/// Parse character literal
-	private void parseCharacter()
+	/// Lex character literal
+	private void lexCharacter()
 	{
 		assert(ch == '\'');
 		advanceChar(ErrorOnEOF.Yes); // Skip opening single-quote
@@ -527,8 +527,8 @@ class Lexer
 		mixin(accept!("Value", value));
 	}
 	
-	/// Parse base64 binary literal
-	private void parseBinary()
+	/// Lex base64 binary literal
+	private void lexBinary()
 	{
 		assert(ch == '[');
 		
@@ -553,9 +553,9 @@ class Lexer
 		mixin(accept!("Value", null));
 	}
 	
-	/// Parse [0-9]+, but without emitting a token.
+	/// Lex [0-9]+, but without emitting a token.
 	/// This is used by the other numeric parsing functions.
-	private void parseNumericFragment()
+	private void lexNumericFragment()
 	{
 		if(!isDigit(ch))
 			throw new SDLangException(location, "Error: Expected a digit 0-9.");
@@ -568,10 +568,10 @@ class Lexer
 		} while(isDigit(ch));
 	}
 
-	/// Parse anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
+	/// Lex anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
 	//TODO: How does spec handle invalid suffix like "12a"? An error? Or a value and ident?
 	//TODO: Does spec allow negative dates?
-	private void parseNumeric()
+	private void lexNumeric()
 	{
 		assert(ch == '-' || isDigit(ch));
 
@@ -580,9 +580,9 @@ class Lexer
 		if(isNegative)
 			advanceChar(ErrorOnEOF.Yes);
 
-		//TODO: Does spec allow "1." or ".1"? If so, parseNumericFragment() needs to accept ""
+		//TODO: Does spec allow "1." or ".1"? If so, lexNumericFragment() needs to accept ""
 		
-		parseNumericFragment();
+		lexNumericFragment();
 		
 		// Long integer (64-bit signed)?
 		if(ch == 'L' || ch == 'l')
@@ -593,28 +593,28 @@ class Lexer
 		
 		// Some floating point?
 		else if(ch == '.')
-			parseFloatingPoint();
+			lexFloatingPoint();
 		
 		// Some date?
 		else if(ch == '/')
-			parseDate();
+			lexDate();
 		
 		// Some time span?
 		else if(ch == ':' || ch == 'd')
-			parseTimeSpan();
+			lexTimeSpan();
 
 		// Integer (32-bit signed)
 		else
 			mixin(accept!("Value", null));
 	}
 	
-	/// Parse any floating-point literal (after the initial numeric fragment was parsed)
-	private void parseFloatingPoint()
+	/// Lex any floating-point literal (after the initial numeric fragment was lexed)
+	private void lexFloatingPoint()
 	{
 		assert(ch == '.');
 		advanceChar(ErrorOnEOF.No);
 		
-		parseNumericFragment();
+		lexNumericFragment();
 		
 		// Float (32-bit signed)?
 		if(ch == 'F' || ch == 'f')
@@ -656,22 +656,22 @@ class Lexer
 			mixin(accept!("Value", null));
 	}
 
-	/// Parse date or datetime (after the initial numeric fragment was parsed)
+	/// Lex date or datetime (after the initial numeric fragment was lexed)
 	//TODO: How does the spec handle a date (not datetime) followed by an int?
 	//TODO: SDL site implies datetime can have milliseconds without seconds. Is this true?
-	private void parseDate()
+	private void lexDate()
 	{
 		assert(ch == '/');
 		
-		// Parse months
+		// Lex months
 		advanceChar(ErrorOnEOF.Yes); // Skip '/'
-		parseNumericFragment();
+		lexNumericFragment();
 
-		// Parse days
+		// Lex days
 		if(ch != '/')
 			throw new SDLangException(location, "Error: Invalid date format: Missing days.");
 		advanceChar(ErrorOnEOF.Yes); // Skip '/'
-		parseNumericFragment();
+		lexNumericFragment();
 		
 		// Date?
 		if(isEOF)
@@ -687,30 +687,30 @@ class Lexer
 		if(isEOF || !isDigit(ch))
 			mixin(accept!("Value", null));
 		
-		// Parse hours
-		parseNumericFragment();
+		// Lex hours
+		lexNumericFragment();
 		
-		// Parse minutes
+		// Lex minutes
 		if(ch != ':')
 			throw new SDLangException(location, "Error: Invalid date-time format: Missing minutes.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
-		parseNumericFragment();
+		lexNumericFragment();
 		
-		// Parse seconds, if exists
+		// Lex seconds, if exists
 		if(ch == ':')
 		{
 			advanceChar(ErrorOnEOF.Yes); // Skip ':'
-			parseNumericFragment();
+			lexNumericFragment();
 		}
 		
-		// Parse milliseconds, if exists
+		// Lex milliseconds, if exists
 		if(ch == '.')
 		{
 			advanceChar(ErrorOnEOF.Yes); // Skip '.'
-			parseNumericFragment();
+			lexNumericFragment();
 		}
 
-		// Parse zone, if exists
+		// Lex zone, if exists
 		//TODO: Make sure the end of this is detected correctly.
 		if(ch == '-')
 		{
@@ -726,41 +726,41 @@ class Lexer
 		mixin(accept!("Value", null));
 	}
 
-	/// Parse time span (after the initial numeric fragment was parsed)
-	private void parseTimeSpan()
+	/// Lex time span (after the initial numeric fragment was lexed)
+	private void lexTimeSpan()
 	{
 		assert(ch == ':' || ch == 'd');
 		
-		// Parsed days?
+		// Lexed days?
 		bool hasDays = ch == 'd';
 		if(hasDays)
 		{
 			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
 
-			// Parse hours
+			// Lex hours
 			if(ch != ':')
 				throw new SDLangException(location, "Error: Invalid time span format: Missing hours.");
 			advanceChar(ErrorOnEOF.Yes); // Skip ':'
-			parseNumericFragment();
+			lexNumericFragment();
 		}
 
-		// Parse minutes
+		// Lex minutes
 		if(ch != ':')
 			throw new SDLangException(location, "Error: Invalid time span format: Missing minutes.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
-		parseNumericFragment();
+		lexNumericFragment();
 
-		// Parse seconds
+		// Lex seconds
 		if(ch != ':')
 			throw new SDLangException(location, "Error: Invalid time span format: Missing seconds.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
-		parseNumericFragment();
+		lexNumericFragment();
 		
-		// Parse milliseconds, if exists
+		// Lex milliseconds, if exists
 		if(ch == '.')
 		{
 			advanceChar(ErrorOnEOF.Yes); // Skip '.'
-			parseNumericFragment();
+			lexNumericFragment();
 		}
 		
 		mixin(accept!("Value", null));
