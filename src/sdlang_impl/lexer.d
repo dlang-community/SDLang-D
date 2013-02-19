@@ -117,6 +117,7 @@ class Lexer
 		tokenLength32    = 1;
 		bool failedKeywordOn  = false;
 		bool failedKeywordOff = false;
+		isEndOfIdentCached = false;
 		while(true)
 		{
 			final switch(state)
@@ -248,22 +249,32 @@ class Lexer
 	}
 
 	/// Does lookahead character indicate the end of an ident?
+	private bool isEndOfIdentCached = false;
+	private bool _isEndOfIdent;
 	private bool isEndOfIdent()
 	{
-		if(!hasNextCh)
-			return true;
+		if(!isEndOfIdentCached)
+		{
+			if(!hasNextCh)
+				_isEndOfIdent = true;
+			
+			else if(isAlpha(nextCh))
+				_isEndOfIdent = false;
+			
+			else if(isNumber(nextCh))
+				_isEndOfIdent = false;
+			
+			else
+				_isEndOfIdent =
+					nextCh != '-' &&
+					nextCh != '_' &&
+					nextCh != '.' &&
+					nextCh != '$';
+			
+			isEndOfIdentCached = true;
+		}
 		
-		if(isAlpha(nextCh))
-			return false;
-		
-		if(isNumber(nextCh))
-			return false;
-		
-		return
-			nextCh != '-' &&
-			nextCh != '_' &&
-			nextCh != '.' &&
-			nextCh != '$';
+		return _isEndOfIdent;
 	}
 
 	private enum KeywordResult
@@ -327,6 +338,7 @@ class Lexer
 		tokenData   = source[tokenStart.index..pos];
 		
 		nextCh = source.decode(nextPos);
+		isEndOfIdentCached = false;
 	}
 
 	/// Advances past whitespace and comments
