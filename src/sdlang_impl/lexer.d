@@ -70,13 +70,13 @@ class Lexer
 	// Only to be used inside popFront.
 	private template accept(alias symbolName)
 	{
-		enum accept = "
+		enum accept = ("
 			{
 				_front = makeToken!"~symbolName.stringof~";
 				advanceChar();
 				return;
 			}
-		";
+		").replace("\n", "");
 	}
 
 	private template gotoState(string stateName)
