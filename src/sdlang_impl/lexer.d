@@ -68,7 +68,7 @@ class Lexer
 	///.
 	@property bool isEOF()
 	{
-		return nextPos == source.length;
+		return location.index == source.length;
 	}
 
 	// Kind of a poor-man's yield, but fast.
@@ -191,17 +191,6 @@ class Lexer
 	/// Returns false if EOF was reached
 	private bool advanceChar(ErrorOnEOF errorOnEOF)
 	{
-		if(!hasNextCh)
-		{
-			if(errorOnEOF == ErrorOnEOF.No)
-				return false;
-			else
-				throw new SDLangException(
-					location,
-					"Error: Unexpected end of file"
-				);
-		}
-		
 		//TODO: Should this include all isNewline()? (except for \r, right?)
 		if(ch == '\n')
 		{
@@ -215,6 +204,18 @@ class Lexer
 
 		nextPos = posAfterLookahead;
 		ch      = nextCh;
+
+		if(!hasNextCh)
+		{
+			if(errorOnEOF == ErrorOnEOF.No)
+				return false;
+			else
+				throw new SDLangException(
+					location,
+					"Error: Unexpected end of file"
+				);
+		}
+
 		if(nextPos == source.length)
 		{
 			nextCh = dchar.init;
