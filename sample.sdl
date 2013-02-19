@@ -9,6 +9,7 @@ ko""Aki\"ko"
 # a tag having only a name
 my_tag
 m my_tag
+68A
 
 true f false on off null
 tru fals o of nul
@@ -30,7 +31,7 @@ upload from="ikayzo.org" data=[
 # three tags acting as name value pairs
 first_name "Akiko"
 last_name "Johnson"
-height 68
+height 68 68L 60l
 
 # a tag with a value list
 person "Akiko" "Johnson" 68

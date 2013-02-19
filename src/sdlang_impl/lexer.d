@@ -142,6 +142,15 @@ class Lexer
 		return _isEndOfIdent;
 	}
 
+	/// Does lookahead character indicate the end of a numberic fragment? (ie: end of [0-9]+)
+	private bool isEndOfNumericFragment()
+	{
+		if(!hasNextCh)
+			return true;
+		
+		return nextCh < '0' || nextCh > '9';
+	}
+	
 	private enum KeywordResult
 	{
 		Accept,   // Keyword is matched
@@ -277,6 +286,9 @@ class Lexer
 
 		else if(ch == '[')
 			parseBinary();
+
+		else if(ch >= '0' && ch <= '9')
+			parseNumeric();
 
 		else
 			mixin(accept!"Error");
@@ -461,10 +473,73 @@ class Lexer
 					location,
 					"Error: Invalid character in base64 binary literal."
 				);
-		}
-		while(ch != ']');
+		} while(ch != ']');
 		
 		mixin(accept!"Value");
+	}
+	
+	/// Parse anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
+	private void parseNumeric()
+	{
+		assert(ch == '-' || (ch >= '0' && ch <= '9'));
+
+		// Check for negative
+		bool isNegative = ch == '-';
+		if(isNegative)
+			advanceChar(ErrorOnEOF.Yes);
+
+		//TODO: Does spec allow "1." or ".1"? If so, parseNumericFragment() needs to accept ""
+		
+		parseNumericFragment();
+		
+		// Long integer (64 bits signed)?
+		if(lookahead('L') || lookahead('l'))
+		{
+			advanceChar(ErrorOnEOF.No);
+			mixin(accept!"Value");
+		}
+		
+		// Some floating point?
+		else if(lookahead('.'))
+		{
+			advanceChar(ErrorOnEOF.No);
+			mixin(accept!"Error"); //TODO
+		}
+		
+		// Some date?
+		else if(lookahead('/'))
+		{
+			advanceChar(ErrorOnEOF.No);
+			mixin(accept!"Error"); //TODO
+		}
+		
+		// Some time span?
+		else if(lookahead(':'))
+		{
+			advanceChar(ErrorOnEOF.No);
+			mixin(accept!"Error"); //TODO
+		}
+
+		// Integer (32 bits signed)
+		mixin(accept!"Value");
+	}
+	
+	/// Parse [0-9]+, but don't actually generate a token
+	private void parseNumericFragment()
+	{
+		if(ch < '0' || ch > '9')
+		{
+			throw new SDLangException(
+				location,
+				"Error: Unexpected character after negative sign. Only 0-9 allowed."
+			);
+		}
+		
+		while(!isEndOfNumericFragment())
+		{
+			if(!advanceChar(ErrorOnEOF.No))
+				return;
+		}
 	}
 	
 	/// Advances past whitespace and comments
