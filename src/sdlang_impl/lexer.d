@@ -197,9 +197,9 @@ class Lexer
 				return false;
 			else
 				throw new SDLangException(
-						location,
-						"Error: Unexpected end of file"
-					);
+					location,
+					"Error: Unexpected end of file"
+				);
 		}
 		
 		//TODO: Should this include all isNewline()? (except for \r, right?)
@@ -466,8 +466,8 @@ class Lexer
 		if(!lookahead('\''))
 		{
 			throw new SDLangException(
-					location,
-					"Error: Expected closing single-quote."
+				location,
+				"Error: Expected closing single-quote."
 			);
 		}
 		
