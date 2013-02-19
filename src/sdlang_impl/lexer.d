@@ -16,6 +16,28 @@ import sdlang_impl.util;
 
 alias sdlang_impl.util.startsWith startsWith;
 
+// Kind of a poor-man's yield, but fast.
+// Only to be used inside Lexer.popFront.
+private template accept(string symbolName)
+{
+	enum accept = acceptImpl!(symbolName, null);
+}
+private template accept(string symbolName, alias value)
+{
+	static assert(symbolName == "Value", "Only a Value symbol can take a value.");
+	enum accept = acceptImpl!(symbolName, value);
+}
+private template acceptImpl(string symbolName, alias value)
+{
+	enum acceptImpl = ("
+		{
+			_front = makeToken!"~symbolName.stringof~";
+			_front.value = "~value.stringof~";
+			return;
+		}
+	").replace("\n", "");
+}
+
 ///.
 class Lexer
 {
@@ -35,6 +57,8 @@ class Lexer
 	///.
 	this(string source=null, string filename=null)
 	{
+		_front = Token(symbol!"Error", Location());
+
 		if( source.startsWith( ByteOrderMarks[BOM.UTF8] ) )
 			source = source[ ByteOrderMarks[BOM.UTF8].length .. $ ];
 		
@@ -59,7 +83,7 @@ class Lexer
 	}
 	
 	///.
-	Token _front = Token(symbol!"Error", Location());
+	Token _front;// = Token(symbol!"Error", Location());
 	@property Token front()
 	{
 		return _front;
@@ -69,18 +93,6 @@ class Lexer
 	@property bool isEOF()
 	{
 		return location.index == source.length;
-	}
-
-	// Kind of a poor-man's yield, but fast.
-	// Only to be used inside popFront.
-	private template accept(alias symbolName)
-	{
-		enum accept = ("
-			{
-				_front = makeToken!"~symbolName.stringof~";
-				return;
-			}
-		").replace("\n", "");
 	}
 
 	private Token makeToken(string symbolName)()
@@ -330,7 +342,7 @@ class Lexer
 			
 			final switch(checkKeyword("true", &isEndOfIdent))
 			{
-			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
+			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", true));
 			case KeywordResult.Continue: break;
 			case KeywordResult.Failed:   parseIdent(); return;
 			}
@@ -355,7 +367,7 @@ class Lexer
 			
 			final switch(checkKeyword("false", &isEndOfIdent))
 			{
-			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
+			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", false));
 			case KeywordResult.Continue: break;
 			case KeywordResult.Failed:   parseIdent(); return;
 			}
@@ -385,7 +397,7 @@ class Lexer
 			{
 				final switch(checkKeyword("on", &isEndOfIdent))
 				{
-				case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
+				case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", true));
 				case KeywordResult.Continue: break;
 				case KeywordResult.Failed:   failedKeywordOn = true; break;
 				}
@@ -395,7 +407,7 @@ class Lexer
 			{
 				final switch(checkKeyword("off", &isEndOfIdent))
 				{
-				case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
+				case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", false));
 				case KeywordResult.Continue: break;
 				case KeywordResult.Failed:   failedKeywordOff = true; break;
 				}
@@ -426,7 +438,7 @@ class Lexer
 			
 			final switch(checkKeyword("null", &isEndOfIdent))
 			{
-			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
+			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", null));
 			case KeywordResult.Continue: break;
 			case KeywordResult.Failed:   parseIdent(); return;
 			}
@@ -476,7 +488,7 @@ class Lexer
 		} while(ch != '"');
 		
 		advanceChar(ErrorOnEOF.No);
-		mixin(accept!"Value");
+		mixin(accept!("Value", null));
 	}
 
 	/// Parse raw string
@@ -489,7 +501,8 @@ class Lexer
 		while(ch != '`');
 		
 		advanceChar(ErrorOnEOF.No);
-		mixin(accept!"Value");
+		auto value = source[tokenStart.index+1..location.index-1];
+		mixin(accept!("Value", value));
 	}
 	
 	/// Parse character literal
@@ -498,6 +511,7 @@ class Lexer
 		assert(ch == '\'');
 		advanceChar(ErrorOnEOF.Yes); // Skip opening single-quote
 		
+		auto value = ch;
 		advanceChar(ErrorOnEOF.Yes); // Skip the character itself
 
 		if(ch == '\'')
@@ -510,7 +524,7 @@ class Lexer
 			);
 		}
 
-		mixin(accept!"Value");
+		mixin(accept!("Value", value));
 	}
 	
 	/// Parse base64 binary literal
@@ -536,7 +550,7 @@ class Lexer
 		} while(ch != ']');
 		
 		advanceChar(ErrorOnEOF.No); // Skip ']'
-		mixin(accept!"Value");
+		mixin(accept!("Value", null));
 	}
 	
 	/// Parse [0-9]+, but without emitting a token.
@@ -574,7 +588,7 @@ class Lexer
 		if(ch == 'L' || ch == 'l')
 		{
 			advanceChar(ErrorOnEOF.No);
-			mixin(accept!"Value");
+			mixin(accept!("Value", null));
 		}
 		
 		// Some floating point?
@@ -591,7 +605,7 @@ class Lexer
 
 		// Integer (32-bit signed)
 		else
-			mixin(accept!"Value");
+			mixin(accept!("Value", null));
 	}
 	
 	/// Parse any floating-point literal (after the initial numeric fragment was parsed)
@@ -606,14 +620,14 @@ class Lexer
 		if(ch == 'F' || ch == 'f')
 		{
 			advanceChar(ErrorOnEOF.No);
-			mixin(accept!"Value");
+			mixin(accept!("Value", null));
 		}
 
 		// Double float (64-bit signed) with suffix?
 		else if(ch == 'D' || ch == 'd')
 		{
 			advanceChar(ErrorOnEOF.No);
-			mixin(accept!"Value");
+			mixin(accept!("Value", null));
 		}
 
 		// Decimal (128+ bits signed)?
@@ -624,7 +638,7 @@ class Lexer
 			if(ch == 'D' || ch == 'd')
 			{
 				advanceChar(ErrorOnEOF.No);
-				mixin(accept!"Value");
+				mixin(accept!("Value", null));
 			}
 
 			//TODO: How does spec actually handle "1.23ba"?
@@ -639,7 +653,7 @@ class Lexer
 
 		// Double float (64-bit signed) without suffix
 		else
-			mixin(accept!"Value");
+			mixin(accept!("Value", null));
 	}
 
 	/// Parse date or datetime (after the initial numeric fragment was parsed)
@@ -661,7 +675,7 @@ class Lexer
 		
 		// Date?
 		if(isEOF)
-			mixin(accept!"Value");
+			mixin(accept!("Value", null));
 		
 		//TODO: Is this the proper way to handle the space between date and time?
 		while(!isEOF && isWhite(ch) && !isNewline(ch))
@@ -671,7 +685,7 @@ class Lexer
 		
 		// Date?
 		if(isEOF || !isDigit(ch))
-			mixin(accept!"Value");
+			mixin(accept!("Value", null));
 		
 		// Parse hours
 		parseNumericFragment();
@@ -709,7 +723,7 @@ class Lexer
 				advanceChar(ErrorOnEOF.No);
 		}
 		
-		mixin(accept!"Value");
+		mixin(accept!("Value", null));
 	}
 
 	/// Parse time span (after the initial numeric fragment was parsed)
@@ -749,7 +763,7 @@ class Lexer
 			parseNumericFragment();
 		}
 		
-		mixin(accept!"Value");
+		mixin(accept!("Value", null));
 	}
 
 	/// Advances past whitespace and comments

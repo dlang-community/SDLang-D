@@ -11,19 +11,14 @@ import sdlang_impl.util;
 
 ///.
 alias Algebraic!(
+	bool,
 	string, dchar,
 	int, long,
 	float, double, real,
 	Date, DateTime, Duration,
 	void[],
 	typeof(null),
-) _Value;
-
-class Value
-{
-	_Value v;
-	alias v this;
-}
+) Value;
 
 /// This only represents terminals. Nonterminals aren't
 /// constructed since the AST is directly built during parsing.

@@ -8,7 +8,7 @@ SDL: http://sdl.ikayzo.org/display/SDL/Language+Guide
 Author:
 $(WEB www.semitwist.com, Nick Sabalausky)
 
-This should work with DMD 2.059 and up.
+This should work with DMD 2.061 and up.
 
 To compile manually:
 	rdmd --build-only -Isrc -ofbin/sdlang [dmd/rdmd options] src/sdlang.d
@@ -58,9 +58,9 @@ int main(string[] args)
 			// Value
 			string value;
 			if(tok.symbol == symbol!"Value")
-				value = tok.value? toString(tok.value.type) : "{null}";
+				value = tok.value.hasValue? toString(tok.value.type) : "{null}";
 			
-			value = value==""? "\t" : "("~value~")";
+			value = value==""? "\t" : "("~value~") "~tok.value.toString();
 			
 			// Display
 			writeln(
@@ -88,7 +88,8 @@ int main(string[] args)
 
 string toString(TypeInfo ti)
 {
-	if     (ti == typeid( string       )) return "string";
+	if     (ti == typeid( bool         )) return "bool";
+	else if(ti == typeid( string       )) return "string";
 	else if(ti == typeid( dchar        )) return "dchar";
 	else if(ti == typeid( int          )) return "int";
 	else if(ti == typeid( long         )) return "long";
