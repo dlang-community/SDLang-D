@@ -515,53 +515,6 @@ class Lexer
 		}
 	}
 
-	/// Parse time span fragment (after the initial numeric fragment was parsed),
-	/// but without emitting a token.
-	/// This is used by some of the other numeric parsing functions.
-	private void parseTimeSpanFragment()
-	{
-		assert(ch == ':' || ch == 'd');
-		
-		// Parsed days?
-		bool hasDays = ch == 'd';
-		if(hasDays)
-		{
-			if(!lookahead(':'))
-				throw new SDLangException(location, "Error: Invalid time span format.");
-			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
-			advanceChar(ErrorOnEOF.Yes); // Skip ':'
-			
-			// Parse hours
-			parseNumericFragment();
-			if(!lookahead(':'))
-				throw new SDLangException(location, "Error: Invalid time span format.");
-			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
-			advanceChar(ErrorOnEOF.Yes); // Skip ':'
-		}
-		else
-			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
-
-		// Parse minutes
-		parseNumericFragment();
-		if(!lookahead(':'))
-			throw new SDLangException(location, "Error: Invalid time span format.");
-		advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
-		advanceChar(ErrorOnEOF.Yes); // Skip ':'
-
-		// Parse seconds
-		parseNumericFragment();
-		
-		// Has milliseconds?
-		if(lookahead('.'))
-		{
-			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
-			advanceChar(ErrorOnEOF.Yes); // Skip '.'
-			
-			// Parse milliseconds
-			parseNumericFragment();
-		}
-	}
-
 	/// Parse anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
 	//TODO: How does spec handle invalid suffix like "12a"? An error? Or a value and ident?
 	//TODO: Does spec allow negative dates?
@@ -747,7 +700,44 @@ class Lexer
 	{
 		assert(ch == ':' || ch == 'd');
 		
-		parseTimeSpanFragment();
+		// Parsed days?
+		bool hasDays = ch == 'd';
+		if(hasDays)
+		{
+			if(!lookahead(':'))
+				throw new SDLangException(location, "Error: Invalid time span format.");
+			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
+			advanceChar(ErrorOnEOF.Yes); // Skip ':'
+			
+			// Parse hours
+			parseNumericFragment();
+			if(!lookahead(':'))
+				throw new SDLangException(location, "Error: Invalid time span format.");
+			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+			advanceChar(ErrorOnEOF.Yes); // Skip ':'
+		}
+		else
+			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
+
+		// Parse minutes
+		parseNumericFragment();
+		if(!lookahead(':'))
+			throw new SDLangException(location, "Error: Invalid time span format.");
+		advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+		advanceChar(ErrorOnEOF.Yes); // Skip ':'
+
+		// Parse seconds
+		parseNumericFragment();
+		
+		// Has milliseconds?
+		if(lookahead('.'))
+		{
+			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+			advanceChar(ErrorOnEOF.Yes); // Skip '.'
+			
+			// Parse milliseconds
+			parseNumericFragment();
+		}
 		
 		mixin(accept!"Value");
 	}
