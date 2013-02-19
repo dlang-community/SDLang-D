@@ -478,6 +478,20 @@ class Lexer
 		mixin(accept!"Value");
 	}
 	
+	/// Parse [0-9]+, but don't actually generate a token.
+	/// This is used by the other numeric parsing fuinctions.
+	private void parseNumericFragment()
+	{
+		if(ch < '0' || ch > '9')
+			throw new SDLangException(location, "Error: Expected a digit 0-9.");
+		
+		while(!isEndOfNumericFragment())
+		{
+			if(!advanceChar(ErrorOnEOF.No))
+				return;
+		}
+	}
+
 	/// Parse anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
 	//TODO: How does spec handle invalid suffix like "12a"? An error? Or a value and ident?
 	private void parseNumeric()
@@ -574,19 +588,6 @@ class Lexer
 			mixin(accept!"Value");
 	}
 
-	/// Parse [0-9]+, but don't actually generate a token
-	private void parseNumericFragment()
-	{
-		if(ch < '0' || ch > '9')
-			throw new SDLangException(location, "Error: Expected a digit 0-9.");
-		
-		while(!isEndOfNumericFragment())
-		{
-			if(!advanceChar(ErrorOnEOF.No))
-				return;
-		}
-	}
-	
 	/// Advances past whitespace and comments
 	private void eatWhite()
 	{

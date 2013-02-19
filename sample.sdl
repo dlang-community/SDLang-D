@@ -35,7 +35,7 @@ examples
 123.43 or 123.43d or 123.43D
 123.44BD or 123.44bd
 123.44A
-123.44BA
+#123.44BA
 
 # three tags acting as name value pairs
 first_name "Akiko"
