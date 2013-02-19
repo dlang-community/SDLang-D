@@ -3,6 +3,7 @@
 
 module sdlang_impl.lexer;
 
+import std.array;
 import std.conv;
 import std.stream : ByteOrderMarks, BOM;
 import std.uni;
@@ -78,6 +79,27 @@ class Lexer
 		";
 	}
 
+	private template gotoState(string stateName)
+	{
+		enum gotoState = ("
+			{
+				state = "~stateName~";
+				goto case "~stateName~";
+			}
+		").replace("\n", "");
+	}
+
+	private enum LexerState
+	{
+		normal,
+		rawString,
+		ident_true,   // ident or true
+		ident_false,  // ident or false
+		ident_on_off, // ident or on or off
+		ident_null,   // ident or null
+		ident,
+	}
+
 	///.
 	void popFront()
 	{
@@ -87,30 +109,19 @@ class Lexer
 
 		// -- Main Lexer -------------
 		
-		enum State
-		{
-			normal,
-			rawString,
-			ident_true,   // ident or true
-			ident_false,  // ident or false
-			ident_on_off, // ident or on or off
-			ident_null,   // ident or null
-			ident,
-		}
-		
-		auto startCh  = ch;
-		auto startPos = pos;
-		State state   = State.normal;
-		tokenStart    = location;
-		tokenLength   = 1;
-		tokenLength32 = 1;
+		auto startCh     = ch;
+		auto startPos    = pos;
+		LexerState state = LexerState.normal;
+		tokenStart       = location;
+		tokenLength      = 1;
+		tokenLength32    = 1;
 		bool failedKeywordOn  = false;
 		bool failedKeywordOff = false;
 		while(true)
 		{
 			final switch(state)
 			{
-			case State.normal:
+			case LexerState.normal:
 				
 				if(ch == '=')
 					mixin(accept!"=");
@@ -128,94 +139,72 @@ class Lexer
 					mixin(accept!"EOL");
 				
 				else if(ch == 't' && !isEndOfIdent())
-					state = State.ident_true;
+					mixin(gotoState!"LexerState.ident_true");
 
 				else if(ch == 'f' && !isEndOfIdent())
-					state = State.ident_false;
+					mixin(gotoState!"LexerState.ident_false");
 
 				else if(ch == 'o' && !isEndOfIdent())
-					state = State.ident_on_off;
+					mixin(gotoState!"LexerState.ident_on_off");
 
 				else if(ch == 'n' && !isEndOfIdent())
-					state = State.ident_null;
+					mixin(gotoState!"LexerState.ident_null");
 
 				else if(isAlpha(ch) || ch == '_')
-				{
-					state = State.ident;
-					goto case State.ident;
-				}
+					mixin(gotoState!"LexerState.ident");
 
 				else if(ch == '`')
-					state = State.rawString;
+				{
+					advanceChar();
+					mixin(gotoState!"LexerState.rawString");
+				}
 
 				else
 					mixin(accept!"Error");
-									
-				break;
 
-			case State.rawString:
+			case LexerState.rawString:
 				if(ch == '`')
 					mixin(accept!"Value");
 				break;
 
-			case State.ident_true:
-				final switch(checkKeyword("true", &isEndOfIdent))
-				{
-				case KeywordResult.Failed:   state = State.ident; break;
-				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"Value");
-				}
-				if(state == State.ident)
-					goto case State.ident;
+			case LexerState.ident_true:
+				auto r = checkKeyword("true", &isEndOfIdent);
+				if     (r == KeywordResult.Accept) mixin(accept!"Value");
+				else if(r == KeywordResult.Failed) mixin(gotoState!"LexerState.ident");
 				break;
 
-			case State.ident_false:
-				final switch(checkKeyword("false", &isEndOfIdent))
-				{
-				case KeywordResult.Failed:   state = State.ident; break;
-				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"Value");
-				}
-				if(state == State.ident)
-					goto case State.ident;
+			case LexerState.ident_false:
+				auto r = checkKeyword("false", &isEndOfIdent);
+				if     (r == KeywordResult.Accept) mixin(accept!"Value");
+				else if(r == KeywordResult.Failed) mixin(gotoState!"LexerState.ident");
 				break;
 
-			case State.ident_on_off:
+			case LexerState.ident_on_off:
 				if(!failedKeywordOn)
-				final switch(checkKeyword("on", &isEndOfIdent))
 				{
-				case KeywordResult.Failed:   failedKeywordOn = true; break;
-				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"Value");
+					auto r = checkKeyword("on", &isEndOfIdent);
+					if     (r == KeywordResult.Accept) mixin(accept!"Value");
+					else if(r == KeywordResult.Failed) failedKeywordOn = true;
 				}
 
 				if(!failedKeywordOff)
-				final switch(checkKeyword("off", &isEndOfIdent))
 				{
-				case KeywordResult.Failed:   failedKeywordOff = true; break;
-				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"Value");
+					auto r = checkKeyword("off", &isEndOfIdent);
+					if     (r == KeywordResult.Accept) mixin(accept!"Value");
+					else if(r == KeywordResult.Failed) failedKeywordOff = true;
 				}
 				
 				if(isEndOfIdent() || (failedKeywordOn && failedKeywordOff))
-				{
-					state = State.ident;
-					goto case State.ident;
-				}
+					mixin(gotoState!"LexerState.ident");
 				break;
 
-			case State.ident_null:
-				final switch(checkKeyword("null", &isEndOfIdent))
-				{
-				case KeywordResult.Failed:   state = State.ident; break;
-				case KeywordResult.Continue: break;
-				case KeywordResult.Accept:   mixin(accept!"Value");
-				}
-				if(state == State.ident)
-					goto case State.ident;
+			case LexerState.ident_null:
+				auto r = checkKeyword("null", &isEndOfIdent);
+				if     (r == KeywordResult.Accept) mixin(accept!"Value");
+				else if(r == KeywordResult.Failed) mixin(gotoState!"LexerState.ident");
 				break;
 
-			case State.ident:
+			case LexerState.ident:
 				if(isEndOfIdent())
 					mixin(accept!"Ident");
 				break;
@@ -227,13 +216,13 @@ class Lexer
 			{
 				// Reached EOF
 
-				/+if(state == State.backslash)
+				/+if(state == LexerState.backslash)
 					throw new SDLangException(
 						location,
 						"Error: No newline after line-continuation backslash"
 					);
 
-				else if(state == State.blockComment)
+				else if(state == LexerState.blockComment)
 					throw new SDLangException(
 						location,
 						"Error: Unterminated block comment"
