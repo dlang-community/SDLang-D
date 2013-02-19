@@ -527,23 +527,24 @@ class Lexer
 		if(hasDays)
 		{
 			if(!lookahead(':'))
-				throw new SDLangException(location, "Error: Invalid time span.");
+				throw new SDLangException(location, "Error: Invalid time span format.");
 			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
 			advanceChar(ErrorOnEOF.Yes); // Skip ':'
 			
 			// Parse hours
 			parseNumericFragment();
 			if(!lookahead(':'))
-				throw new SDLangException(location, "Error: Invalid time span.");
+				throw new SDLangException(location, "Error: Invalid time span format.");
 			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+			advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		}
-		
-		advanceChar(ErrorOnEOF.Yes); // Skip ':'
+		else
+			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
 
 		// Parse minutes
 		parseNumericFragment();
 		if(!lookahead(':'))
-			throw new SDLangException(location, "Error: Invalid time span.");
+			throw new SDLangException(location, "Error: Invalid time span format.");
 		advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 
@@ -563,6 +564,7 @@ class Lexer
 
 	/// Parse anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
 	//TODO: How does spec handle invalid suffix like "12a"? An error? Or a value and ident?
+	//TODO: Does spec allow negative dates?
 	private void parseNumeric()
 	{
 		assert(ch == '-' || (ch >= '0' && ch <= '9'));
@@ -594,7 +596,7 @@ class Lexer
 		else if(lookahead('/'))
 		{
 			advanceChar(ErrorOnEOF.No);
-			mixin(accept!"Error"); //TODO
+			parseDate();
 		}
 		
 		// Some time span?
@@ -635,14 +637,14 @@ class Lexer
 		//TODO: Does spec allow mixed-case suffix?
 		else if(lookahead('B') || lookahead('b'))
 		{
-			advanceChar(ErrorOnEOF.No);
+			advanceChar(ErrorOnEOF.Yes);
 			if(lookahead('D') || lookahead('d'))
 			{
 				advanceChar(ErrorOnEOF.No);
 				mixin(accept!"Value");
 			}
 
-			//TODO: How does spec actually handle this case?
+			//TODO: How does spec actually handle "1.23ba"?
 			else
 			{
 				throw new SDLangException(
@@ -655,6 +657,89 @@ class Lexer
 		// Double float (64-bit signed) without suffix
 		else
 			mixin(accept!"Value");
+	}
+
+	/// Parse date or datetime (after the initial numeric fragment was parsed)
+	//TODO: How does the spec handle a date (not datetime) followed by an int?
+	//TODO: SDL site implies datetime can have milliseconds without seconds. Is this true?
+	private void parseDate()
+	{
+		assert(ch == '/');
+
+		advanceChar(ErrorOnEOF.Yes); // Skip '/'
+		
+		// Parse months
+		parseNumericFragment();
+		if(!lookahead('/'))
+			throw new SDLangException(location, "Error: Invalid date format.");
+		
+		advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+		advanceChar(ErrorOnEOF.Yes); // Skip '/'
+
+		// Parse days
+		parseNumericFragment();
+		
+		// Date?
+		if(!hasNextCh)
+			mixin(accept!"Value");
+		
+		//TODO: Is this the proper way to handle the space between date and time?
+		while(hasNextCh && isWhite(nextCh) && !isNewline(nextCh))
+			advanceChar(ErrorOnEOF.Yes);
+		
+		// Note: Date (not datetime) may contain trailing whitespace at this point.
+		
+		// Date?
+		if(!hasNextCh || nextCh < '0' || nextCh > '9')
+			mixin(accept!"Value");
+		advanceChar(ErrorOnEOF.Yes); // Pass end of whitespace
+		
+		// Parse hours
+		parseNumericFragment();
+		if(!lookahead(':'))
+			throw new SDLangException(location, "Error: Invalid date-time format.");
+		advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+		advanceChar(ErrorOnEOF.Yes); // Skip ':'
+		
+		// Parse minutes
+		parseNumericFragment();
+		
+		// Has seconds?
+		if(lookahead(':'))
+		{
+			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+			advanceChar(ErrorOnEOF.Yes); // Skip ':'
+		
+			// Parse seconds
+			parseNumericFragment();
+		}
+		
+		// Has milliseconds?
+		if(lookahead('.'))
+		{
+			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+			advanceChar(ErrorOnEOF.Yes); // Skip '.'
+		
+			// Parse milliseconds
+			parseNumericFragment();
+		}
+
+		// Has zone?
+		//TODO: Make sure the end of this is detected correctly.
+		if(lookahead('-'))
+		{
+			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+			advanceChar(ErrorOnEOF.Yes); // Skip '-'
+		
+			// Parse zone
+			if(!isAlpha(ch))
+				throw new SDLangException(location, "Error: Invalid timezone.");
+			
+			while(hasNextCh && !isWhite(nextCh))
+				advanceChar(ErrorOnEOF.Yes);
+		}
+		
+		mixin(accept!"Value");
 	}
 
 	/// Parse time span (after the initial numeric fragment was parsed)

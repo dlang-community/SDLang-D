@@ -45,6 +45,20 @@ timespan 00:00:01.023
 timespan 23d:05:21:23
 timespan 23d:05:21:23.532
 
+# Examples: Time Span Literals
+hours 03:00:00
+minutes 00:12:00
+seconds 00:00:42
+short_time 00:12:32.423 # 12 minutes, 32 seconds, 423 milliseconds
+long_time 30d:15:23:04.023 # 30 days, 15 hours, 23 mins, 4 secs, 23 millis 
+#before -00:02:30 # 2 hours and 30 minutes ago
+#about_two_days_ago -2d:00:04:00 
+
+# Examples: Date and Date/Time Literals
+date 2005/12/05
+here 2005/12/05 14:12:23.345
+in_japan 2005/12/05 14:12:23.345-JST
+
 # three tags acting as name value pairs
 first_name "Akiko"
 last_name "Johnson"
