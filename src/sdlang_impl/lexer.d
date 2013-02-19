@@ -73,7 +73,6 @@ class Lexer
 		enum accept = ("
 			{
 				_front = makeToken!"~symbolName.stringof~";
-				advanceChar(ErrorOnEOF.No);
 				return;
 			}
 		").replace("\n", "");
@@ -82,7 +81,7 @@ class Lexer
 	private Token makeToken(string symbolName)()
 	{
 		auto tok = Token(symbol!symbolName, tokenStart);
-		tok.data = source[tokenStart.index..pos];
+		tok.data = source[tokenStart.index..location.index];
 		return tok;
 	}
 	
@@ -248,20 +247,35 @@ class Lexer
 		isEndOfIdentCached = false;
 		
 		if(ch == '=')
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"=");
+		}
 		
 		else if(ch == '{')
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"{");
+		}
 		
 		else if(ch == '}')
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"}");
+		}
 		
 		else if(ch == ':')
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!":");
+		}
 		
 		//TODO: Should this include all isNewline()? (except for \r, right?)
 		else if(ch == ';' || ch == '\n')
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"EOL");
+		}
 		
 		else if(ch == 't' && !isEndOfIdent())
 			parseIdentTrue();
@@ -294,7 +308,10 @@ class Lexer
 			parseNumeric();
 
 		else
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Error");
+		}
 	}
 	
 	/// Parse Ident or 'true'
@@ -305,16 +322,20 @@ class Lexer
 		while(!isEndOfIdent())
 		{
 			if(!advanceChar(ErrorOnEOF.No))
+			{
+				advanceChar(ErrorOnEOF.No);
 				mixin(accept!"Ident");
+			}
 			
 			final switch(checkKeyword("true", &isEndOfIdent))
 			{
-			case KeywordResult.Accept:   mixin(accept!"Value");
+			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
 			case KeywordResult.Continue: break;
 			case KeywordResult.Failed:   parseIdent(); return;
 			}
 		}
 
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Ident");
 	}
 
@@ -326,16 +347,20 @@ class Lexer
 		while(!isEndOfIdent())
 		{
 			if(!advanceChar(ErrorOnEOF.No))
+			{
+				advanceChar(ErrorOnEOF.No);
 				mixin(accept!"Ident");
+			}
 			
 			final switch(checkKeyword("false", &isEndOfIdent))
 			{
-			case KeywordResult.Accept:   mixin(accept!"Value");
+			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
 			case KeywordResult.Continue: break;
 			case KeywordResult.Failed:   parseIdent(); return;
 			}
 		}
 
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Ident");
 	}
 
@@ -350,13 +375,16 @@ class Lexer
 		while(!isEndOfIdent())
 		{
 			if(!advanceChar(ErrorOnEOF.No))
+			{
+				advanceChar(ErrorOnEOF.No);
 				mixin(accept!"Ident");
+			}
 			
 			if(!failedKeywordOn)
 			{
 				final switch(checkKeyword("on", &isEndOfIdent))
 				{
-				case KeywordResult.Accept:   mixin(accept!"Value");
+				case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
 				case KeywordResult.Continue: break;
 				case KeywordResult.Failed:   failedKeywordOn = true; break;
 				}
@@ -366,7 +394,7 @@ class Lexer
 			{
 				final switch(checkKeyword("off", &isEndOfIdent))
 				{
-				case KeywordResult.Accept:   mixin(accept!"Value");
+				case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
 				case KeywordResult.Continue: break;
 				case KeywordResult.Failed:   failedKeywordOff = true; break;
 				}
@@ -390,16 +418,20 @@ class Lexer
 		while(!isEndOfIdent())
 		{
 			if(!advanceChar(ErrorOnEOF.No))
+			{
+				advanceChar(ErrorOnEOF.No);
 				mixin(accept!"Ident");
+			}
 			
 			final switch(checkKeyword("null", &isEndOfIdent))
 			{
-			case KeywordResult.Accept:   mixin(accept!"Value");
+			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!"Value");
 			case KeywordResult.Continue: break;
 			case KeywordResult.Failed:   parseIdent(); return;
 			}
 		}
-
+	
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Ident");
 	}
 
@@ -412,6 +444,7 @@ class Lexer
 		while(hasMore && !isEndOfIdent())
 			hasMore = advanceChar(ErrorOnEOF.No);
 
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Ident");
 	}
 	
@@ -441,6 +474,7 @@ class Lexer
 
 		} while(ch != '"');
 		
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Value");
 	}
 
@@ -453,6 +487,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.Yes);
 		while(ch != '`');
 		
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Value");
 	}
 	
@@ -473,6 +508,7 @@ class Lexer
 		
 		advanceChar(ErrorOnEOF.Yes); // Skip character
 		
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Value");
 	}
 	
@@ -498,6 +534,7 @@ class Lexer
 				);
 		} while(ch != ']');
 		
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Value");
 	}
 	
@@ -535,6 +572,7 @@ class Lexer
 		if(lookahead('L') || lookahead('l'))
 		{
 			advanceChar(ErrorOnEOF.No);
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
 		}
 		
@@ -561,7 +599,10 @@ class Lexer
 
 		// Integer (32-bit signed)
 		else
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
+		}
 	}
 	
 	/// Parse any floating-point literal (after the initial numeric fragment was parsed)
@@ -576,12 +617,14 @@ class Lexer
 		if(lookahead('F') || lookahead('f'))
 		{
 			advanceChar(ErrorOnEOF.No);
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
 		}
 
 		// Double float (64-bit signed) with suffix?
 		else if(lookahead('D') || lookahead('d'))
 		{
+			advanceChar(ErrorOnEOF.No);
 			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
 		}
@@ -593,6 +636,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.Yes);
 			if(lookahead('D') || lookahead('d'))
 			{
+				advanceChar(ErrorOnEOF.No);
 				advanceChar(ErrorOnEOF.No);
 				mixin(accept!"Value");
 			}
@@ -609,7 +653,10 @@ class Lexer
 
 		// Double float (64-bit signed) without suffix
 		else
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
+		}
 	}
 
 	/// Parse date or datetime (after the initial numeric fragment was parsed)
@@ -634,7 +681,10 @@ class Lexer
 		
 		// Date?
 		if(!hasNextCh)
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
+		}
 		
 		//TODO: Is this the proper way to handle the space between date and time?
 		while(hasNextCh && isWhite(nextCh) && !isNewline(nextCh))
@@ -644,7 +694,10 @@ class Lexer
 		
 		// Date?
 		if(!hasNextCh || nextCh < '0' || nextCh > '9')
+		{
+			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
+		}
 		advanceChar(ErrorOnEOF.Yes); // Pass end of whitespace
 		
 		// Parse hours
@@ -692,6 +745,7 @@ class Lexer
 				advanceChar(ErrorOnEOF.Yes);
 		}
 		
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Value");
 	}
 
@@ -739,6 +793,7 @@ class Lexer
 			parseNumericFragment();
 		}
 		
+		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Value");
 	}
 
