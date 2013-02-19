@@ -207,7 +207,7 @@ class Lexer
 
 	/// Advance one code point.
 	/// Returns false if EOF was reached
-	private bool advanceChar(ErrorOnEOF errorOnEOF)
+	private void advanceChar(ErrorOnEOF errorOnEOF)
 	{
 		//TODO: Should this include all isNewline()? (except for \r, right?)
 		if(ch == '\n')
@@ -225,20 +225,20 @@ class Lexer
 
 		if(!hasNextCh)
 		{
-			if(errorOnEOF == ErrorOnEOF.No)
-				return false;
-			else
+			if(errorOnEOF == ErrorOnEOF.Yes)
 				throw new SDLangException(
 					location,
 					"Error: Unexpected end of file"
 				);
+
+			return;
 		}
 
 		if(nextPos == source.length)
 		{
 			nextCh = dchar.init;
 			hasNextCh = false;
-			return true;
+			return;
 		}
 
 		tokenLength32++;
@@ -246,7 +246,6 @@ class Lexer
 		
 		nextCh = source.decode(posAfterLookahead);
 		isEndOfIdentCached = false;
-		return true;
 	}
 
 	///.
@@ -552,10 +551,8 @@ class Lexer
 		
 		do
 		{
-			if(!advanceChar(ErrorOnEOF.No))
-				return;
-		
-		} while(isDigit(ch));
+			advanceChar(ErrorOnEOF.No);
+		} while(!isEOF && isDigit(ch));
 	}
 
 	/// Lex anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
