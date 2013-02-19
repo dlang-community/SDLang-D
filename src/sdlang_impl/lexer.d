@@ -283,6 +283,9 @@ class Lexer
 
 		else if(ch == '`')
 			parseRawString();
+		
+		else if(ch == '\'')
+			parseCharacter();
 
 		else if(ch == '[')
 			parseBinary();
@@ -449,6 +452,26 @@ class Lexer
 		do
 			advanceChar(ErrorOnEOF.Yes);
 		while(ch != '`');
+		
+		mixin(accept!"Value");
+	}
+	
+	/// Parse character literal
+	private void parseCharacter()
+	{
+		assert(ch == '\'');
+		
+		advanceChar(ErrorOnEOF.Yes); // Skip opening single-quote
+		
+		if(!lookahead('\''))
+		{
+			throw new SDLangException(
+					location,
+					"Error: Expected closing single-quote."
+			);
+		}
+		
+		advanceChar(ErrorOnEOF.Yes); // Skip character
 		
 		mixin(accept!"Value");
 	}
