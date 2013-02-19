@@ -20,7 +20,7 @@ alias sdlang_impl.util.startsWith startsWith;
 class Lexer
 {
 	string source; ///.
-	Location location; ///.
+	Location location; /// Location of current character in source
 
 	private dchar  ch;         // Current character
 	private dchar  nextCh;     // Lookahead character
@@ -55,7 +55,7 @@ class Lexer
 	///.
 	@property bool empty()
 	{
-		return nextPos == source.length;
+		return _front.symbol == symbol!"EOF";
 	}
 	
 	///.
@@ -63,6 +63,12 @@ class Lexer
 	@property Token front()
 	{
 		return _front;
+	}
+
+	///.
+	@property bool isEOF()
+	{
+		return nextPos == source.length;
 	}
 
 	// Kind of a poor-man's yield, but fast.
@@ -140,13 +146,9 @@ class Lexer
 		return _isEndOfIdent;
 	}
 
-	/// Does lookahead character indicate the end of a numberic fragment? (ie: end of [0-9]+)
-	private bool isEndOfNumericFragment()
+	private bool isDigit(dchar ch)
 	{
-		if(!hasNextCh)
-			return true;
-		
-		return nextCh < '0' || nextCh > '9';
+		return ch >= '0' && ch <= '9';
 	}
 	
 	private enum KeywordResult
@@ -236,7 +238,7 @@ class Lexer
 
 		eatWhite();
 
-		if(!hasNextCh)
+		if(isEOF)
 			mixin(accept!"EOF");
 		
 		tokenStart    = location;
@@ -302,7 +304,7 @@ class Lexer
 		else if(ch == '[')
 			parseBinary();
 
-		else if(ch == '-' || (ch >= '0' && ch <= '9'))
+		else if(ch == '-' || isDigit(ch))
 			parseNumeric();
 
 		else
@@ -493,20 +495,20 @@ class Lexer
 	private void parseCharacter()
 	{
 		assert(ch == '\'');
-		
 		advanceChar(ErrorOnEOF.Yes); // Skip opening single-quote
 		
-		if(!lookahead('\''))
+		advanceChar(ErrorOnEOF.Yes); // Skip the character itself
+
+		if(ch == '\'')
+			advanceChar(ErrorOnEOF.No); // Skip closing single-quote
+		else
 		{
 			throw new SDLangException(
 				location,
 				"Error: Expected closing single-quote."
 			);
 		}
-		
-		advanceChar(ErrorOnEOF.Yes); // Skip character
-		
-		advanceChar(ErrorOnEOF.No);
+
 		mixin(accept!"Value");
 	}
 	
@@ -532,7 +534,7 @@ class Lexer
 				);
 		} while(ch != ']');
 		
-		advanceChar(ErrorOnEOF.No);
+		advanceChar(ErrorOnEOF.No); // Skip ']'
 		mixin(accept!"Value");
 	}
 	
@@ -540,14 +542,15 @@ class Lexer
 	/// This is used by the other numeric parsing functions.
 	private void parseNumericFragment()
 	{
-		if(ch < '0' || ch > '9')
+		if(!isDigit(ch))
 			throw new SDLangException(location, "Error: Expected a digit 0-9.");
 		
-		while(!isEndOfNumericFragment())
+		do
 		{
 			if(!advanceChar(ErrorOnEOF.No))
 				return;
-		}
+		
+		} while(isDigit(ch));
 	}
 
 	/// Parse anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
@@ -555,7 +558,7 @@ class Lexer
 	//TODO: Does spec allow negative dates?
 	private void parseNumeric()
 	{
-		assert(ch == '-' || (ch >= '0' && ch <= '9'));
+		assert(ch == '-' || isDigit(ch));
 
 		// Check for negative
 		bool isNegative = ch == '-';
@@ -567,40 +570,27 @@ class Lexer
 		parseNumericFragment();
 		
 		// Long integer (64-bit signed)?
-		if(lookahead('L') || lookahead('l'))
+		if(ch == 'L' || ch == 'l')
 		{
-			advanceChar(ErrorOnEOF.No);
 			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
 		}
 		
 		// Some floating point?
-		else if(lookahead('.'))
-		{
-			advanceChar(ErrorOnEOF.No);
+		else if(ch == '.')
 			parseFloatingPoint();
-		}
 		
 		// Some date?
-		else if(lookahead('/'))
-		{
-			advanceChar(ErrorOnEOF.No);
+		else if(ch == '/')
 			parseDate();
-		}
 		
 		// Some time span?
-		else if(lookahead(':') || lookahead('d'))
-		{
-			advanceChar(ErrorOnEOF.No);
+		else if(ch == ':' || ch == 'd')
 			parseTimeSpan();
-		}
 
 		// Integer (32-bit signed)
 		else
-		{
-			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
-		}
 	}
 	
 	/// Parse any floating-point literal (after the initial numeric fragment was parsed)
@@ -612,29 +602,26 @@ class Lexer
 		parseNumericFragment();
 		
 		// Float (32-bit signed)?
-		if(lookahead('F') || lookahead('f'))
+		if(ch == 'F' || ch == 'f')
 		{
-			advanceChar(ErrorOnEOF.No);
 			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
 		}
 
 		// Double float (64-bit signed) with suffix?
-		else if(lookahead('D') || lookahead('d'))
+		else if(ch == 'D' || ch == 'd')
 		{
-			advanceChar(ErrorOnEOF.No);
 			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
 		}
 
 		// Decimal (128+ bits signed)?
 		//TODO: Does spec allow mixed-case suffix?
-		else if(lookahead('B') || lookahead('b'))
+		else if(ch == 'B' || ch == 'b')
 		{
 			advanceChar(ErrorOnEOF.Yes);
-			if(lookahead('D') || lookahead('d'))
+			if(ch == 'D' || ch == 'd')
 			{
-				advanceChar(ErrorOnEOF.No);
 				advanceChar(ErrorOnEOF.No);
 				mixin(accept!"Value");
 			}
@@ -651,10 +638,7 @@ class Lexer
 
 		// Double float (64-bit signed) without suffix
 		else
-		{
-			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"Value");
-		}
 	}
 
 	/// Parse date or datetime (after the initial numeric fragment was parsed)
@@ -663,87 +647,67 @@ class Lexer
 	private void parseDate()
 	{
 		assert(ch == '/');
-
-		advanceChar(ErrorOnEOF.Yes); // Skip '/'
 		
 		// Parse months
-		parseNumericFragment();
-		if(!lookahead('/'))
-			throw new SDLangException(location, "Error: Invalid date format.");
-		
-		advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
 		advanceChar(ErrorOnEOF.Yes); // Skip '/'
+		parseNumericFragment();
 
 		// Parse days
+		if(ch != '/')
+			throw new SDLangException(location, "Error: Invalid date format: Missing days.");
+		advanceChar(ErrorOnEOF.Yes); // Skip '/'
 		parseNumericFragment();
 		
 		// Date?
-		if(!hasNextCh)
-		{
-			advanceChar(ErrorOnEOF.No);
+		if(isEOF)
 			mixin(accept!"Value");
-		}
 		
 		//TODO: Is this the proper way to handle the space between date and time?
-		while(hasNextCh && isWhite(nextCh) && !isNewline(nextCh))
-			advanceChar(ErrorOnEOF.Yes);
+		while(!isEOF && isWhite(ch) && !isNewline(ch))
+			advanceChar(ErrorOnEOF.No);
 		
 		// Note: Date (not datetime) may contain trailing whitespace at this point.
 		
 		// Date?
-		if(!hasNextCh || nextCh < '0' || nextCh > '9')
-		{
-			advanceChar(ErrorOnEOF.No);
+		if(isEOF || !isDigit(ch))
 			mixin(accept!"Value");
-		}
-		advanceChar(ErrorOnEOF.Yes); // Pass end of whitespace
 		
 		// Parse hours
 		parseNumericFragment();
-		if(!lookahead(':'))
-			throw new SDLangException(location, "Error: Invalid date-time format.");
-		advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
-		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		
 		// Parse minutes
+		if(ch != ':')
+			throw new SDLangException(location, "Error: Invalid date-time format: Missing minutes.");
+		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		parseNumericFragment();
 		
-		// Has seconds?
-		if(lookahead(':'))
+		// Parse seconds, if exists
+		if(ch == ':')
 		{
-			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
 			advanceChar(ErrorOnEOF.Yes); // Skip ':'
-		
-			// Parse seconds
 			parseNumericFragment();
 		}
 		
-		// Has milliseconds?
-		if(lookahead('.'))
+		// Parse milliseconds, if exists
+		if(ch == '.')
 		{
-			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
 			advanceChar(ErrorOnEOF.Yes); // Skip '.'
-		
-			// Parse milliseconds
 			parseNumericFragment();
 		}
 
-		// Has zone?
+		// Parse zone, if exists
 		//TODO: Make sure the end of this is detected correctly.
-		if(lookahead('-'))
+		if(ch == '-')
 		{
-			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
 			advanceChar(ErrorOnEOF.Yes); // Skip '-'
-		
-			// Parse zone
+			
 			if(!isAlpha(ch))
 				throw new SDLangException(location, "Error: Invalid timezone.");
 			
-			while(hasNextCh && !isWhite(nextCh))
-				advanceChar(ErrorOnEOF.Yes);
+			while(!isEOF && !isWhite(ch))
+				advanceChar(ErrorOnEOF.No);
 		}
 		
-		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Value");
 	}
 
@@ -756,42 +720,34 @@ class Lexer
 		bool hasDays = ch == 'd';
 		if(hasDays)
 		{
-			if(!lookahead(':'))
-				throw new SDLangException(location, "Error: Invalid time span format.");
 			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
-			advanceChar(ErrorOnEOF.Yes); // Skip ':'
-			
+
 			// Parse hours
-			parseNumericFragment();
-			if(!lookahead(':'))
-				throw new SDLangException(location, "Error: Invalid time span format.");
-			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+			if(ch != ':')
+				throw new SDLangException(location, "Error: Invalid time span format: Missing hours.");
 			advanceChar(ErrorOnEOF.Yes); // Skip ':'
+			parseNumericFragment();
 		}
-		else
-			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
 
 		// Parse minutes
-		parseNumericFragment();
-		if(!lookahead(':'))
-			throw new SDLangException(location, "Error: Invalid time span format.");
-		advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
+		if(ch != ':')
+			throw new SDLangException(location, "Error: Invalid time span format: Missing minutes.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
+		parseNumericFragment();
 
 		// Parse seconds
+		if(ch != ':')
+			throw new SDLangException(location, "Error: Invalid time span format: Missing seconds.");
+		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		parseNumericFragment();
 		
-		// Has milliseconds?
-		if(lookahead('.'))
+		// Parse milliseconds, if exists
+		if(ch == '.')
 		{
-			advanceChar(ErrorOnEOF.Yes); // Pass end of numeric fragment
 			advanceChar(ErrorOnEOF.Yes); // Skip '.'
-			
-			// Parse milliseconds
 			parseNumericFragment();
 		}
 		
-		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Value");
 	}
 
@@ -808,7 +764,7 @@ class Lexer
 			blockComment, // Got "/*", Eating everything until "*/"
 		}
 
-		if(!hasNextCh)
+		if(isEOF)
 			return;
 		
 		State state = State.normal;
@@ -877,9 +833,8 @@ class Lexer
 				break;
 			}
 			
-			if(hasNextCh)
-				advanceChar(ErrorOnEOF.No);
-			else
+			advanceChar(ErrorOnEOF.No);
+			if(isEOF)
 			{
 				// Reached EOF
 
