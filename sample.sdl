@@ -15,6 +15,18 @@ tru fals o of nul
 true_ false_ on_ off_ null_
 truX or
 
+key [sdf789GSfsb2+3324sf2] name="my key"
+image [
+    R3df789GSfsb2edfSFSDF
+    uikuikk2349GSfsb2edfS
+    vFSDFR3df789GSfsb2edf
+]
+upload from="ikayzo.org" data=[
+    R3df789GSfsb2edfSFSDF
+    uikuikk2349GSfsb2edfS
+    vFSDFR3df789GSfsb2edf
+]
+
 # three tags acting as name value pairs
 first_name "Akiko"
 last_name "Johnson"

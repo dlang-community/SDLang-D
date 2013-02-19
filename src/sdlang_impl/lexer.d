@@ -97,6 +97,21 @@ class Lexer
 		//TODO: Not entirely sure if this list is 100% complete and correct per spec.
 		return ch == '\n' || ch == '\r' || ch == lineSep || ch == paraSep;
 	}
+
+	/// Is 'ch' a valid base 64 character?
+	private bool isBase64(dchar ch)
+	{
+		if(ch >= 'A' && ch <= 'Z')
+			return true;
+
+		if(ch >= 'a' && ch <= 'z')
+			return true;
+
+		if(ch >= '0' && ch <= '9')
+			return true;
+		
+		return ch == '+' || ch == '/' || ch == '=';
+	}
 	
 	/// Does lookahead character indicate the end of an ident?
 	private bool isEndOfIdentCached = false;
@@ -260,6 +275,9 @@ class Lexer
 		else if(ch == '`')
 			parseRawString();
 
+		else if(ch == '[')
+			parseBinary();
+
 		else
 			mixin(accept!"Error");
 	}
@@ -419,6 +437,32 @@ class Lexer
 		do
 			advanceChar(ErrorOnEOF.Yes);
 		while(ch != '`');
+		
+		mixin(accept!"Value");
+	}
+	
+	/// Parse base64 binary literal
+	private void parseBinary()
+	{
+		assert(ch == '[');
+		
+		do
+		{
+			advanceChar(ErrorOnEOF.Yes);
+			
+			if(isWhite(ch))
+				eatWhite();
+			
+			if(ch == ']' || isNewline(ch))
+				continue;
+			
+			if(!isBase64(ch))
+				throw new SDLangException(
+					location,
+					"Error: Invalid character in base64 binary literal."
+				);
+		}
+		while(ch != ']');
 		
 		mixin(accept!"Value");
 	}
