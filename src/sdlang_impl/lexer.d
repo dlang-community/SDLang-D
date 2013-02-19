@@ -48,7 +48,7 @@ class Lexer
 		// Prime everything
 		hasNextCh = true;
 		nextCh = source.decode(nextPos);
-		advanceChar();
+		advanceChar(ErrorOnEOF.Yes); //TODO: Emit EOL on parsing empty string
 		location = Location(filename, 0, 0, 0);
 		popFront();
 	}
@@ -73,194 +73,219 @@ class Lexer
 		enum accept = ("
 			{
 				_front = makeToken!"~symbolName.stringof~";
-				advanceChar();
+				advanceChar(ErrorOnEOF.No);
 				return;
 			}
 		").replace("\n", "");
-	}
-
-	private template gotoState(string stateName)
-	{
-		enum gotoState = ("
-			{
-				state = "~stateName~";
-				goto case "~stateName~";
-			}
-		").replace("\n", "");
-	}
-
-	private enum LexerState
-	{
-		normal,
-		regularString,
-		rawString,
-		ident_true,   // ident or true
-		ident_false,  // ident or false
-		ident_on_off, // ident or on or off
-		ident_null,   // ident or null
-		ident,
 	}
 
 	///.
 	void popFront()
 	{
 		//TODO: Finish implementing this
+		// -- Main Lexer -------------
 
 		eatWhite();
 
-		// -- Main Lexer -------------
+		if(!hasNextCh)
+			mixin(accept!"EOF");
 		
-		auto startCh     = ch;
-		auto startPos    = pos;
-		LexerState state = LexerState.normal;
-		tokenStart       = location;
-		tokenLength      = 1;
-		tokenLength32    = 1;
-		bool failedKeywordOn  = false;
-		bool failedKeywordOff = false;
+		tokenStart    = location;
+		tokenLength   = 1;
+		tokenLength32 = 1;
 		isEndOfIdentCached = false;
-		while(true)
+		
+		if(ch == '=')
+			mixin(accept!"=");
+		
+		else if(ch == '{')
+			mixin(accept!"{");
+		
+		else if(ch == '}')
+			mixin(accept!"}");
+		
+		else if(ch == ':')
+			mixin(accept!":");
+		
+		//TODO: Should this include all isNewline()? (except for \r, right?)
+		else if(ch == ';' || ch == '\n')
+			mixin(accept!"EOL");
+		
+		else if(ch == 't' && !isEndOfIdent())
+			parseIdentTrue();
+
+		else if(ch == 'f' && !isEndOfIdent())
+			parseIdentFalse();
+
+		else if(ch == 'o' && !isEndOfIdent())
+			parseIdentOnOff();
+
+		else if(ch == 'n' && !isEndOfIdent())
+			parseIdentNull();
+
+		else if(isAlpha(ch) || ch == '_')
+			parseIdent();
+
+		else if(ch == '"')
+			parseRegularString();
+
+		else if(ch == '`')
+			parseRawString();
+
+		else
+			mixin(accept!"Error");
+	}
+	
+	private void parseIdentTrue()
+	{
+		assert(ch == 't' && !isEndOfIdent());
+
+		while(!isEndOfIdent())
 		{
-			final switch(state)
+			if(!advanceChar(ErrorOnEOF.No))
+				mixin(accept!"Ident");
+			
+			final switch(checkKeyword("true", &isEndOfIdent))
 			{
-			case LexerState.normal:
-				
-				if(ch == '=')
-					mixin(accept!"=");
-				
-				else if(ch == '{')
-					mixin(accept!"{");
-				
-				else if(ch == '}')
-					mixin(accept!"}");
-				
-				else if(ch == ':')
-					mixin(accept!":");
-				
-				//TODO: Should this include all isNewline()? (except for \r, right?)
-				else if(ch == ';' || ch == '\n')
-					mixin(accept!"EOL");
-				
-				else if(ch == 't' && !isEndOfIdent())
-					mixin(gotoState!"LexerState.ident_true");
-
-				else if(ch == 'f' && !isEndOfIdent())
-					mixin(gotoState!"LexerState.ident_false");
-
-				else if(ch == 'o' && !isEndOfIdent())
-					mixin(gotoState!"LexerState.ident_on_off");
-
-				else if(ch == 'n' && !isEndOfIdent())
-					mixin(gotoState!"LexerState.ident_null");
-
-				else if(isAlpha(ch) || ch == '_')
-					mixin(gotoState!"LexerState.ident");
-
-				else if(ch == '"')
-				{
-					advanceChar();
-					mixin(gotoState!"LexerState.regularString");
-				}
-
-				else if(ch == '`')
-				{
-					advanceChar();
-					mixin(gotoState!"LexerState.rawString");
-				}
-
-				else
-					mixin(accept!"Error");
-
-			case LexerState.regularString:
-
-				if(ch == '\\')
-				{
-					advanceChar();
-					if(isNewline(ch))
-						eatWhite();
-				}
-
-				else if(ch == '"')
-					mixin(accept!"Value");
-
-				else if(isNewline(ch))
-					throw new SDLangException(
-						location,
-						"Error: Unescaped newlines are only allowed in raw strings, not regular strings."
-					);
-
-				break;
-
-			case LexerState.rawString:
-				if(ch == '`')
-					mixin(accept!"Value");
-				break;
-
-			case LexerState.ident_true:
-				auto r = checkKeyword("true", &isEndOfIdent);
-				if     (r == KeywordResult.Accept) mixin(accept!"Value");
-				else if(r == KeywordResult.Failed) mixin(gotoState!"LexerState.ident");
-				break;
-
-			case LexerState.ident_false:
-				auto r = checkKeyword("false", &isEndOfIdent);
-				if     (r == KeywordResult.Accept) mixin(accept!"Value");
-				else if(r == KeywordResult.Failed) mixin(gotoState!"LexerState.ident");
-				break;
-
-			case LexerState.ident_on_off:
-				if(!failedKeywordOn)
-				{
-					auto r = checkKeyword("on", &isEndOfIdent);
-					if     (r == KeywordResult.Accept) mixin(accept!"Value");
-					else if(r == KeywordResult.Failed) failedKeywordOn = true;
-				}
-
-				if(!failedKeywordOff)
-				{
-					auto r = checkKeyword("off", &isEndOfIdent);
-					if     (r == KeywordResult.Accept) mixin(accept!"Value");
-					else if(r == KeywordResult.Failed) failedKeywordOff = true;
-				}
-				
-				if(isEndOfIdent() || (failedKeywordOn && failedKeywordOff))
-					mixin(gotoState!"LexerState.ident");
-				break;
-
-			case LexerState.ident_null:
-				auto r = checkKeyword("null", &isEndOfIdent);
-				if     (r == KeywordResult.Accept) mixin(accept!"Value");
-				else if(r == KeywordResult.Failed) mixin(gotoState!"LexerState.ident");
-				break;
-
-			case LexerState.ident:
-				if(isEndOfIdent())
-					mixin(accept!"Ident");
-				break;
-			}
-
-			if(hasNextCh)
-				advanceChar();
-			else
-			{
-				// Reached EOF
-
-				/+if(state == LexerState.backslash)
-					throw new SDLangException(
-						location,
-						"Error: Missing newline after line-continuation backslash"
-					);
-
-				else if(state == LexerState.blockComment)
-					throw new SDLangException(
-						location,
-						"Error: Unterminated block comment"
-					);
-
-				else+/
-					mixin(accept!"EOF"); // Done, reached EOF
+			case KeywordResult.Accept:   mixin(accept!"Value");
+			case KeywordResult.Continue: break;
+			case KeywordResult.Failed:   parseIdent(); return;
 			}
 		}
+
+		mixin(accept!"Ident");
+	}
+
+	private void parseIdentFalse()
+	{
+		assert(ch == 'f' && !isEndOfIdent());
+		
+		while(!isEndOfIdent())
+		{
+			if(!advanceChar(ErrorOnEOF.No))
+				mixin(accept!"Ident");
+			
+			final switch(checkKeyword("false", &isEndOfIdent))
+			{
+			case KeywordResult.Accept:   mixin(accept!"Value");
+			case KeywordResult.Continue: break;
+			case KeywordResult.Failed:   parseIdent(); return;
+			}
+		}
+
+		mixin(accept!"Ident");
+	}
+
+	private void parseIdentOnOff()
+	{
+		assert(ch == 'o' && !isEndOfIdent());
+		
+		bool failedKeywordOn  = false;
+		bool failedKeywordOff = false;
+
+		while(!isEndOfIdent())
+		{
+			if(!advanceChar(ErrorOnEOF.No))
+				mixin(accept!"Ident");
+			
+			if(!failedKeywordOn)
+			{
+				final switch(checkKeyword("on", &isEndOfIdent))
+				{
+				case KeywordResult.Accept:   mixin(accept!"Value");
+				case KeywordResult.Continue: break;
+				case KeywordResult.Failed:   failedKeywordOn = true; break;
+				}
+			}
+
+			if(!failedKeywordOff)
+			{
+				final switch(checkKeyword("off", &isEndOfIdent))
+				{
+				case KeywordResult.Accept:   mixin(accept!"Value");
+				case KeywordResult.Continue: break;
+				case KeywordResult.Failed:   failedKeywordOff = true; break;
+				}
+			}
+			
+			if(failedKeywordOn && failedKeywordOff)
+			{
+				parseIdent();
+				return;
+			}
+		}
+
+		parseIdent();
+	}
+
+	private void parseIdentNull()
+	{
+		assert(ch == 'n' && !isEndOfIdent());
+		
+		while(!isEndOfIdent())
+		{
+			if(!advanceChar(ErrorOnEOF.No))
+				mixin(accept!"Ident");
+			
+			final switch(checkKeyword("null", &isEndOfIdent))
+			{
+			case KeywordResult.Accept:   mixin(accept!"Value");
+			case KeywordResult.Continue: break;
+			case KeywordResult.Failed:   parseIdent(); return;
+			}
+		}
+
+		mixin(accept!"Ident");
+	}
+
+	private void parseIdent()
+	{
+		assert(isAlpha(ch) || ch == '_');
+		
+		bool hasMore = true;
+		while(hasMore && !isEndOfIdent())
+			hasMore = advanceChar(ErrorOnEOF.No);
+
+		mixin(accept!"Ident");
+	}
+	
+	private void parseRegularString()
+	{
+		assert(ch == '"');
+		
+		do
+		{
+			advanceChar(ErrorOnEOF.Yes);
+
+			if(ch == '\\')
+			{
+				advanceChar(ErrorOnEOF.Yes);
+				if(isNewline(ch))
+					eatWhite();
+				else
+					advanceChar(ErrorOnEOF.Yes);
+			}
+
+			else if(isNewline(ch))
+				throw new SDLangException(
+					location,
+					"Error: Unescaped newlines are only allowed in raw strings, not regular strings."
+				);
+
+		} while(ch != '"');
+		
+		mixin(accept!"Value");
+	}
+
+	private void parseRawString()
+	{
+		assert(ch == '`');
+		
+		do
+			advanceChar(ErrorOnEOF.Yes);
+		while(ch != '`');
+		
+		mixin(accept!"Value");
 	}
 	
 	private Token makeToken(string symbolName)()
@@ -345,9 +370,23 @@ class Lexer
 			return KeywordResult.Failed;
 	}
 
-	/// Advance one code point
-	private void advanceChar()
+	enum ErrorOnEOF { No, Yes }
+
+	/// Advance one code point.
+	/// Returns false if EOF was reached
+	private bool advanceChar(ErrorOnEOF errorOnEOF)
 	{
+		if(!hasNextCh)
+		{
+			if(errorOnEOF == ErrorOnEOF.No)
+				return false;
+			else
+				throw new SDLangException(
+						location,
+						"Error: Unexpected end of file"
+					);
+		}
+		
 		//TODO: Should this include all isNewline()? (except for \r, right?)
 		if(ch == '\n')
 		{
@@ -365,7 +404,7 @@ class Lexer
 		{
 			nextCh = dchar.init;
 			hasNextCh = false;
-			return;
+			return true;
 		}
 
 		tokenLength32++;
@@ -374,6 +413,7 @@ class Lexer
 		
 		nextCh = source.decode(nextPos);
 		isEndOfIdentCached = false;
+		return true;
 	}
 
 	/// Advances past whitespace and comments
@@ -388,6 +428,9 @@ class Lexer
 			lineComment,  // Got "#" or "//" or "--", Eating everything until "\n"
 			blockComment, // Got "/*", Eating everything until "*/"
 		}
+
+		if(!hasNextCh)
+			return;
 		
 		State state = State.normal;
 		while(true)
@@ -406,12 +449,12 @@ class Lexer
 				{
 					if(lookahead(ch))
 					{
-						advanceChar();
+						advanceChar(ErrorOnEOF.No);
 						state = State.lineComment;
 					}
 					else if(ch == '/' && lookahead('*'))
 					{
-						advanceChar();
+						advanceChar(ErrorOnEOF.No);
 						state = State.blockComment;
 					}
 					else
@@ -446,7 +489,7 @@ class Lexer
 				{
 					if(lookahead('/'))
 					{
-						advanceChar();
+						advanceChar(ErrorOnEOF.No);
 						state = State.normal;
 					}
 					else
@@ -456,7 +499,7 @@ class Lexer
 			}
 			
 			if(hasNextCh)
-				advanceChar();
+				advanceChar(ErrorOnEOF.No);
 			else
 			{
 				// Reached EOF
