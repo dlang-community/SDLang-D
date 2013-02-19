@@ -51,8 +51,10 @@ class Lexer
 	private size_t posAfterLookahead; // Position after lookahead character (an index into source)
 
 	private Location tokenStart;    // The starting location of the token being lexed
-	private size_t   tokenLength;   // Length so far of the token being lexed, in UTF-8 code units
-	private size_t   tokenLength32; // Length so far of the token being lexed, in UTF-32 code units
+	
+	// Length so far of the token being lexed, not including current char
+	private size_t tokenLength;   // Length in UTF-8 code units
+	private size_t tokenLength32; // Length in UTF-32 code units
 	
 	///.
 	this(string source=null, string filename=null)
@@ -129,7 +131,7 @@ class Lexer
 		return ch == '+' || ch == '/' || ch == '=';
 	}
 	
-	/// Does lookahead character indicate the end of an ident?
+	/// Is current character the last one in an ident?
 	private bool isEndOfIdentCached = false;
 	private bool _isEndOfIdent;
 	private bool isEndOfIdent()
@@ -138,24 +140,30 @@ class Lexer
 		{
 			if(!hasNextCh)
 				_isEndOfIdent = true;
-			
-			else if(isAlpha(nextCh))
-				_isEndOfIdent = false;
-			
-			else if(isNumber(nextCh))
-				_isEndOfIdent = false;
-			
 			else
-				_isEndOfIdent =
-					nextCh != '-' &&
-					nextCh != '_' &&
-					nextCh != '.' &&
-					nextCh != '$';
+				_isEndOfIdent = !isIdentChar(nextCh);
 			
 			isEndOfIdentCached = true;
 		}
 		
 		return _isEndOfIdent;
+	}
+
+	/// Is 'ch' a character that's allowed *somewhere* in an identifier?
+	private bool isIdentChar(dchar ch)
+	{
+		if(isAlpha(ch))
+			return true;
+		
+		else if(isNumber(ch))
+			return true;
+		
+		else
+			return 
+				ch == '-' ||
+				ch == '_' ||
+				ch == '.' ||
+				ch == '$';
 	}
 
 	private bool isDigit(dchar ch)
@@ -169,32 +177,30 @@ class Lexer
 		Continue, // Keyword is not matched *yet*
 		Failed,   // Keyword doesn't match
 	}
-	private KeywordResult checkKeyword(dstring keyword32, bool delegate() dgIsAtEnd)
+	private KeywordResult checkKeyword(dstring keyword32)
 	{
-		// Shorter than keyword
+		// Still within length of keyword
 		if(tokenLength32 < keyword32.length)
 		{
-			if(ch == keyword32[tokenLength32-1] && !dgIsAtEnd())
+			if(ch == keyword32[tokenLength32])
 				return KeywordResult.Continue;
 			else
 				return KeywordResult.Failed;
 		}
 
-		// Same length as keyword
+		// At position after keyword
 		else if(tokenLength32 == keyword32.length)
 		{
-			if(ch == keyword32[tokenLength32-1] && dgIsAtEnd())
+			if(!isIdentChar(ch))
 			{
-				assert(source[tokenStart.index..nextPos] == to!string(keyword32));
+				assert(source[tokenStart.index..location.index] == to!string(keyword32));
 				return KeywordResult.Accept;
 			}
 			else
 				return KeywordResult.Failed;
 		}
 
-		// Longer than keyword
-		else
-			return KeywordResult.Failed;
+		assert(0, "Fell off end of keyword to check");
 	}
 
 	enum ErrorOnEOF { No, Yes }
@@ -236,7 +242,7 @@ class Lexer
 		}
 
 		tokenLength32++;
-		tokenLength = nextPos - tokenStart.index;
+		tokenLength = location.index - tokenStart.index;
 		
 		nextCh = source.decode(posAfterLookahead);
 		isEndOfIdentCached = false;
@@ -255,8 +261,8 @@ class Lexer
 			mixin(accept!"EOF");
 		
 		tokenStart    = location;
-		tokenLength   = 1;
-		tokenLength32 = 1;
+		tokenLength   = 0;
+		tokenLength32 = 0;
 		isEndOfIdentCached = false;
 		
 		if(ch == '=')
@@ -332,23 +338,19 @@ class Lexer
 	{
 		assert(ch == 't' && !isEndOfIdent());
 
-		while(!isEndOfIdent())
+		do
 		{
-			if(!advanceChar(ErrorOnEOF.No))
+			final switch(checkKeyword("true"))
 			{
-				advanceChar(ErrorOnEOF.No);
-				mixin(accept!"Ident");
-			}
-			
-			final switch(checkKeyword("true", &isEndOfIdent))
-			{
-			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", true));
+			case KeywordResult.Accept:   mixin(accept!("Value", true));
 			case KeywordResult.Continue: break;
 			case KeywordResult.Failed:   lexIdent(); return;
 			}
-		}
 
-		advanceChar(ErrorOnEOF.No);
+			advanceChar(ErrorOnEOF.No);
+
+		} while(!isEOF);
+
 		mixin(accept!"Ident");
 	}
 
@@ -357,23 +359,19 @@ class Lexer
 	{
 		assert(ch == 'f' && !isEndOfIdent());
 		
-		while(!isEndOfIdent())
+		do
 		{
-			if(!advanceChar(ErrorOnEOF.No))
+			final switch(checkKeyword("false"))
 			{
-				advanceChar(ErrorOnEOF.No);
-				mixin(accept!"Ident");
-			}
-			
-			final switch(checkKeyword("false", &isEndOfIdent))
-			{
-			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", false));
+			case KeywordResult.Accept:   mixin(accept!("Value", false));
 			case KeywordResult.Continue: break;
 			case KeywordResult.Failed:   lexIdent(); return;
 			}
-		}
 
-		advanceChar(ErrorOnEOF.No);
+			advanceChar(ErrorOnEOF.No);
+
+		} while(!isEOF);
+
 		mixin(accept!"Ident");
 	}
 
@@ -385,19 +383,13 @@ class Lexer
 		bool failedKeywordOn  = false;
 		bool failedKeywordOff = false;
 
-		while(!isEndOfIdent())
+		do
 		{
-			if(!advanceChar(ErrorOnEOF.No))
-			{
-				advanceChar(ErrorOnEOF.No);
-				mixin(accept!"Ident");
-			}
-			
 			if(!failedKeywordOn)
 			{
-				final switch(checkKeyword("on", &isEndOfIdent))
+				final switch(checkKeyword("on"))
 				{
-				case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", true));
+				case KeywordResult.Accept:   mixin(accept!("Value", true));
 				case KeywordResult.Continue: break;
 				case KeywordResult.Failed:   failedKeywordOn = true; break;
 				}
@@ -405,9 +397,9 @@ class Lexer
 
 			if(!failedKeywordOff)
 			{
-				final switch(checkKeyword("off", &isEndOfIdent))
+				final switch(checkKeyword("off"))
 				{
-				case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", false));
+				case KeywordResult.Accept:   mixin(accept!("Value", false));
 				case KeywordResult.Continue: break;
 				case KeywordResult.Failed:   failedKeywordOff = true; break;
 				}
@@ -418,9 +410,12 @@ class Lexer
 				lexIdent();
 				return;
 			}
-		}
 
-		lexIdent();
+			advanceChar(ErrorOnEOF.No);
+
+		} while(!isEOF);
+
+		mixin(accept!"Ident");
 	}
 
 	/// Lex Ident or 'null'
@@ -428,36 +423,31 @@ class Lexer
 	{
 		assert(ch == 'n' && !isEndOfIdent());
 		
-		while(!isEndOfIdent())
+		do
 		{
-			if(!advanceChar(ErrorOnEOF.No))
+			final switch(checkKeyword("null"))
 			{
-				advanceChar(ErrorOnEOF.No);
-				mixin(accept!"Ident");
-			}
-			
-			final switch(checkKeyword("null", &isEndOfIdent))
-			{
-			case KeywordResult.Accept:   advanceChar(ErrorOnEOF.No); mixin(accept!("Value", null));
+			case KeywordResult.Accept:   mixin(accept!("Value", null));
 			case KeywordResult.Continue: break;
 			case KeywordResult.Failed:   lexIdent(); return;
 			}
-		}
-	
-		advanceChar(ErrorOnEOF.No);
+
+			advanceChar(ErrorOnEOF.No);
+
+		} while(!isEOF);
+
 		mixin(accept!"Ident");
 	}
 
 	/// Lex Ident
 	private void lexIdent()
 	{
-		assert(isAlpha(ch) || ch == '_');
+		if(tokenLength == 0)
+			assert(isAlpha(ch) || ch == '_');
 		
-		bool hasMore = true;
-		while(hasMore && !isEndOfIdent())
-			hasMore = advanceChar(ErrorOnEOF.No);
+		while(!isEOF && isIdentChar(ch))
+			advanceChar(ErrorOnEOF.No);
 
-		advanceChar(ErrorOnEOF.No);
 		mixin(accept!"Ident");
 	}
 	
@@ -487,7 +477,7 @@ class Lexer
 
 		} while(ch != '"');
 		
-		advanceChar(ErrorOnEOF.No);
+		advanceChar(ErrorOnEOF.No); // Skip closing double-quote
 		mixin(accept!("Value", null));
 	}
 
@@ -500,7 +490,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.Yes);
 		while(ch != '`');
 		
-		advanceChar(ErrorOnEOF.No);
+		advanceChar(ErrorOnEOF.No); // Skip closing back-tick
 		auto value = source[tokenStart.index+1..location.index-1];
 		mixin(accept!("Value", value));
 	}
