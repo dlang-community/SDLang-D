@@ -22,6 +22,7 @@ You can also compile with stbuild (part of SemiTwist D Tools):
 
 module sdlang;
 
+import std.array;
 import std.datetime;
 import std.file;
 import std.stdio;
@@ -49,10 +50,14 @@ int main(string[] args)
 		
 		foreach(tok; lexer)
 		{
+			auto data = tok.data.replace("\n", "").replace("\r", "");
+			if(data != "")
+				data = "\t|"~tok.data~"|";
+
 			writeln(
 				tok.location.toString, ":\t",
 				tok.symbol.name, "(", tok.value? toString(tok.value.type) : "{null}", ")",
-				tok.symbol == symbol!"EOL"? "" : (":\t|"~tok.data~"|")
+				data
 			);
 			
 			if(tok.symbol.name == "Error")
