@@ -32,6 +32,23 @@ private template accept(string symbolName, string value)
 	static assert(symbolName == "Value", "Only a Value symbol can take a value.");
 	enum accept = acceptImpl!(symbolName, value);
 }
+private template accept(string symbolName, string value, string startLocation, string endLocation)
+{
+	static assert(symbolName == "Value", "Only a Value symbol can take a value.");
+	enum accept = ("
+		{
+			_front = makeToken!"~symbolName.stringof~";
+			_front.value = "~value~";
+			_front.location = "~(startLocation==""? "tokenStart" : startLocation)~";
+			_front.data = source[
+				"~(startLocation==""? "tokenStart.index" : startLocation)~"
+				..
+				"~(endLocation==""? "location.index" : endLocation)~"
+			];
+			return;
+		}
+	").replace("\n", "");
+}
 private template acceptImpl(string symbolName, string value)
 {
 	enum acceptImpl = ("
@@ -765,14 +782,14 @@ class Lexer
 		if(isEOF)
 			mixin(accept!("Value", "date"));
 		
+		auto endOfDate = location;
+		
 		while(!isEOF && isWhite(ch) && !isNewline(ch))
 			advanceChar(ErrorOnEOF.No);
-		
-		// Note: Date (not datetime) may contain trailing whitespace at this point.
 
 		// Date?
 		if(isEOF || !isDigit(ch))
-			mixin(accept!("Value", "date"));
+			mixin(accept!("Value", "date", "", "endOfDate.index"));
 		
 		// Is time negative?
 		bool isTimeNegative = ch == '-';

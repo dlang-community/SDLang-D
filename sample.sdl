@@ -66,6 +66,7 @@ about_two_days_ago -2d:00:04:00
 date 2005/12/05
 date -2005/12/05
 date 2005/12/05 	foo
+#date_and_int 2005/12/05 7
 here 2005/12/05 14:12:23.345
 in_japan 2005/12/05 14:12:23.345-JST
 
