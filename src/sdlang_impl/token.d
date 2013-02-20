@@ -15,7 +15,7 @@ alias Algebraic!(
 	string, dchar,
 	int, long,
 	float, double, real,
-	Date, DateTime, Duration,
+	Date, DateTime, SysTime, Duration,
 	ubyte[],
 	typeof(null),
 ) Value;

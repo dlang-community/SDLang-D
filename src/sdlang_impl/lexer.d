@@ -759,6 +759,55 @@ class Lexer
 		return Date(year, month, day);
 	}
 	
+	// TimeOfDay plus milliseconds
+	private struct TimeWithFracSec
+	{
+		TimeOfDay timeOfDay;
+		FracSec fracSec;
+	}
+	private TimeWithFracSec makeTimeWithFracSec(
+		bool isNegative, string hourStr, string minuteStr,
+		string secondStr, string millisecondStr
+	)
+	{
+		BigInt biTmp;
+
+		biTmp = BigInt(hourStr);
+		if(isNegative)
+			biTmp = -biTmp;
+		if(biTmp < int.min || biTmp > int.max)
+			error(tokenStart, "Datetime's hour is out of range.");
+		auto hour = biTmp.toInt();
+		
+		biTmp = BigInt(minuteStr);
+		if(biTmp < 0 || biTmp > int.max)
+			error(tokenStart, "Datetime's minute is out of range.");
+		auto minute = biTmp.toInt();
+		
+		int second = 0;
+		if(secondStr != "")
+		{
+			biTmp = BigInt(secondStr);
+			if(biTmp < 0 || biTmp > int.max)
+				error(tokenStart, "Datetime's second is out of range.");
+			second = biTmp.toInt();
+		}
+		
+		int millisecond = 0;
+		if(millisecondStr != "")
+		{
+			biTmp = BigInt(millisecondStr);
+			if(biTmp < 0 || biTmp > int.max)
+				error(tokenStart, "Datetime's millisecond is out of range.");
+			millisecond = biTmp.toInt();
+		}
+
+		FracSec fracSecs;
+		fracSecs.msecs = millisecond;
+		
+		return TimeWithFracSec(TimeOfDay(hour, minute, second), fracSecs);
+	}
+
 	/// Lex date or datetime (after the initial numeric fragment was lexed)
 	//TODO: How does the spec handle a date (not datetime) followed by an int? As a date (not datetime) followed by an int
 	//TODO: SDL site implies datetime can have milliseconds without seconds. Is this true? Yes.
@@ -797,7 +846,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.Yes);
 
 		// Lex hours
-		lexNumericFragment();
+		auto hourStr = lexNumericFragment();
 		
 		// Lex minutes
 		if(ch != ':')
@@ -807,22 +856,27 @@ class Lexer
 			error("Invalid date-time format: Missing minutes.");
 		}
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
-		lexNumericFragment();
+		auto minuteStr = lexNumericFragment();
 		
 		// Lex seconds, if exists
+		string secondStr;
 		if(ch == ':')
 		{
 			advanceChar(ErrorOnEOF.Yes); // Skip ':'
-			lexNumericFragment();
+			secondStr = lexNumericFragment();
 		}
 		
 		// Lex milliseconds, if exists
+		string millisecondStr;
 		if(ch == '.')
 		{
 			advanceChar(ErrorOnEOF.Yes); // Skip '.'
-			lexNumericFragment();
+			millisecondStr = lexNumericFragment();
 		}
 
+		auto timeWithFracSec = makeTimeWithFracSec(isTimeNegative, hourStr, minuteStr, secondStr, millisecondStr);
+		auto dateTime = DateTime(date, timeWithFracSec.timeOfDay);
+		
 		// Lex zone, if exists
 		//TODO: Make sure the end of this is detected correctly.
 		if(ch == '-')
@@ -834,9 +888,16 @@ class Lexer
 			
 			while(!isEOF && !isWhite(ch))
 				advanceChar(ErrorOnEOF.No);
+			
+			//TODO*: Interpret timezone
+			mixin(accept!("Value", "SysTime(dateTime, timeWithFracSec.fracSec, UTC())"));
 		}
-		
-		mixin(accept!("Value", "null"));
+		else
+		{
+			//TODO*: DateTime doesn't store milliseconds. So keep them somehow.
+			//       Shouldn't use SysTime because no timezone was given.
+			mixin(accept!("Value", "dateTime"));
+		}
 	}
 
 	/// Lex time span (after the initial numeric fragment was lexed)
