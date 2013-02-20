@@ -206,7 +206,7 @@ class Lexer
 		{
 			if(!isIdentChar(ch))
 			{
-				assert(source[tokenStart.index..location.index] == to!string(keyword32));
+				debug assert(source[tokenStart.index..location.index] == to!string(keyword32));
 				return KeywordResult.Accept;
 			}
 			else
