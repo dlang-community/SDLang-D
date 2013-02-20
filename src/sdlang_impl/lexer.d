@@ -4,6 +4,7 @@
 module sdlang_impl.lexer;
 
 import std.array;
+import std.base64;
 import std.conv;
 import std.stream : ByteOrderMarks, BOM;
 import std.uni;
@@ -227,10 +228,7 @@ class Lexer
 		if(!hasNextCh)
 		{
 			if(errorOnEOF == ErrorOnEOF.Yes)
-				throw new SDLangException(
-					location,
-					"Error: Unexpected end of file"
-				);
+				throw new SDLangException(location, "Error: Unexpected end of file");
 
 			return;
 		}
@@ -495,26 +493,94 @@ class Lexer
 	private void lexBinary()
 	{
 		assert(ch == '[');
+		advanceChar(ErrorOnEOF.Yes);
 		
-		do
+		void eatBase64Whitespace()
 		{
-			advanceChar(ErrorOnEOF.Yes);
+			while(!isEOF && isWhite(ch))
+			{
+				if(isNewline(ch))
+					advanceChar(ErrorOnEOF.Yes);
+				
+				if(!isEOF && isWhite(ch))
+					eatWhite();
+			}
+		}
+		
+		eatBase64Whitespace();
+
+		// Iterates all valid base64 characters, ending at ']'.
+		// Skips all whitespace. Throws on invalid chars.
+		struct Base64InputRange
+		{
+			Lexer *lexer;
 			
-			if(isWhite(ch))
-				eatWhite();
+			@property bool empty()
+			{
+				return lexer.ch == ']';
+			}
+
+			//char _front;
+			@property dchar front()
+			{
+				return lexer.ch;
+
+				// The only valid Base64 chars happen to be valid
+				// non-extended ASCII (and therefore single-code-unit UTF-8),
+				// so this is Unicode-safe.
+				//return lexer.source[lexer.location.index];
+			}
 			
-			if(ch == ']' || isNewline(ch))
-				continue;
-			
-			if(!isBase64(ch))
-				throw new SDLangException(
-					location,
-					"Error: Invalid character in base64 binary literal."
-				);
-		} while(ch != ']');
+			void popFront()
+			{
+				auto lex = lexer;
+				lex.advanceChar(lex.ErrorOnEOF.Yes);
+
+				eatBase64Whitespace();
+				
+				if(lex.isEOF)
+					throw new SDLangException(lex.location, "Error: Unexpected end of file");
+
+				if(lex.ch != ']' && !lex.isBase64(lex.ch))
+					throw new SDLangException(
+						lex.location,
+						"Error: Invalid character in base64 binary literal."
+					);
+			}
+		}
+		
+		// This is a slow ugly hack. It's necessary because Base64.decode
+		// currently requires the source to have known length.
+		//TODO: Remove this when DMD issue #9543 is fixed.
+		dchar[] tmpBuf = array(Base64InputRange(&this));
+
+		Appender!(ubyte[]) outputBuf;
+		// Ugly workaround for DMD issue #9102
+		//TODO: Remove this when DMD #9102 is fixed
+		struct OutputBuf
+		{
+			void put(ubyte ch)
+			{
+				outputBuf.put(ch);
+			}
+		}
+		
+		try
+			//Base64.decode(Base64InputRange(&this), OutputBuf());
+			Base64.decode(tmpBuf, OutputBuf());
+
+		//TODO: Starting with dmd 2.062, this should be a Base64Exception
+		catch(Exception e)
+		{
+			throw new SDLangException(
+				location,
+				"Error: Invalid character in base64 binary literal."
+			);
+		}
 		
 		advanceChar(ErrorOnEOF.No); // Skip ']'
-		mixin(accept!("Value", null));
+		auto value = outputBuf.data;
+		mixin(accept!("Value", value));
 	}
 	
 	/// Lex [0-9]+, but without emitting a token.
