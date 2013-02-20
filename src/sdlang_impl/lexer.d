@@ -626,7 +626,7 @@ class Lexer
 	}
 
 	/// Lex anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
-	//TODO: How does spec handle invalid suffix like "12a"? An error? Or a value and ident?
+	//TODO: How does spec handle invalid suffix like "12a"? An error? Or a value and ident? (An "unexpected token EOL"?!?)
 	private void lexNumeric()
 	{
 		assert(ch == '-' || ch == '.' || isDigit(ch));
@@ -801,7 +801,11 @@ class Lexer
 		
 		// Lex minutes
 		if(ch != ':')
+		{
+			//TODO: This really shouldn't be an error. It should be
+			//      "accept the plain Date, and then continue lexing normally from there."
 			error("Invalid date-time format: Missing minutes.");
+		}
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		lexNumericFragment();
 		
