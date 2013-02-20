@@ -8,6 +8,7 @@ import std.conv;
 import std.stream : ByteOrderMarks, BOM;
 import std.uni;
 import std.utf;
+import std.variant;
 
 import sdlang_impl.exception;
 import sdlang_impl.symbol;
@@ -295,20 +296,8 @@ class Lexer
 			mixin(accept!"EOL");
 		}
 		
-		else if(ch == 't' && !isEndOfIdent())
-			lexIdentTrue();
-
-		else if(ch == 'f' && !isEndOfIdent())
-			lexIdentFalse();
-
-		else if(ch == 'o' && !isEndOfIdent())
-			lexIdentOnOff();
-
-		else if(ch == 'n' && !isEndOfIdent())
-			lexIdentNull();
-
 		else if(isAlpha(ch) || ch == '_')
-			lexIdent();
+			lexIdentKeyword();
 
 		else if(ch == '"')
 			lexRegularString();
@@ -331,104 +320,62 @@ class Lexer
 			mixin(accept!"Error");
 		}
 	}
-	
-	/// Lex Ident or 'true'
-	private void lexIdentTrue()
+
+	/// Lex Ident or Keyword
+	private void lexIdentKeyword()
 	{
-		assert(ch == 't' && !isEndOfIdent());
-
-		do
-		{
-			final switch(checkKeyword("true"))
-			{
-			case KeywordResult.Accept:   mixin(accept!("Value", true));
-			case KeywordResult.Continue: break;
-			case KeywordResult.Failed:   lexIdent(); return;
-			}
-
-			advanceChar(ErrorOnEOF.No);
-
-		} while(!isEOF);
-
-		mixin(accept!"Ident");
-	}
-
-	/// Lex Ident or 'false'
-	private void lexIdentFalse()
-	{
-		assert(ch == 'f' && !isEndOfIdent());
+		assert(isAlpha(ch) || ch == '_');
 		
-		do
+		// Keyword
+		struct Key
 		{
-			final switch(checkKeyword("false"))
-			{
-			case KeywordResult.Accept:   mixin(accept!("Value", false));
-			case KeywordResult.Continue: break;
-			case KeywordResult.Failed:   lexIdent(); return;
-			}
-
-			advanceChar(ErrorOnEOF.No);
-
-		} while(!isEOF);
-
-		mixin(accept!"Ident");
-	}
-
-	/// Lex Ident or 'on' or 'off'
-	private void lexIdentOnOff()
-	{
-		assert(ch == 'o' && !isEndOfIdent());
+			dstring name;
+			Value value;
+			bool failed = false;
+		}
+		static Key[5] keywords;
+		static keywordsInited = false;
+		if(!keywordsInited)
+		{
+			// Value (as a std.variant-based type) can't be statically inited
+			keywords[0] = Key("true",  Value(true ));
+			keywords[1] = Key("false", Value(false));
+			keywords[2] = Key("on",    Value(true ));
+			keywords[3] = Key("off",   Value(false));
+			keywords[4] = Key("null",  Value(null ));
+			keywordsInited = true;
+		}
 		
-		bool failedKeywordOn  = false;
-		bool failedKeywordOff = false;
+		foreach(ref key; keywords)
+			key.failed = false;
+		
+		auto numKeys = keywords.length;
 
 		do
 		{
-			if(!failedKeywordOn)
+			foreach(ref key; keywords)
+			if(!key.failed)
 			{
-				final switch(checkKeyword("on"))
+				final switch(checkKeyword(key.name))
 				{
-				case KeywordResult.Accept:   mixin(accept!("Value", true));
-				case KeywordResult.Continue: break;
-				case KeywordResult.Failed:   failedKeywordOn = true; break;
+				case KeywordResult.Accept:
+					auto v = key.value;
+					mixin(accept!("Value", v));
+				
+				case KeywordResult.Continue:
+					break;
+				
+				case KeywordResult.Failed:
+					key.failed = true;
+					numKeys--;
+					break;
 				}
 			}
 
-			if(!failedKeywordOff)
-			{
-				final switch(checkKeyword("off"))
-				{
-				case KeywordResult.Accept:   mixin(accept!("Value", false));
-				case KeywordResult.Continue: break;
-				case KeywordResult.Failed:   failedKeywordOff = true; break;
-				}
-			}
-			
-			if(failedKeywordOn && failedKeywordOff)
+			if(numKeys == 0)
 			{
 				lexIdent();
 				return;
-			}
-
-			advanceChar(ErrorOnEOF.No);
-
-		} while(!isEOF);
-
-		mixin(accept!"Ident");
-	}
-
-	/// Lex Ident or 'null'
-	private void lexIdentNull()
-	{
-		assert(ch == 'n' && !isEndOfIdent());
-		
-		do
-		{
-			final switch(checkKeyword("null"))
-			{
-			case KeywordResult.Accept:   mixin(accept!("Value", null));
-			case KeywordResult.Continue: break;
-			case KeywordResult.Failed:   lexIdent(); return;
 			}
 
 			advanceChar(ErrorOnEOF.No);
