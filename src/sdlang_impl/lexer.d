@@ -69,7 +69,7 @@ class Lexer
 		
 		foreach(bom; ByteOrderMarks)
 		if( source.startsWith(bom) )
-			throw new SDLangException("SDL spec only supports UTF-8, not UTF-16 or UTF-32");
+			error(Location(filename,0,0,0), "SDL spec only supports UTF-8, not UTF-16 or UTF-32");
 
 		this.source = source;
 		
@@ -102,7 +102,12 @@ class Lexer
 
 	private void error(string msg)
 	{
-		throw new SDLangException(location, "Error: "~msg);
+		error(location, msg);
+	}
+
+	private void error(Location loc, string msg)
+	{
+		throw new SDLangException(loc, "Error: "~msg);
 	}
 
 	private Token makeToken(string symbolName)()
@@ -614,7 +619,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.No);
 
 			if(num < BigInt(long.min) || num > long.max)
-				error("Value doesn't fit in 64-bit signed long integer: "~to!string(num));
+				error(tokenStart, "Value doesn't fit in 64-bit signed long integer: "~to!string(num));
 
 			long value = num.toLong();
 			mixin(accept!("Value", value));
@@ -806,6 +811,7 @@ class Lexer
 		if(isEOF)
 			return;
 		
+		Location commentStart;
 		State state = State.normal;
 		while(true)
 		{
@@ -814,13 +820,20 @@ class Lexer
 			case State.normal:
 
 				if(ch == '\\')
+				{
+					commentStart = location;
 					state = State.backslash;
+				}
 
 				else if(ch == '#')
+				{
+					commentStart = location;
 					state = State.lineComment;
+				}
 
 				else if(ch == '/' || ch == '-')
 				{
+					commentStart = location;
 					if(lookahead(ch))
 					{
 						advanceChar(ErrorOnEOF.No);
@@ -877,7 +890,7 @@ class Lexer
 					error("Missing newline after line-continuation backslash.");
 
 				else if(state == State.blockComment)
-					error("Unterminated block comment.");
+					error(commentStart, "Unterminated block comment.");
 
 				else
 					return; // Done, reached EOF
