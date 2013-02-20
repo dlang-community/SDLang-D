@@ -674,38 +674,48 @@ class Lexer
 		
 		//TODO: How does spec actually handle "1.23a" or "1.23bda"?
 
-		// Float (32-bit signed)?
-		if(ch == 'F' || ch == 'f')
+		try
 		{
-			auto value = to!float(tokenData);
-			advanceChar(ErrorOnEOF.No);
-			mixin(accept!("Value", "value"));
-		}
-
-		// Double float (64-bit signed) with suffix?
-		else if(ch == 'D' || ch == 'd')
-		{
-			advanceChar(ErrorOnEOF.No);
-			mixin(accept!("Value", "null"));
-		}
-
-		// Decimal (128+ bits signed)?
-		else if(ch == 'B' || ch == 'b')
-		{
-			advanceChar(ErrorOnEOF.Yes);
-			if(ch == 'D' || ch == 'd')
+			// Float (32-bit signed)?
+			if(ch == 'F' || ch == 'f')
 			{
+				auto value = to!float(tokenData);
 				advanceChar(ErrorOnEOF.No);
-				mixin(accept!("Value", "null"));
+				mixin(accept!("Value", "value"));
 			}
 
-			else
-				error("Invalid floating point suffix.");
-		}
+			// Double float (64-bit signed) with suffix?
+			else if(ch == 'D' || ch == 'd')
+			{
+				auto value = to!double(tokenData);
+				advanceChar(ErrorOnEOF.No);
+				mixin(accept!("Value", "value"));
+			}
 
-		// Double float (64-bit signed) without suffix
-		else
-			mixin(accept!("Value", "null"));
+			// Decimal (128+ bits signed)?
+			else if(ch == 'B' || ch == 'b')
+			{
+				auto value = to!real(tokenData);
+				advanceChar(ErrorOnEOF.Yes);
+				if(ch == 'D' || ch == 'd')
+				{
+					advanceChar(ErrorOnEOF.No);
+					mixin(accept!("Value", "value"));
+				}
+
+				else
+					error("Invalid floating point suffix.");
+			}
+
+			// Double float (64-bit signed) without suffix
+			else
+			{
+				auto value = to!double(tokenData);
+				mixin(accept!("Value", "value"));
+			}
+		}
+		catch(ConvException e)
+			error("Invalid floating point literal.");
 	}
 
 	/// Lex date or datetime (after the initial numeric fragment was lexed)
