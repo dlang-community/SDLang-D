@@ -574,9 +574,20 @@ class Lexer
 		mixin(accept!("Value", "outputBuf.data"));
 	}
 	
+	private BigInt toBigInt(bool isNegative, string absValue)
+	{
+		auto num = BigInt(absValue);
+		assert(num > 0);
+
+		if(isNegative)
+			num = -num;
+
+		return num;
+	}
+
 	/// Lex [0-9]+, but without emitting a token.
 	/// This is used by the other numeric parsing functions.
-	private BigInt lexNumericFragment()
+	private string lexNumericFragment()
 	{
 		if(!isDigit(ch))
 			error("Expected a digit 0-9.");
@@ -588,7 +599,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.No);
 		} while(!isEOF && isDigit(ch));
 		
-		return BigInt(source[spanStart..location.index]);
+		return source[spanStart..location.index];
 	}
 
 	/// Lex anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
@@ -603,11 +614,9 @@ class Lexer
 		if(isNegative)
 			advanceChar(ErrorOnEOF.Yes);
 
-		//TODO: Does spec allow "1." or ".1"? If so, lexNumericFragment() needs to accept ""
+		//TODO: Spec allows ".1" (but not "1.")
 		
-		auto num = lexNumericFragment();
-		if(isNegative)
-			num = -num;
+		auto numStr = lexNumericFragment();
 		
 		// Long integer (64-bit signed)?
 		if(ch == 'L' || ch == 'l')
@@ -615,6 +624,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.No);
 
 			// BigInt(long.min) is a workaround for DMD issue #9548
+			auto num = toBigInt(isNegative, numStr);
 			if(num < BigInt(long.min) || num > long.max)
 				error(tokenStart, "Value doesn't fit in 64-bit signed long integer: "~to!string(num));
 
@@ -623,7 +633,7 @@ class Lexer
 		
 		// Some floating point?
 		else if(ch == '.')
-			lexFloatingPoint();
+			lexFloatingPoint(numStr);
 		
 		// Some date?
 		else if(ch == '/')
@@ -636,6 +646,7 @@ class Lexer
 		// Integer (32-bit signed)
 		else
 		{
+			auto num = toBigInt(isNegative, numStr);
 			if(num < int.min || num > int.max)
 				error(tokenStart, "Value doesn't fit in 32-bit signed integer: "~to!string(num));
 
@@ -644,18 +655,21 @@ class Lexer
 	}
 	
 	/// Lex any floating-point literal (after the initial numeric fragment was lexed)
-	private void lexFloatingPoint()
+	private void lexFloatingPoint(string firstPart)
 	{
 		assert(ch == '.');
 		advanceChar(ErrorOnEOF.No);
 		
-		lexNumericFragment();
+		auto secondPart = lexNumericFragment();
 		
+		//TODO: How does spec actually handle "1.23a" or "1.23bda"?
+
 		// Float (32-bit signed)?
 		if(ch == 'F' || ch == 'f')
 		{
+			auto value = to!float(source[ tokenStart.index .. location.index] );
 			advanceChar(ErrorOnEOF.No);
-			mixin(accept!("Value", "null"));
+			mixin(accept!("Value", "value"));
 		}
 
 		// Double float (64-bit signed) with suffix?
@@ -666,7 +680,6 @@ class Lexer
 		}
 
 		// Decimal (128+ bits signed)?
-		//TODO: Does spec allow mixed-case suffix?
 		else if(ch == 'B' || ch == 'b')
 		{
 			advanceChar(ErrorOnEOF.Yes);
@@ -676,7 +689,6 @@ class Lexer
 				mixin(accept!("Value", "null"));
 			}
 
-			//TODO: How does spec actually handle "1.23ba"?
 			else
 				error("Invalid floating point suffix.");
 		}
@@ -707,7 +719,6 @@ class Lexer
 		if(isEOF)
 			mixin(accept!("Value", "null"));
 		
-		//TODO: Is this the proper way to handle the space between date and time?
 		while(!isEOF && isWhite(ch) && !isNewline(ch))
 			advanceChar(ErrorOnEOF.No);
 		
