@@ -7,6 +7,7 @@ import std.array;
 import std.base64;
 import std.bigint;
 import std.conv;
+import std.datetime;
 import std.stream : ByteOrderMarks, BOM;
 import std.uni;
 import std.utf;
@@ -609,7 +610,6 @@ class Lexer
 
 	/// Lex anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
 	//TODO: How does spec handle invalid suffix like "12a"? An error? Or a value and ident?
-	//TODO: Does spec allow negative dates?
 	private void lexNumeric()
 	{
 		assert(ch == '-' || ch == '.' || isDigit(ch));
@@ -647,11 +647,11 @@ class Lexer
 		
 		// Some date?
 		else if(ch == '/')
-			lexDate();
+			lexDate(isNegative, numStr);
 		
 		// Some time span?
 		else if(ch == ':' || ch == 'd')
-			lexTimeSpan();
+			lexTimeSpan(isNegative);
 
 		// Integer (32-bit signed)
 		else
@@ -718,36 +718,67 @@ class Lexer
 			error("Invalid floating point literal.");
 	}
 
+	private Date makeDate(bool isDateNegative, string yearStr, string monthStr, string dayStr)
+	{
+		BigInt biTmp;
+		
+		biTmp = BigInt(yearStr);
+		if(isDateNegative)
+			biTmp = -biTmp;
+		if(biTmp < int.min || biTmp > int.max)
+			error(tokenStart, "Date's year is out of range. (Must fit within a 32-bit signed int.)");
+		auto year = biTmp.toInt();
+
+		biTmp = BigInt(monthStr);
+		if(biTmp < 1 || biTmp > 12)
+			error(tokenStart, "Date's month is out of range.");
+		auto month = biTmp.toInt();
+		
+		biTmp = BigInt(dayStr);
+		if(biTmp < 1 || biTmp > 31)
+			error(tokenStart, "Date's month is out of range.");
+		auto day = biTmp.toInt();
+		
+		return Date(year, month, day);
+	}
+	
 	/// Lex date or datetime (after the initial numeric fragment was lexed)
-	//TODO: How does the spec handle a date (not datetime) followed by an int?
-	//TODO: SDL site implies datetime can have milliseconds without seconds. Is this true?
-	private void lexDate()
+	//TODO: How does the spec handle a date (not datetime) followed by an int? As a date (not datetime) followed by an int
+	//TODO: SDL site implies datetime can have milliseconds without seconds. Is this true? Yes.
+	private void lexDate(bool isDateNegative, string yearStr)
 	{
 		assert(ch == '/');
 		
 		// Lex months
 		advanceChar(ErrorOnEOF.Yes); // Skip '/'
-		lexNumericFragment();
+		auto monthStr = lexNumericFragment();
 
 		// Lex days
 		if(ch != '/')
 			error("Invalid date format: Missing days.");
 		advanceChar(ErrorOnEOF.Yes); // Skip '/'
-		lexNumericFragment();
+		auto dayStr = lexNumericFragment();
 		
+		auto date = makeDate(isDateNegative, yearStr, monthStr, dayStr);
+
 		// Date?
 		if(isEOF)
-			mixin(accept!("Value", "null"));
+			mixin(accept!("Value", "date"));
 		
 		while(!isEOF && isWhite(ch) && !isNewline(ch))
 			advanceChar(ErrorOnEOF.No);
 		
 		// Note: Date (not datetime) may contain trailing whitespace at this point.
-		
+
 		// Date?
 		if(isEOF || !isDigit(ch))
-			mixin(accept!("Value", "null"));
+			mixin(accept!("Value", "date"));
 		
+		// Is time negative?
+		bool isTimeNegative = ch == '-';
+		if(isTimeNegative)
+			advanceChar(ErrorOnEOF.Yes);
+
 		// Lex hours
 		lexNumericFragment();
 		
@@ -788,7 +819,7 @@ class Lexer
 	}
 
 	/// Lex time span (after the initial numeric fragment was lexed)
-	private void lexTimeSpan()
+	private void lexTimeSpan(bool isNegative)
 	{
 		assert(ch == ':' || ch == 'd');
 		

@@ -64,6 +64,8 @@ about_two_days_ago -2d:00:04:00
 
 # Examples: Date and Date/Time Literals
 date 2005/12/05
+date -2005/12/05
+date 2005/12/05 	foo
 here 2005/12/05 14:12:23.345
 in_japan 2005/12/05 14:12:23.345-JST
 
