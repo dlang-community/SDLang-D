@@ -668,7 +668,7 @@ class Lexer
 		
 		// Some time span?
 		else if(ch == ':' || ch == 'd')
-			lexTimeSpan(isNegative);
+			lexTimeSpan(isNegative, numStr);
 
 		// Integer (32-bit signed)
 		else
@@ -735,12 +735,12 @@ class Lexer
 			error("Invalid floating point literal.");
 	}
 
-	private Date makeDate(bool isDateNegative, string yearStr, string monthStr, string dayStr)
+	private Date makeDate(bool isNegative, string yearStr, string monthStr, string dayStr)
 	{
 		BigInt biTmp;
 		
 		biTmp = BigInt(yearStr);
-		if(isDateNegative)
+		if(isNegative)
 			biTmp = -biTmp;
 		if(biTmp < int.min || biTmp > int.max)
 			error(tokenStart, "Date's year is out of range. (Must fit within a 32-bit signed int.)");
@@ -808,9 +808,62 @@ class Lexer
 		return TimeWithFracSec(TimeOfDay(hour, minute, second), fracSecs);
 	}
 
+	private Duration makeDuration(
+		bool isNegative, string dayStr,
+		string hourStr, string minuteStr, string secondStr,
+		string millisecondStr
+	)
+	{
+		BigInt biTmp;
+
+		long day = 0;
+		if(dayStr != "")
+		{
+			biTmp = BigInt(dayStr);
+			if(biTmp < long.min || biTmp > long.max)
+				error(tokenStart, "Time span's day is out of range.");
+			day = biTmp.toLong();
+		}
+
+		biTmp = BigInt(hourStr);
+		if(biTmp < long.min || biTmp > long.max)
+			error(tokenStart, "Time span's hour is out of range.");
+		auto hour = biTmp.toLong();
+
+		biTmp = BigInt(minuteStr);
+		if(biTmp < long.min || biTmp > long.max)
+			error(tokenStart, "Time span's minute is out of range.");
+		auto minute = biTmp.toLong();
+
+		biTmp = BigInt(secondStr);
+		if(biTmp < long.min || biTmp > long.max)
+			error(tokenStart, "Time span's second is out of range.");
+		auto second = biTmp.toLong();
+
+		long millisecond = 0;
+		if(millisecondStr != "")
+		{
+			biTmp = BigInt(millisecondStr);
+			if(biTmp < long.min || biTmp > long.max)
+				error(tokenStart, "Time span's millisecond is out of range.");
+			millisecond = biTmp.toLong();
+		}
+		
+		auto duration =
+			dur!"days"   (day)    +
+			dur!"hours"  (hour)   +
+			dur!"minutes"(minute) +
+			dur!"seconds"(second) +
+			dur!"msecs"  (millisecond);
+
+		if(isNegative)
+			duration = -duration;
+		
+		return duration;
+	}
+
 	/// Lex date or datetime (after the initial numeric fragment was lexed)
 	//TODO: How does the spec handle a date (not datetime) followed by an int? As a date (not datetime) followed by an int
-	//TODO: SDL site implies datetime can have milliseconds without seconds. Is this true? Yes.
 	private void lexDate(bool isDateNegative, string yearStr)
 	{
 		assert(ch == '/');
@@ -901,43 +954,51 @@ class Lexer
 	}
 
 	/// Lex time span (after the initial numeric fragment was lexed)
-	private void lexTimeSpan(bool isNegative)
+	private void lexTimeSpan(bool isNegative, string firstPart)
 	{
 		assert(ch == ':' || ch == 'd');
 		
+		string dayStr = "";
+		string hourStr;
+
 		// Lexed days?
 		bool hasDays = ch == 'd';
 		if(hasDays)
 		{
+			dayStr = firstPart;
 			advanceChar(ErrorOnEOF.Yes); // Skip 'd'
 
 			// Lex hours
 			if(ch != ':')
 				error("Invalid time span format: Missing hours.");
 			advanceChar(ErrorOnEOF.Yes); // Skip ':'
-			lexNumericFragment();
+			hourStr = lexNumericFragment();
 		}
+		else
+			hourStr = firstPart;
 
 		// Lex minutes
 		if(ch != ':')
 			error("Invalid time span format: Missing minutes.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
-		lexNumericFragment();
+		auto minuteStr = lexNumericFragment();
 
 		// Lex seconds
 		if(ch != ':')
 			error("Invalid time span format: Missing seconds.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
-		lexNumericFragment();
+		auto secondStr = lexNumericFragment();
 		
 		// Lex milliseconds, if exists
+		string millisecondStr = "";
 		if(ch == '.')
 		{
 			advanceChar(ErrorOnEOF.Yes); // Skip '.'
-			lexNumericFragment();
+			millisecondStr = lexNumericFragment();
 		}
 		
-		mixin(accept!("Value", "null"));
+		auto duration = makeDuration(isNegative, dayStr, hourStr, minuteStr, secondStr, millisecondStr);
+		mixin(accept!("Value", "duration"));
 	}
 
 	/// Advances past whitespace and comments
