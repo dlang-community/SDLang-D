@@ -543,15 +543,9 @@ class Lexer
 				return lexer.ch == ']';
 			}
 
-			//char _front;
 			@property dchar front()
 			{
 				return lexer.ch;
-
-				// The only valid Base64 chars happen to be valid
-				// non-extended ASCII (and therefore single-code-unit UTF-8),
-				// so this is Unicode-safe.
-				//return lexer.source[lexer.location.index];
 			}
 			
 			void popFront()
