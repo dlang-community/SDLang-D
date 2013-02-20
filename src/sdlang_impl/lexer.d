@@ -252,7 +252,6 @@ class Lexer
 	///.
 	void popFront()
 	{
-		//TODO: Finish implementing this
 		// -- Main Lexer -------------
 
 		eatWhite();
@@ -401,6 +400,18 @@ class Lexer
 	private void lexRegularString()
 	{
 		assert(ch == '"');
+
+		Appender!string buf;
+		size_t spanStart = nextPos;
+		
+		// Doesn't include current character
+		void updateBuf()
+		{
+			if(location.index == spanStart)
+				return;
+
+			buf.put( source[spanStart..location.index] );
+		}
 		
 		do
 		{
@@ -408,11 +419,26 @@ class Lexer
 
 			if(ch == '\\')
 			{
+				updateBuf();
+				
 				advanceChar(ErrorOnEOF.Yes);
 				if(isNewline(ch))
 					eatWhite();
 				else
+				{
+					//TODO: Is this list of escape chars 100% complete and correct?
+					switch(ch)
+					{
+					case 'n': buf.put('\n'); break;
+					case 't': buf.put('\t'); break;
+					
+					// Handles ' " \ and anything else
+					default: buf.put(ch); break;
+					}
+
 					advanceChar(ErrorOnEOF.Yes);
+				}
+				spanStart = location.index;
 			}
 
 			else if(isNewline(ch))
@@ -423,8 +449,10 @@ class Lexer
 
 		} while(ch != '"');
 		
+		updateBuf();
 		advanceChar(ErrorOnEOF.No); // Skip closing double-quote
-		mixin(accept!("Value", null));
+		auto value = buf.data;
+		mixin(accept!("Value", value));
 	}
 
 	/// Lex raw string
