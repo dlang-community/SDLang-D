@@ -113,8 +113,13 @@ class Lexer
 	private Token makeToken(string symbolName)()
 	{
 		auto tok = Token(symbol!symbolName, tokenStart);
-		tok.data = source[tokenStart.index..location.index];
+		tok.data = tokenData;
 		return tok;
+	}
+	
+	private @property string tokenData()
+	{
+		return source[ tokenStart.index .. location.index ];
 	}
 	
 	/// Check the lookahead character
@@ -206,7 +211,7 @@ class Lexer
 		{
 			if(!isIdentChar(ch))
 			{
-				debug assert(source[tokenStart.index..location.index] == to!string(keyword32));
+				debug assert(tokenData == to!string(keyword32));
 				return KeywordResult.Accept;
 			}
 			else
@@ -469,7 +474,7 @@ class Lexer
 		while(ch != '`');
 		
 		advanceChar(ErrorOnEOF.No); // Skip closing back-tick
-		mixin(accept!("Value", "source[ tokenStart.index+1 .. location.index-1 ]"));
+		mixin(accept!("Value", "tokenData[1..$-1]"));
 	}
 	
 	/// Lex character literal
@@ -667,7 +672,7 @@ class Lexer
 		// Float (32-bit signed)?
 		if(ch == 'F' || ch == 'f')
 		{
-			auto value = to!float(source[ tokenStart.index .. location.index] );
+			auto value = to!float(tokenData);
 			advanceChar(ErrorOnEOF.No);
 			mixin(accept!("Value", "value"));
 		}
