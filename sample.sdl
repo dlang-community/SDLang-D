@@ -68,6 +68,7 @@ date -2005/12/05
 date 2005/12/05 	foo
 #date_and_int 2005/12/05 7
 here 2005/12/05 14:12:23.345
+here 2005/12/05 14:12.345
 in_japan 2005/12/05 14:12:23.345-JST
 
 # three tags acting as name value pairs

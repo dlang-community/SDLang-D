@@ -70,11 +70,7 @@ int main(string[] args)
 			);
 			
 			if(tok.symbol.name == "Error")
-			{
-				writeln(lexer.location, ": The rest starts here");
-				//writeln(lexer.ch, lexer.source[lexer.pos..$]);
 				break;
-			}
 		}
 	}
 	catch(SDLangException e)
