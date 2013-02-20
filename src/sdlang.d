@@ -50,17 +50,17 @@ int main(string[] args)
 		
 		foreach(tok; lexer)
 		{
-			// Data
-			auto data = tok.data.replace("\n", "").replace("\r", "");
-			if(data != "")
-				data = "\t|"~tok.data~"|";
-
 			// Value
 			string value;
 			if(tok.symbol == symbol!"Value")
 				value = tok.value.hasValue? toString(tok.value.type) : "{null}";
 			
-			value = value==""? "\t" : "("~value~") "~tok.value.toString();
+			value = value==""? "\t" : "("~value~":"~tok.value.toString()~") ";
+
+			// Data
+			auto data = tok.data.replace("\n", "").replace("\r", "");
+			if(data != "")
+				data = "\t|"~tok.data~"|";
 			
 			// Display
 			writeln(
