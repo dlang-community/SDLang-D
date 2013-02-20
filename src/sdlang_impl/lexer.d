@@ -618,6 +618,7 @@ class Lexer
 		{
 			advanceChar(ErrorOnEOF.No);
 
+			// BigInt(long.min) is a workaround for DMD issue #9548
 			if(num < BigInt(long.min) || num > long.max)
 				error(tokenStart, "Value doesn't fit in 64-bit signed long integer: "~to!string(num));
 
@@ -639,7 +640,13 @@ class Lexer
 
 		// Integer (32-bit signed)
 		else
-			mixin(accept!("Value", null));
+		{
+			if(num < int.min || num > int.max)
+				error(tokenStart, "Value doesn't fit in 32-bit signed integer: "~to!string(num));
+
+			int value = num.toInt();
+			mixin(accept!("Value", value));
+		}
 	}
 	
 	/// Lex any floating-point literal (after the initial numeric fragment was lexed)
