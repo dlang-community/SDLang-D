@@ -32,6 +32,9 @@ upload from="ikayzo.org" data=[
 
 examples
 123
+.32 -.32
+.32f -.32F
+#12.
 123L or 123l
 -321 or -321L
 123.43F or 123.43f

@@ -324,7 +324,7 @@ class Lexer
 		else if(ch == '[')
 			lexBinary();
 
-		else if(ch == '-' || isDigit(ch))
+		else if(ch == '-' || ch == '.' || isDigit(ch))
 			lexNumeric();
 
 		else
@@ -612,14 +612,19 @@ class Lexer
 	//TODO: Does spec allow negative dates?
 	private void lexNumeric()
 	{
-		assert(ch == '-' || isDigit(ch));
+		assert(ch == '-' || ch == '.' || isDigit(ch));
 
 		// Check for negative
 		bool isNegative = ch == '-';
 		if(isNegative)
 			advanceChar(ErrorOnEOF.Yes);
 
-		//TODO: Spec allows ".1" (but not "1.")
+		// Some floating point with omitted leading zero?
+		if(ch == '.')
+		{
+			lexFloatingPoint("");
+			return;
+		}
 		
 		auto numStr = lexNumericFragment();
 		
