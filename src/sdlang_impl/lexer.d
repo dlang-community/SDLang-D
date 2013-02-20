@@ -5,6 +5,7 @@ module sdlang_impl.lexer;
 
 import std.array;
 import std.base64;
+import std.bigint;
 import std.conv;
 import std.stream : ByteOrderMarks, BOM;
 import std.uni;
@@ -585,15 +586,19 @@ class Lexer
 	
 	/// Lex [0-9]+, but without emitting a token.
 	/// This is used by the other numeric parsing functions.
-	private void lexNumericFragment()
+	private BigInt lexNumericFragment()
 	{
 		if(!isDigit(ch))
 			throw new SDLangException(location, "Error: Expected a digit 0-9.");
+		
+		auto spanStart = location.index;
 		
 		do
 		{
 			advanceChar(ErrorOnEOF.No);
 		} while(!isEOF && isDigit(ch));
+		
+		return BigInt(source[spanStart..location.index]);
 	}
 
 	/// Lex anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
@@ -610,13 +615,24 @@ class Lexer
 
 		//TODO: Does spec allow "1." or ".1"? If so, lexNumericFragment() needs to accept ""
 		
-		lexNumericFragment();
+		auto num = lexNumericFragment();
+		if(isNegative)
+			num = -num;
 		
 		// Long integer (64-bit signed)?
 		if(ch == 'L' || ch == 'l')
 		{
 			advanceChar(ErrorOnEOF.No);
-			mixin(accept!("Value", null));
+
+			if(num < BigInt(long.min) || num > long.max)
+			{
+				throw new SDLangException(
+					location,
+					"Error: Value doesn't fit in 64-bit signed long integer: "~to!string(num)
+				);
+			}
+			long value = num.toLong();
+			mixin(accept!("Value", value));
 		}
 		
 		// Some floating point?
