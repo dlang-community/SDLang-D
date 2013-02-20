@@ -88,7 +88,7 @@ class Lexer
 	}
 	
 	///.
-	Token _front;// = Token(symbol!"Error", Location());
+	Token _front;
 	@property Token front()
 	{
 		return _front;
@@ -98,6 +98,11 @@ class Lexer
 	@property bool isEOF()
 	{
 		return location.index == source.length;
+	}
+
+	private void error(string msg)
+	{
+		throw new SDLangException(location, "Error: "~msg);
 	}
 
 	private Token makeToken(string symbolName)()
@@ -229,7 +234,7 @@ class Lexer
 		if(!hasNextCh)
 		{
 			if(errorOnEOF == ErrorOnEOF.Yes)
-				throw new SDLangException(location, "Error: Unexpected end of file");
+				error("Unexpected end of file");
 
 			return;
 		}
@@ -441,10 +446,7 @@ class Lexer
 			}
 
 			else if(isNewline(ch))
-				throw new SDLangException(
-					location,
-					"Error: Unescaped newlines are only allowed in raw strings, not regular strings."
-				);
+				error("Unescaped newlines are only allowed in raw strings, not regular strings.");
 
 		} while(ch != '"');
 		
@@ -480,12 +482,7 @@ class Lexer
 		if(ch == '\'')
 			advanceChar(ErrorOnEOF.No); // Skip closing single-quote
 		else
-		{
-			throw new SDLangException(
-				location,
-				"Error: Expected closing single-quote."
-			);
-		}
+			error("Expected closing single-quote.");
 
 		mixin(accept!("Value", value));
 	}
@@ -540,13 +537,10 @@ class Lexer
 				eatBase64Whitespace();
 				
 				if(lex.isEOF)
-					throw new SDLangException(lex.location, "Error: Unexpected end of file");
+					lex.error("Unexpected end of file.");
 
 				if(lex.ch != ']' && !lex.isBase64(lex.ch))
-					throw new SDLangException(
-						lex.location,
-						"Error: Invalid character in base64 binary literal."
-					);
+					lex.error("Invalid character in base64 binary literal.");
 			}
 		}
 		
@@ -572,12 +566,7 @@ class Lexer
 
 		//TODO: Starting with dmd 2.062, this should be a Base64Exception
 		catch(Exception e)
-		{
-			throw new SDLangException(
-				location,
-				"Error: Invalid character in base64 binary literal."
-			);
-		}
+			error("Invalid character in base64 binary literal.");
 		
 		advanceChar(ErrorOnEOF.No); // Skip ']'
 		auto value = outputBuf.data;
@@ -589,7 +578,7 @@ class Lexer
 	private BigInt lexNumericFragment()
 	{
 		if(!isDigit(ch))
-			throw new SDLangException(location, "Error: Expected a digit 0-9.");
+			error("Expected a digit 0-9.");
 		
 		auto spanStart = location.index;
 		
@@ -625,12 +614,8 @@ class Lexer
 			advanceChar(ErrorOnEOF.No);
 
 			if(num < BigInt(long.min) || num > long.max)
-			{
-				throw new SDLangException(
-					location,
-					"Error: Value doesn't fit in 64-bit signed long integer: "~to!string(num)
-				);
-			}
+				error("Value doesn't fit in 64-bit signed long integer: "~to!string(num));
+
 			long value = num.toLong();
 			mixin(accept!("Value", value));
 		}
@@ -687,12 +672,7 @@ class Lexer
 
 			//TODO: How does spec actually handle "1.23ba"?
 			else
-			{
-				throw new SDLangException(
-					location,
-					"Error: Invalid floating point suffix."
-				);
-			}
+				error("Invalid floating point suffix.");
 		}
 
 		// Double float (64-bit signed) without suffix
@@ -713,7 +693,7 @@ class Lexer
 
 		// Lex days
 		if(ch != '/')
-			throw new SDLangException(location, "Error: Invalid date format: Missing days.");
+			error("Invalid date format: Missing days.");
 		advanceChar(ErrorOnEOF.Yes); // Skip '/'
 		lexNumericFragment();
 		
@@ -736,7 +716,7 @@ class Lexer
 		
 		// Lex minutes
 		if(ch != ':')
-			throw new SDLangException(location, "Error: Invalid date-time format: Missing minutes.");
+			error("Invalid date-time format: Missing minutes.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		lexNumericFragment();
 		
@@ -761,7 +741,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.Yes); // Skip '-'
 			
 			if(!isAlpha(ch))
-				throw new SDLangException(location, "Error: Invalid timezone.");
+				error("Invalid timezone.");
 			
 			while(!isEOF && !isWhite(ch))
 				advanceChar(ErrorOnEOF.No);
@@ -783,20 +763,20 @@ class Lexer
 
 			// Lex hours
 			if(ch != ':')
-				throw new SDLangException(location, "Error: Invalid time span format: Missing hours.");
+				error("Invalid time span format: Missing hours.");
 			advanceChar(ErrorOnEOF.Yes); // Skip ':'
 			lexNumericFragment();
 		}
 
 		// Lex minutes
 		if(ch != ':')
-			throw new SDLangException(location, "Error: Invalid time span format: Missing minutes.");
+			error("Invalid time span format: Missing minutes.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		lexNumericFragment();
 
 		// Lex seconds
 		if(ch != ':')
-			throw new SDLangException(location, "Error: Invalid time span format: Missing seconds.");
+			error("Invalid time span format: Missing seconds.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		lexNumericFragment();
 		
@@ -864,12 +844,8 @@ class Lexer
 				//TODO: Should this include all isNewline()? (except for \r, right?)
 				if(ch == '\n')
 					state = State.normal;
-
 				else if(!isWhite(ch))
-					throw new SDLangException(
-						location,
-						"Error: Only whitespace can come after a line-continuation backslash"
-					);
+					error("Only whitespace can come after a line-continuation backslash.");
 				break;
 			
 			case State.lineComment:
@@ -898,16 +874,10 @@ class Lexer
 				// Reached EOF
 
 				if(state == State.backslash)
-					throw new SDLangException(
-						location,
-						"Error: Missing newline after line-continuation backslash"
-					);
+					error("Missing newline after line-continuation backslash.");
 
 				else if(state == State.blockComment)
-					throw new SDLangException(
-						location,
-						"Error: Unterminated block comment"
-					);
+					error("Unterminated block comment.");
 
 				else
 					return; // Done, reached EOF
