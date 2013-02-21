@@ -940,11 +940,7 @@ class Lexer
 			mixin(accept!("Value", "SysTime(dateTime, timeWithFracSec.fracSec, UTC())"));
 		}
 		else
-		{
-			//TODO*: DateTime doesn't store milliseconds. So keep them somehow.
-			//       Shouldn't use SysTime because no timezone was given.
-			mixin(accept!("Value", "dateTime"));
-		}
+			mixin(accept!("Value", "DateTimeFrac(dateTime, timeWithFracSec.fracSec)"));
 	}
 
 	/// Lex time span (after the initial numeric fragment was lexed)

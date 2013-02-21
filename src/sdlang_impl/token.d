@@ -9,13 +9,21 @@ import std.variant;
 import sdlang_impl.symbol;
 import sdlang_impl.util;
 
+/// DateTime doesn't support milliseconds, but SDL's "Date Time" type does.
+/// So this is needed for any SDL "Date Time" that doesn't include a time zone.
+struct DateTimeFrac
+{
+	DateTime dateTime;
+	FracSec fracSec;
+}
+
 ///.
 alias Algebraic!(
 	bool,
 	string, dchar,
 	int, long,
 	float, double, real,
-	Date, DateTime, SysTime, Duration,
+	Date, DateTimeFrac, SysTime, Duration,
 	ubyte[],
 	typeof(null),
 ) Value;
