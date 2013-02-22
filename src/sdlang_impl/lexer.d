@@ -9,6 +9,7 @@ import std.bigint;
 import std.conv;
 import std.datetime;
 import std.stream : ByteOrderMarks, BOM;
+import std.typecons;
 import std.uni;
 import std.utf;
 import std.variant;
@@ -929,15 +930,44 @@ class Lexer
 		if(ch == '-')
 		{
 			advanceChar(ErrorOnEOF.Yes); // Skip '-'
+			auto timezoneStart = location;
 			
 			if(!isAlpha(ch))
-				error("Invalid timezone.");
+				error("Invalid timezone format.");
 			
 			while(!isEOF && !isWhite(ch))
 				advanceChar(ErrorOnEOF.No);
 			
-			//TODO*: Interpret timezone
-			mixin(accept!("Value", "SysTime(dateTime, timeWithFracSec.fracSec, UTC())"));
+			auto timezoneStr = source[timezoneStart.index..location.index];
+
+			//TODO*: Interpret more timezones
+
+/+import std.stdio;
+static showedTZNames = false;
+if(!showedTZNames)
+writeln("getInstalledTZNames: ", TimeZone.getInstalledTZNames());
+showedTZNames = true;
+writeln("timezoneStr: ", timezoneStr);+/
+			//Rebindable!(const TimeZone) foundTimezone = TimeZone.getTimeZone(timezoneStr);
+			try
+			{
+				auto foundTimezone = TimeZone.getTimeZone(timezoneStr);
+/+writeln("timezone is null: ", timezone is null);
+if(timezone !is null)
+{
+writeln("timezone.name: ", timezone.name);
+writeln("timezone.stdName: ", timezone.stdName);
+}+/
+				if(foundTimezone)
+					mixin(accept!("Value", "SysTime(dateTime, timeWithFracSec.fracSec, foundTimezone)"));
+			}
+			catch(TimeException e)
+			{
+				// Time zone not found. So just move along to "Unknown time zone" below.
+			}
+
+			// Unknown time zone
+			mixin(accept!("Value", "DateTimeFracUnknownZone(dateTime, timeWithFracSec.fracSec, timezoneStr)"));
 		}
 		else
 			mixin(accept!("Value", "DateTimeFrac(dateTime, timeWithFracSec.fracSec)"));

@@ -94,6 +94,7 @@ string toString(TypeInfo ti)
 	else if(ti == typeid( real         )) return "real";
 	else if(ti == typeid( Date         )) return "Date";
 	else if(ti == typeid( DateTimeFrac )) return "DateTimeFrac";
+	else if(ti == typeid( DateTimeFracUnknownZone )) return "DateTimeFracUnknownZone";
 	else if(ti == typeid( SysTime      )) return "SysTime";
 	else if(ti == typeid( Duration     )) return "Duration";
 	else if(ti == typeid( ubyte[]      )) return "ubyte[]";
