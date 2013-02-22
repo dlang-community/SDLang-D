@@ -11,7 +11,8 @@ $(WEB www.semitwist.com, Nick Sabalausky)
 This should work with DMD 2.061 and up.
 
 To compile manually:
-	rdmd --build-only -Isrc -ofbin/sdlang [dmd/rdmd options] src/sdlang.d
+	Win:   build [rdmd and compiler options]
+	Other: ./build [rdmd and compiler options]
 
 You can also compile with stbuild (part of SemiTwist D Tools):
 	semitwist-stbuild all [release|debug|all]
