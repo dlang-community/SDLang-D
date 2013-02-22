@@ -51,11 +51,10 @@ Decimal (128+ bits signed):    real
 Binary (standard Base64):      ubyte[]
 Time Span:                     Duration
 
-Date (with no time at all):                 Date
-Date Time (no milliseconds, no timezone):   DateTime
-Date Time (with milliseconds, no timezone): DateTimeFrac
-Date Time (optionally milliseconds, with a known timezone):    SysTime
-Date Time (optionally milliseconds, with an unknown timezone): DateTimeFracUnknownZone
+Date (with no time at all):           Date
+Date Time (no timezone):              DateTimeFrac
+Date Time (with a known timezone):    SysTime
+Date Time (with an unknown timezone): DateTimeFracUnknownZone
 +/
 alias Algebraic!(
 	bool,
@@ -77,9 +76,68 @@ struct Token
 	string data; /// Original text from source
 
 	@disable this();
-	this(Symbol symbol, Location location) ///.
+	this(Symbol symbol, Location location, Value value=Value(null), string data=null) ///.
 	{
 		this.symbol   = symbol;
 		this.location = location;
+		this.value    = value;
+		this.data     = data;
 	}
+	
+	/// Tokens with differing symbols are always unequal.
+	/// Tokens with differing values are always unequal.
+	/// Tokens with differing Value types are always unequal.
+	/// Member 'location' is always ignored for comparison.
+	/// Member 'data' is ignored for comparison *EXCEPT* when the symbol is Ident.
+	bool opEquals(Token b)
+	{
+		return opEquals(b);
+	}
+	bool opEquals(ref Token b)
+	{
+		if(
+			this.symbol     != b.symbol     ||
+			this.value.type != b.value.type ||
+			this.value      != b.value
+		)
+			return false;
+		
+		if(this.symbol == .symbol!"Ident")
+			return this.data == b.data;
+		
+		return true;
+	}
+}
+
+version(unittest_sdlang)
+unittest
+{
+	import std.stdio;
+	writeln("Unittesting sdlang token...");
+	
+	auto loc  = Location("", 0, 0, 0);
+	auto loc2 = Location("a", 1, 1, 1);
+
+	assert(Token(symbol!"EOL",loc) == Token(symbol!"EOL",loc ));
+	assert(Token(symbol!"EOL",loc) == Token(symbol!"EOL",loc2));
+	assert(Token(symbol!":",  loc) == Token(symbol!":",  loc ));
+	assert(Token(symbol!"EOL",loc) != Token(symbol!":",  loc ));
+	assert(Token(symbol!"EOL",loc,Value(null),"\n") == Token(symbol!"EOL",loc,Value(null),"\n"));
+
+	assert(Token(symbol!"EOL",loc,Value(null),"\n") == Token(symbol!"EOL",loc,Value(null),";" ));
+	assert(Token(symbol!"EOL",loc,Value(null),"A" ) == Token(symbol!"EOL",loc,Value(null),"B" ));
+	assert(Token(symbol!":",  loc,Value(null),"A" ) == Token(symbol!":",  loc,Value(null),"BB"));
+	assert(Token(symbol!"EOL",loc,Value(null),"A" ) != Token(symbol!":",  loc,Value(null),"A" ));
+
+	assert(Token(symbol!"Ident",loc,Value(null),"foo") == Token(symbol!"Ident",loc,Value(null),"foo"));
+	assert(Token(symbol!"Ident",loc,Value(null),"foo") != Token(symbol!"Ident",loc,Value(null),"BAR"));
+
+	assert(Token(symbol!"Value",loc,Value(null),"foo") == Token(symbol!"Value",loc, Value(null),"foo"));
+	assert(Token(symbol!"Value",loc,Value(null),"foo") == Token(symbol!"Value",loc2,Value(null),"foo"));
+	assert(Token(symbol!"Value",loc,Value(null),"foo") == Token(symbol!"Value",loc, Value(null),"BAR"));
+	assert(Token(symbol!"Value",loc,Value(   7),"foo") == Token(symbol!"Value",loc, Value(   7),"BAR"));
+	assert(Token(symbol!"Value",loc,Value(   7),"foo") != Token(symbol!"Value",loc, Value( "A"),"foo"));
+	assert(Token(symbol!"Value",loc,Value(   7),"foo") != Token(symbol!"Value",loc, Value(   2),"foo"));
+	assert(Token(symbol!"Value",loc,Value(cast(int)7)) != Token(symbol!"Value",loc, Value(cast(long)7)));
+	assert(Token(symbol!"Value",loc,Value(cast(float)1.2)) != Token(symbol!"Value",loc, Value(cast(double)1.2)));
 }

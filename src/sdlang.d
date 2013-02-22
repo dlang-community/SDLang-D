@@ -33,6 +33,10 @@ import sdlang_impl.lexer;
 import sdlang_impl.symbol;
 import sdlang_impl.token;
 
+version(unittest_sdlang)
+	void main() {}
+
+version(unittest_sdlang) {} else
 int main(string[] args)
 {
 	if(args.length != 2)
