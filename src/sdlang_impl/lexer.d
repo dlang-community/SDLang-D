@@ -926,7 +926,6 @@ class Lexer
 		auto dateTime = DateTime(date, timeWithFracSec.timeOfDay);
 		
 		// Lex zone, if exists
-		//TODO: Make sure the end of this is detected correctly.
 		if(ch == '-')
 		{
 			advanceChar(ErrorOnEOF.Yes); // Skip '-'
@@ -940,26 +939,34 @@ class Lexer
 			
 			auto timezoneStr = source[timezoneStart.index..location.index];
 
-			//TODO*: Interpret more timezones
+			// Why the fuck is SimpleTimeZone.fromISOString private?!?! Fucking API minimalism...
+			if(timezoneStr.startsWith("GMT"))
+			{
+				auto isoPart = timezoneStr["GMT".length..$];
+				if(isoPart.length == 3 || isoPart.length == 6)
+				if(isoPart[0] == '+' || isoPart[0] == '-')
+				{
+					auto isNegative = isoPart[0] == '-';
 
-/+import std.stdio;
-static showedTZNames = false;
-if(!showedTZNames)
-writeln("getInstalledTZNames: ", TimeZone.getInstalledTZNames());
-showedTZNames = true;
-writeln("timezoneStr: ", timezoneStr);+/
-			//Rebindable!(const TimeZone) foundTimezone = TimeZone.getTimeZone(timezoneStr);
+					auto numHours = to!long(isoPart[1..3]);
+					long numMinutes = 0;
+					if(isoPart.length == 6)
+						numMinutes = to!long(isoPart[4..$]);
+
+					auto timeZoneOffset = hours(numHours) + minutes(numMinutes);
+					if(isNegative)
+						timeZoneOffset = -timeZoneOffset;
+
+					auto timezone = new SimpleTimeZone(timeZoneOffset);
+					mixin(accept!("Value", "SysTime(dateTime, timeWithFracSec.fracSec, timezone)"));
+				}
+			}
+			
 			try
 			{
-				auto foundTimezone = TimeZone.getTimeZone(timezoneStr);
-/+writeln("timezone is null: ", timezone is null);
-if(timezone !is null)
-{
-writeln("timezone.name: ", timezone.name);
-writeln("timezone.stdName: ", timezone.stdName);
-}+/
-				if(foundTimezone)
-					mixin(accept!("Value", "SysTime(dateTime, timeWithFracSec.fracSec, foundTimezone)"));
+				auto timezone = TimeZone.getTimeZone(timezoneStr);
+				if(timezone)
+					mixin(accept!("Value", "SysTime(dateTime, timeWithFracSec.fracSec, timezone)"));
 			}
 			catch(TimeException e)
 			{
