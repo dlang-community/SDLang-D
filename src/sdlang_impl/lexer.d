@@ -759,38 +759,30 @@ class Lexer
 		return Date(year, month, day);
 	}
 	
-	// TimeOfDay plus milliseconds
-	private struct TimeWithFracSec
-	{
-		TimeOfDay timeOfDay;
-		FracSec fracSec;
-	}
-	private TimeWithFracSec makeTimeWithFracSec(
-		bool isNegative, string hourStr, string minuteStr,
+	private DateTimeFrac makeDateTimeFrac(
+		bool isNegative, Date date, string hourStr, string minuteStr,
 		string secondStr, string millisecondStr
 	)
 	{
 		BigInt biTmp;
 
 		biTmp = BigInt(hourStr);
-		if(isNegative)
-			biTmp = -biTmp;
 		if(biTmp < int.min || biTmp > int.max)
 			error(tokenStart, "Datetime's hour is out of range.");
-		auto hour = biTmp.toInt();
+		auto numHours = biTmp.toInt();
 		
 		biTmp = BigInt(minuteStr);
 		if(biTmp < 0 || biTmp > int.max)
 			error(tokenStart, "Datetime's minute is out of range.");
-		auto minute = biTmp.toInt();
+		auto numMinutes = biTmp.toInt();
 		
-		int second = 0;
+		int numSeconds = 0;
 		if(secondStr != "")
 		{
 			biTmp = BigInt(secondStr);
 			if(biTmp < 0 || biTmp > int.max)
 				error(tokenStart, "Datetime's second is out of range.");
-			second = biTmp.toInt();
+			numSeconds = biTmp.toInt();
 		}
 		
 		int millisecond = 0;
@@ -805,7 +797,15 @@ class Lexer
 		FracSec fracSecs;
 		fracSecs.msecs = millisecond;
 		
-		return TimeWithFracSec(TimeOfDay(hour, minute, second), fracSecs);
+		auto offset = hours(numHours) + minutes(numMinutes) + seconds(numSeconds);
+
+		if(isNegative)
+		{
+			offset   = -offset;
+			fracSecs = -fracSecs;
+		}
+		
+		return DateTimeFrac(DateTime(date) + offset, fracSecs);
 	}
 
 	private Duration makeDuration(
@@ -890,7 +890,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.No);
 
 		// Date?
-		if(isEOF || !isDigit(ch))
+		if(isEOF || (!isDigit(ch) && ch != '-'))
 			mixin(accept!("Value", "date", "", "endOfDate.index"));
 		
 		// Is time negative?
@@ -927,8 +927,9 @@ class Lexer
 			millisecondStr = lexNumericFragment();
 		}
 
-		auto timeWithFracSec = makeTimeWithFracSec(isTimeNegative, hourStr, minuteStr, secondStr, millisecondStr);
-		auto dateTime = DateTime(date, timeWithFracSec.timeOfDay);
+		auto dateTimeFrac = makeDateTimeFrac(isTimeNegative, date, hourStr, minuteStr, secondStr, millisecondStr);
+		//auto timeWithFracSec = makeTimeWithFracSec(isTimeNegative, hourStr, minuteStr, secondStr, millisecondStr);
+		//auto dateTime = DateTime(date, timeWithFracSec.timeOfDay);
 		
 		// Lex zone, if exists
 		if(ch == '-')
@@ -963,7 +964,7 @@ class Lexer
 						timeZoneOffset = -timeZoneOffset;
 
 					auto timezone = new SimpleTimeZone(timeZoneOffset);
-					mixin(accept!("Value", "SysTime(dateTime, timeWithFracSec.fracSec, timezone)"));
+					mixin(accept!("Value", "SysTime(dateTimeFrac.dateTime, dateTimeFrac.fracSec, timezone)"));
 				}
 			}
 			
@@ -971,7 +972,7 @@ class Lexer
 			{
 				auto timezone = TimeZone.getTimeZone(timezoneStr);
 				if(timezone)
-					mixin(accept!("Value", "SysTime(dateTime, timeWithFracSec.fracSec, timezone)"));
+					mixin(accept!("Value", "SysTime(dateTimeFrac.dateTime, dateTimeFrac.fracSec, timezone)"));
 			}
 			catch(TimeException e)
 			{
@@ -979,10 +980,10 @@ class Lexer
 			}
 
 			// Unknown time zone
-			mixin(accept!("Value", "DateTimeFracUnknownZone(dateTime, timeWithFracSec.fracSec, timezoneStr)"));
+			mixin(accept!("Value", "DateTimeFracUnknownZone(dateTimeFrac.dateTime, dateTimeFrac.fracSec, timezoneStr)"));
 		}
 		else
-			mixin(accept!("Value", "DateTimeFrac(dateTime, timeWithFracSec.fracSec)"));
+			mixin(accept!("Value", "dateTimeFrac"));
 	}
 
 	/// Lex time span (after the initial numeric fragment was lexed)
@@ -1258,40 +1259,50 @@ unittest
 	testLex("-2013/2/22", [ Token(symbol!"Value",loc,Value(Date(-2013, 2, 22))) ]);
 
 	// DateTime, no timezone
-	testLex( "2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22,  7, 53,  0)))) ]);
-	testLex( "2013/2/22 \t 07:53",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22,  7, 53,  0)))) ]);
-	testLex("-2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22,  7, 53,  0)))) ]);
-	//testLex( "2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, -7, 53,  0)))) ]);
-	//testLex("-2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, -7, 53,  0)))) ]);
-	testLex( "2013/2/22 07:53:34",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22,  7, 53, 34)))) ]);
-	testLex( "2013/2/22 07:53:34.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22,  7, 53, 34), FracSec.from!"msecs"(123)))) ]);
-	testLex( "2013/2/22 07:53.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22,  7, 53,  0), FracSec.from!"msecs"(123)))) ]);
+	testLex( "2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 \t 07:53",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex("-2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
+	testLex("-2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
+	testLex( "2013/2/22 07:53:34",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34)))) ]);
+	testLex( "2013/2/22 07:53:34.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123)))) ]);
+	testLex( "2013/2/22 07:53.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123)))) ]);
+
+	testLex( "2013/2/22 34:65",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0)))) ]);
+	testLex( "2013/2/22 34:65:77.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds(77), FracSec.from!"msecs"(123)))) ]);
+	testLex( "2013/2/22 34:65.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0), FracSec.from!"msecs"(123)))) ]);
+
+	testLex( "2013/2/22 -34:65",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0)))) ]);
+	testLex( "2013/2/22 -34:65:77.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds(77), FracSec.from!"msecs"(-123)))) ]);
+	testLex( "2013/2/22 -34:65.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0), FracSec.from!"msecs"(-123)))) ]);
 
 	// DateTime, with known timezone
-	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22,  7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
-	//testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, -7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
-	//testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, -7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53-GMT+02:10",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53,  0), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53-GMT-05:30",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53,  0), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53:34-GMT+00:00",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53, 34), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53:34-GMT+02:10",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53, 34), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53:34-GMT-05:30",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53, 34), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT+00:00", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53, 34), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT+02:10", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53, 34), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT-05:30", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53, 34), FracSec.from!"msecs"(123), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53.123-GMT+00:00",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53.123-GMT+02:10",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53.123-GMT-05:30",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22,  7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
+	testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new SimpleTimeZone( hours(0)            )))) ]);
+	testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53-GMT+02:10",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53-GMT-05:30",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53:34-GMT+00:00",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53:34-GMT+02:10",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53:34-GMT-05:30",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53:34.123-GMT+00:00", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53:34.123-GMT+02:10", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53:34.123-GMT-05:30", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53.123-GMT+00:00",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53.123-GMT+02:10",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53.123-GMT-05:30",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+
+	testLex( "2013/2/22 -34:65-GMT-05:30",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(34) - minutes(65) - seconds( 0), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
 
 	// DateTime, with unknown timezone
-	testLex( "2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22,  7, 53,  0), FracSec.from!"msecs"(  0), "Bogus/Foo")), "2013/2/22 07:53-Bogus/Foo") ]);
-	testLex("-2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22,  7, 53,  0), FracSec.from!"msecs"(  0), "Bogus/Foo"))) ]);
-	//testLex( "2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, -7, 53,  0), FracSec.from!"msecs"(  0), "Bogus/Foo"))) ]);
-	//testLex("-2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, -7, 53,  0), FracSec.from!"msecs"(  0), "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 07:53:34-Bogus/Foo",     [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22,  7, 53, 34), FracSec.from!"msecs"(  0), "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 07:53:34.123-Bogus/Foo", [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22,  7, 53, 34), FracSec.from!"msecs"(123), "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 07:53.123-Bogus/Foo",    [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22,  7, 53,  0), FracSec.from!"msecs"(123), "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(  0), "Bogus/Foo")), "2013/2/22 07:53-Bogus/Foo") ]);
+	testLex("-2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(  0), "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), FracSec.from!"msecs"(  0), "Bogus/Foo"))) ]);
+	testLex("-2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), FracSec.from!"msecs"(  0), "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 07:53:34-Bogus/Foo",     [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(  0), "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 07:53:34.123-Bogus/Foo", [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 07:53.123-Bogus/Foo",    [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), "Bogus/Foo"))) ]);
 
 	// Time Span
 	testLex( "12:14:42",         [ Token(symbol!"Value",loc,Value( days( 0)+hours(12)+minutes(14)+seconds(42)+msecs(  0))) ]);
