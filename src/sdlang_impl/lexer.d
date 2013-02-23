@@ -460,7 +460,11 @@ class Lexer
 				
 				advanceChar(ErrorOnEOF.Yes);
 				if(isNewline(ch))
+				{
+					advanceChar(ErrorOnEOF.Yes);
+					buf.put('\n');
 					eatWhite();
+				}
 				else
 				{
 					//TODO: Is this list of escape chars 100% complete and correct?
