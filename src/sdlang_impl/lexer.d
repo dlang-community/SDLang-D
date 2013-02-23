@@ -228,7 +228,7 @@ class Lexer
 		// At position after keyword
 		else if(tokenLength32 == keyword32.length)
 		{
-			if(!isIdentChar(ch))
+			if(isEOF || !isIdentChar(ch))
 			{
 				debug assert(tokenData == to!string(keyword32));
 				return KeywordResult.Accept;
@@ -268,15 +268,15 @@ class Lexer
 			return;
 		}
 
+		tokenLength32++;
+		tokenLength = location.index - tokenStart.index;
+
 		if(nextPos == source.length)
 		{
 			nextCh = dchar.init;
 			hasNextCh = false;
 			return;
 		}
-
-		tokenLength32++;
-		tokenLength = location.index - tokenStart.index;
 		
 		nextCh = source.decode(posAfterLookahead);
 		isEndOfIdentCached = false;
@@ -412,6 +412,11 @@ class Lexer
 			advanceChar(ErrorOnEOF.No);
 
 		} while(!isEOF);
+
+		foreach(ref key; keywords)
+		if(!key.failed)
+		if(key.name.length == tokenLength32+1)
+			mixin(accept!("Value", "key.value"));
 
 		mixin(accept!"Ident");
 	}
@@ -1152,9 +1157,9 @@ unittest
 		{
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
-			stderr.writeln("    Actual:");
+			stderr.writeln("Actual:");
 			stderr.writeln("    ", actual);
-			stderr.writeln("    Expected:");
+			stderr.writeln("Expected:");
 			stderr.writeln("    ", expected);
 		}
 	}
@@ -1204,12 +1209,18 @@ unittest
 	testLex("1.2bD", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
 
 	// Booleans and null
-	testLex("true",  [ Token(symbol!"Value",loc,Value( true)) ]);
-	testLex("false", [ Token(symbol!"Value",loc,Value(false)) ]);
-	testLex("on",    [ Token(symbol!"Value",loc,Value( true)) ]);
-	testLex("off",   [ Token(symbol!"Value",loc,Value(false)) ]);
-	testLex("TRUE",  [ Token(symbol!"Ident",loc,Value( null),"TRUE") ]);
-	testLex("null",  [ Token(symbol!"Value",loc,Value( null)) ]);
+	testLex("true",   [ Token(symbol!"Value",loc,Value( true)) ]);
+	testLex("false",  [ Token(symbol!"Value",loc,Value(false)) ]);
+	testLex("on",     [ Token(symbol!"Value",loc,Value( true)) ]);
+	testLex("off",    [ Token(symbol!"Value",loc,Value(false)) ]);
+	testLex("null",   [ Token(symbol!"Value",loc,Value( null)) ]);
+
+	testLex("TRUE",   [ Token(symbol!"Ident",loc,Value(null),"TRUE")  ]);
+	testLex("true ",  [ Token(symbol!"Value",loc,Value(true)) ]);
+	testLex("true  ", [ Token(symbol!"Value",loc,Value(true)) ]);
+	testLex("tru",    [ Token(symbol!"Ident",loc,Value(null),"tru")   ]);
+	testLex("truX",   [ Token(symbol!"Ident",loc,Value(null),"truX")  ]);
+	testLex("trueX",  [ Token(symbol!"Ident",loc,Value(null),"trueX") ]);
 
 	// Raw Backtick Strings
 	testLex("`hello world`",     [ Token(symbol!"Value",loc,Value(`hello world`   )) ]);
