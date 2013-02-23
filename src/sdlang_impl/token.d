@@ -32,6 +32,18 @@ struct DateTimeFracUnknownZone
 	DateTime dateTime;
 	FracSec fracSec;
 	string timeZone;
+
+	bool opEquals(const DateTimeFracUnknownZone b) const
+	{
+		return opEquals(b);
+	}
+	bool opEquals(ref const DateTimeFracUnknownZone b) const
+	{
+		return
+			this.dateTime == b.dateTime &&
+			this.fracSec  == b.fracSec  &&
+			this.timeZone == b.timeZone;
+	}
 }
 
 /++
@@ -114,6 +126,7 @@ unittest
 {
 	import std.stdio;
 	writeln("Unittesting sdlang token...");
+	stdout.flush();
 	
 	auto loc  = Location("", 0, 0, 0);
 	auto loc2 = Location("a", 1, 1, 1);

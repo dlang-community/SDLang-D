@@ -1142,6 +1142,7 @@ unittest
 {
 	import std.stdio;
 	writeln("Unittesting sdlang lexer...");
+	stdout.flush();
 	
 	auto loc  = Location("filename", 0, 0, 0);
 	auto loc2 = Location("a", 1, 1, 1);
