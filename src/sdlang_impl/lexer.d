@@ -1167,6 +1167,23 @@ unittest
 			stderr.writeln("    ", actual);
 			stderr.writeln("Expected:");
 			stderr.writeln("    ", expected);
+
+			if(expected.length > 1 || actual.length > 1)
+			{
+				stderr.writeln("actual.length:   ", actual.length);
+				stderr.writeln("expected.length: ", expected.length);
+
+				if(actual.length == expected.length)
+				foreach(i; 0..actual.length)
+				if(actual[i] != expected[i])
+				{
+					stderr.writeln("Unequal at index #", i, ":");
+					stderr.writeln("    Actual:");
+					stderr.writeln("        ", actual[i]);
+					stderr.writeln("    Expected:");
+					stderr.writeln("        ", expected[i]);
+				}
+			}
 		}
 	}
 
@@ -1334,16 +1351,16 @@ unittest
 		Token(symbol!"Ident", loc, Value(         null ), "namespace"),
 		Token(symbol!":",     loc, Value(         null ), ":"),
 		Token(symbol!"Ident", loc, Value(         null ), "person"),
-		Token(symbol!"Value", loc, Value(        "foo" ), "foo"),
-		Token(symbol!"Value", loc, Value(        "bar" ), "bar"),
+		Token(symbol!"Value", loc, Value(        "foo" ), `"foo"`),
+		Token(symbol!"Value", loc, Value(        "bar" ), `"bar"`),
 		Token(symbol!"Value", loc, Value( cast( int) 1 ), "1"),
 		Token(symbol!"Value", loc, Value( cast(long)23 ), "23L"),
 		Token(symbol!"Ident", loc, Value(         null ), "first"),
 		Token(symbol!"=",     loc, Value(         null ), "="),
-		Token(symbol!"Value", loc, Value(       "ひとみ" ), "ひとみ"),
+		Token(symbol!"Value", loc, Value(       "ひとみ" ), `"ひとみ"`),
 		Token(symbol!"Ident", loc, Value(         null ), "last"),
 		Token(symbol!"=",     loc, Value(         null ), "="),
-		Token(symbol!"Value", loc, Value(      "Smith" ), "Smith"),
+		Token(symbol!"Value", loc, Value(      "Smith" ), `"Smith"`),
 		Token(symbol!"{",     loc, Value(         null ), "{"),
 		Token(symbol!"EOL",   loc, Value(         null ), "\n"),
 
@@ -1355,11 +1372,11 @@ unittest
 		Token(symbol!"Ident", loc, Value(        null ), "namespace"),
 		Token(symbol!":",     loc, Value(        null ), ":"),
 		Token(symbol!"Ident", loc, Value(        null ), "favorite_color"),
-		Token(symbol!"Value", loc, Value(      "blue" ), "blue"),
+		Token(symbol!"Value", loc, Value(      "blue" ), `"blue"`),
 		Token(symbol!"EOL",   loc, Value(        null ), "\n"),
 
 		Token(symbol!"Ident", loc, Value( null ), "somedate"),
-		Token(symbol!"Value", loc, Value( DateTimeFrac(DateTime(2012, 2, 22, 7, 53, 0)) ), "2013/2/22  07:53"),
+		Token(symbol!"Value", loc, Value( DateTimeFrac(DateTime(2013, 2, 22, 7, 53, 0)) ), "2013/2/22  07:53"),
 		Token(symbol!"EOL",   loc, Value( null ), "\n"),
 		Token(symbol!"EOL",   loc, Value( null ), "\n"),
 
@@ -1377,4 +1394,7 @@ unittest
 		Token(symbol!"}",     loc, Value(null), "}"),
 		Token(symbol!"EOL",   loc, Value(null), "\n"),
 	]);
+	
+	if(numErrors > 0)
+		stderr.writeln(numErrors, " failed test(s)");
 }
