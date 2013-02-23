@@ -1247,7 +1247,7 @@ unittest
 	testLex("'\n'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
 	
 	// Unicode
-	testLex("日本語",         [ Token(symbol!"Ident",loc,Value("日本語"))       ]);
+	testLex("日本語",         [ Token(symbol!"Ident",loc,Value(null), "日本語") ]);
 	testLex("`おはよう、日本。`", [ Token(symbol!"Value",loc,Value(`おはよう、日本。`)) ]);
 	testLex(`"おはよう、日本。"`, [ Token(symbol!"Value",loc,Value(`おはよう、日本。`)) ]);
 	testLex("'月'",           [ Token(symbol!"Value",loc,Value("月"d.dup[0]))   ]);
