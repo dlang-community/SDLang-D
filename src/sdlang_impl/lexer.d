@@ -3,6 +3,7 @@
 
 module sdlang_impl.lexer;
 
+import std.algorithm;
 import std.array;
 import std.base64;
 import std.bigint;
@@ -994,19 +995,80 @@ class Lexer
 			
 			auto timezoneStr = source[timezoneStart.index..location.index];
 
-			// Why the fuck is SimpleTimeZone.fromISOString private?!?! Fucking API minimalism...
+			// This has to reproduce some weird corner case behaviors from the
+			// original Java version of SDL. So some of this may seem weird.
 			if(timezoneStr.startsWith("GMT"))
 			{
 				auto isoPart = timezoneStr["GMT".length..$];
-				if(isoPart.length == 3 || isoPart.length == 6)
+				if(isoPart.length >= 2)
 				if(isoPart[0] == '+' || isoPart[0] == '-')
 				{
 					auto isNegative = isoPart[0] == '-';
 
-					auto numHours = to!long(isoPart[1..3]);
+					string numHoursStr;
+					string numMinutesStr;
+					if(isoPart[1] == ':')
+					{
+						numMinutesStr = isoPart[1..$];
+						numHoursStr = "";
+					}
+					else
+					{
+						numMinutesStr = isoPart.find(':');
+						numHoursStr = isoPart[1 .. $-numMinutesStr.length];
+					}
+					
+					long numHours = 0;
 					long numMinutes = 0;
-					if(isoPart.length == 6)
-						numMinutes = to!long(isoPart[4..$]);
+					bool isUnknown = false;
+					try
+					{
+						switch(numHoursStr.length)
+						{
+						case 0:
+							if(numMinutesStr.length == 3)
+							{
+								numHours   = 0;
+								numMinutes = to!long(numMinutesStr[1..$]);
+							}
+							else
+								isUnknown = true;
+							break;
+
+						case 1:
+						case 2:
+							if(numMinutesStr.length == 0)
+							{
+								numHours   = to!long(numHoursStr);
+								numMinutes = 0;
+							}
+							else if(numMinutesStr.length == 3)
+							{
+								numHours   = to!long(numHoursStr);
+								numMinutes = to!long(numMinutesStr[1..$]);
+							}
+							else
+								isUnknown = true;
+							break;
+
+						default:
+							if(numMinutesStr.length == 0)
+							{
+								// Yes, this is correct
+								numHours   = 0;
+								numMinutes = to!long(numHoursStr[1..$]);
+							}
+							else
+								isUnknown = true;
+							break;
+						}
+					}
+					catch(ConvException e)
+						isUnknown = true;
+					
+					// Unknown time zone?
+					if(isUnknown)
+						mixin(accept!("Value", "DateTimeFracUnknownZone(dateTimeFrac.dateTime, dateTimeFrac.fracSec, timezoneStr)"));
 
 					auto timeZoneOffset = hours(numHours) + minutes(numMinutes);
 					if(isNegative)
@@ -1426,7 +1488,6 @@ unittest
 
 	// DateTime, with known timezone
 	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53-GMT+00:00abcd",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
 	testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
 	testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new SimpleTimeZone( hours(0)            )))) ]);
 	testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new SimpleTimeZone( hours(0)            )))) ]);
@@ -1443,6 +1504,57 @@ unittest
 	testLex( "2013/2/22 07:53.123-GMT-05:30",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
 
 	testLex( "2013/2/22 -34:65-GMT-05:30",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(34) - minutes(65) - seconds( 0), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+
+	// DateTime, with Java SDL's occasionally weird interpretation of some
+	// "not quite ISO" variations of the "GMT with offset" timezone strings.
+	Token testTokenSimpleTimeZone(Duration d)
+	{
+		auto dateTime = DateTime(2013, 2, 22, 7, 53, 0);
+		auto tz = new SimpleTimeZone(d);
+		return Token( symbol!"Value", loc, Value(SysTime(dateTime,tz)) );
+	}
+	Token testTokenUnknownTimeZone(string tzName)
+	{
+		auto dateTime = DateTime(2013, 2, 22, 7, 53, 0);
+		auto frac = FracSec.from!"msecs"(0);
+		return Token( symbol!"Value", loc, Value(DateTimeFracUnknownZone(dateTime,frac,tzName)) );
+	}
+	testLex("2013/2/22 07:53-GMT+",          [ testTokenUnknownTimeZone("GMT+")     ]);
+	testLex("2013/2/22 07:53-GMT+:",         [ testTokenUnknownTimeZone("GMT+:")    ]);
+	testLex("2013/2/22 07:53-GMT+:3",        [ testTokenUnknownTimeZone("GMT+:3")   ]);
+	testLex("2013/2/22 07:53-GMT+:03",       [ testTokenSimpleTimeZone(minutes(3))  ]);
+	testLex("2013/2/22 07:53-GMT+:003",      [ testTokenUnknownTimeZone("GMT+:003") ]);
+
+	testLex("2013/2/22 07:53-GMT+4",         [ testTokenSimpleTimeZone(hours(4))            ]);
+	testLex("2013/2/22 07:53-GMT+4:",        [ testTokenUnknownTimeZone("GMT+4:")           ]);
+	testLex("2013/2/22 07:53-GMT+4:3",       [ testTokenUnknownTimeZone("GMT+4:3")          ]);
+	testLex("2013/2/22 07:53-GMT+4:03",      [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ]);
+	testLex("2013/2/22 07:53-GMT+4:003",     [ testTokenUnknownTimeZone("GMT+4:003")        ]);
+
+	testLex("2013/2/22 07:53-GMT+04",        [ testTokenSimpleTimeZone(hours(4))            ]);
+	testLex("2013/2/22 07:53-GMT+04:",       [ testTokenUnknownTimeZone("GMT+04:")          ]);
+	testLex("2013/2/22 07:53-GMT+04:3",      [ testTokenUnknownTimeZone("GMT+04:3")         ]);
+	testLex("2013/2/22 07:53-GMT+04:03",     [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ]);
+	testLex("2013/2/22 07:53-GMT+04:03abc",  [ testTokenUnknownTimeZone("GMT+04:03abc")     ]);
+	testLex("2013/2/22 07:53-GMT+04:003",    [ testTokenUnknownTimeZone("GMT+04:003")       ]);
+
+	testLex("2013/2/22 07:53-GMT+004",       [ testTokenSimpleTimeZone(minutes(4))     ]);
+	testLex("2013/2/22 07:53-GMT+004:",      [ testTokenUnknownTimeZone("GMT+004:")    ]);
+	testLex("2013/2/22 07:53-GMT+004:3",     [ testTokenUnknownTimeZone("GMT+004:3")   ]);
+	testLex("2013/2/22 07:53-GMT+004:03",    [ testTokenUnknownTimeZone("GMT+004:03")  ]);
+	testLex("2013/2/22 07:53-GMT+004:003",   [ testTokenUnknownTimeZone("GMT+004:003") ]);
+
+	testLex("2013/2/22 07:53-GMT+0004",      [ testTokenSimpleTimeZone(minutes(4))      ]);
+	testLex("2013/2/22 07:53-GMT+0004:",     [ testTokenUnknownTimeZone("GMT+0004:")    ]);
+	testLex("2013/2/22 07:53-GMT+0004:3",    [ testTokenUnknownTimeZone("GMT+0004:3")   ]);
+	testLex("2013/2/22 07:53-GMT+0004:03",   [ testTokenUnknownTimeZone("GMT+0004:03")  ]);
+	testLex("2013/2/22 07:53-GMT+0004:003",  [ testTokenUnknownTimeZone("GMT+0004:003") ]);
+
+	testLex("2013/2/22 07:53-GMT+00004",     [ testTokenSimpleTimeZone(minutes(4))       ]);
+	testLex("2013/2/22 07:53-GMT+00004:",    [ testTokenUnknownTimeZone("GMT+00004:")    ]);
+	testLex("2013/2/22 07:53-GMT+00004:3",   [ testTokenUnknownTimeZone("GMT+00004:3")   ]);
+	testLex("2013/2/22 07:53-GMT+00004:03",  [ testTokenUnknownTimeZone("GMT+00004:03")  ]);
+	testLex("2013/2/22 07:53-GMT+00004:003", [ testTokenUnknownTimeZone("GMT+00004:003") ]);
 
 	// DateTime, with unknown timezone
 	testLex( "2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(  0), "Bogus/Foo")), "2013/2/22 07:53-Bogus/Foo") ]);
@@ -1507,7 +1619,6 @@ unittest
 		Token(symbol!"Value", loc, Value( DateTimeFrac(DateTime(2013, 2, 22, 7, 53, 0)) ), "2013/2/22  07:53"),
 		Token(symbol!"EOL",   loc, Value( null ), "\n"),
 		Token(symbol!"EOL",   loc, Value( null ), "\n"),
-
 
 		Token(symbol!"Ident", loc, Value(null), "inventory"),
 		Token(symbol!"{",     loc, Value(null), "{"),
