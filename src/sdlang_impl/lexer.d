@@ -1232,9 +1232,9 @@ unittest
 		{
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
-			stderr.writeln("Expected SDLangException");
-			stderr.writeln("Actual:");
-			stderr.writeln("    ", actual);
+			stderr.writeln("    Expected SDLangException");
+			stderr.writeln("    Actual:");
+			stderr.writeln("        ", actual);
 		}
 	}
 
@@ -1279,6 +1279,8 @@ unittest
 		Token(symbol!"Ident",loc,Value(      null),"A"),
 	]);
 	testLexThrows("7A");
+	testLexThrows("-A");
+	testLexThrows(`-""`);
 
 	// Floats
 	testLex("1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
@@ -1321,15 +1323,24 @@ unittest
 	testLex("`hello \n world`",  [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
 	testLex("`hello \"world\"`", [ Token(symbol!"Value",loc,Value(`hello "world"` )) ]);
 
+	testLexThrows(`"foo`);
+	testLexThrows(`"`);
+
 	// Double-Quote Strings
 	testLex(`"hello world"`,         [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
 	testLex(`" hello world "`,       [ Token(symbol!"Value",loc,Value(" hello world " )) ]);
 	testLex(`"hello \t world"`,      [ Token(symbol!"Value",loc,Value("hello \t world")) ]);
 	testLex("\"hello \\\n world\"",  [ Token(symbol!"Value",loc,Value("hello \nworld" )) ]);
 
+	testLexThrows("`foo");
+	testLexThrows("`");
+
 	// Characters
 	testLex("'a'",  [ Token(symbol!"Value",loc,Value(cast(dchar) 'a')) ]);
 	testLex("'\n'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
+
+	testLexThrows("'a");
+	testLexThrows("'");
 	
 	// Unicode
 	testLex("日本語",         [ Token(symbol!"Ident",loc,Value(null), "日本語") ]);
@@ -1342,14 +1353,22 @@ unittest
 	testLex("[ aGVsbG8gd29ybGQ= ]",            [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
 	testLex("[\n aGVsbG8g \n \n d29ybGQ= \n]", [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
 
+	testLexThrows("[aGVsbG8gd29ybGQ]"); // Not multiple of 4 (Java SDL throws "Input string length is not a multiple of 4")
+
 	// Date
 	testLex( "1999/12/5", [ Token(symbol!"Value",loc,Value(Date( 1999, 12, 5))) ]);
 	testLex( "2013/2/22", [ Token(symbol!"Value",loc,Value(Date( 2013, 2, 22))) ]);
 	testLex("-2013/2/22", [ Token(symbol!"Value",loc,Value(Date(-2013, 2, 22))) ]);
 
+	testLexThrows("2013/2/22a");
+	testLexThrows("2013/2/22f");
+
 	// DateTime, no timezone
 	testLex( "2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22 \t 07:53",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22/*foo*/07:53",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 /*foo*/ \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22/*foo*/\\\n/*bar*/07:53",      [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex("-2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
 	testLex("-2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
@@ -1365,8 +1384,14 @@ unittest
 	testLex( "2013/2/22 -34:65:77.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds(77), FracSec.from!"msecs"(-123)))) ]);
 	testLex( "2013/2/22 -34:65.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0), FracSec.from!"msecs"(-123)))) ]);
 
+	testLexThrows("2013/2/22 07:53a");
+	testLexThrows("2013/2/22 07:53f");
+	testLexThrows("2013/2/22 07:53:34.123a");
+	testLexThrows("2013/2/22 07:53:34.123f");
+
 	// DateTime, with known timezone
 	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53-GMT+00:00abcd",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
 	testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
 	testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new SimpleTimeZone( hours(0)            )))) ]);
 	testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new SimpleTimeZone( hours(0)            )))) ]);
