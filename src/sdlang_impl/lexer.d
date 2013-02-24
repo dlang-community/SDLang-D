@@ -91,14 +91,10 @@ class Lexer
 	// needs to lookahead more than one character, so this is good enough.
 	private struct LookaheadTokenInfo
 	{
-		string   numericFragment="";
-		bool     isNegative=false;
+		bool     exists          = false;
+		string   numericFragment = "";
+		bool     isNegative      = false;
 		Location tokenStart;
-		
-		@property bool exists()
-		{
-			return numericFragment != "";
-		}
 	}
 	private LookaheadTokenInfo lookaheadTokenInfo;
 	
@@ -780,6 +776,10 @@ class Lexer
 		assert(ch == '.');
 		advanceChar(ErrorOnEOF.No);
 		
+		// In case of negative floating-point with leading zero omitted
+//		if(firstPart == "-")
+//			firstPart = "-0";
+		
 		auto secondPart = lexNumericFragment();
 		
 		try
@@ -1093,13 +1093,14 @@ class Lexer
 			advanceChar(ErrorOnEOF.Yes);
 
 		// Lex hours
-		auto hourStr = lexNumericFragment();
+		auto hourStr = ch == '.'? "" : lexNumericFragment();
 		
 		// Lex minutes
 		if(ch != ':')
 		{
 			// No minutes found. Therefore we had a plain Date followed
 			// by a numeric literal, not a DateTime.
+			lookaheadTokenInfo.exists          = true;
 			lookaheadTokenInfo.numericFragment = hourStr;
 			lookaheadTokenInfo.isNegative      = isTimeNegative;
 			lookaheadTokenInfo.tokenStart      = startOfTime;
@@ -1348,12 +1349,12 @@ unittest
 	void testLex(string file=__FILE__, size_t line=__LINE__)(string source, Token[] expected)
 	{
 		Token[] actual;
-		try
+		//try
 		{
 			auto lexer = new Lexer(source, "filename");
 			actual = array(lexer);
 		}
-		catch(SDLangException e)
+		/+catch(SDLangException e)
 		{
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
@@ -1362,7 +1363,7 @@ unittest
 			stderr.writeln("    Actual: SDLangException thrown:");
 			stderr.writeln("        ", e.msg);
 			return;
-		}
+		}+/
 		
 		if(actual != expected)
 		{
