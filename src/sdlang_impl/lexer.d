@@ -560,10 +560,20 @@ class Lexer
 		struct Base64InputRange
 		{
 			Lexer *lexer;
+			private bool isInited = false;
+			private int numInputCharsMod4 = 0;
 			
 			@property bool empty()
 			{
-				return lexer.ch == ']';
+				if(lexer.ch == ']')
+				{
+					if(numInputCharsMod4 != 0)
+						lexer.error("Length of Base64 encoding must be a multiple of 4. ("~to!string(numInputCharsMod4)~")");
+					
+					return true;
+				}
+				
+				return false;
 			}
 
 			@property dchar front()
@@ -574,6 +584,18 @@ class Lexer
 			void popFront()
 			{
 				auto lex = lexer;
+
+				if(!isInited)
+				{
+					if(lexer.isBase64(lexer.ch))
+					{
+						numInputCharsMod4++;
+						numInputCharsMod4 %= 4;
+					}
+					
+					isInited = true;
+				}
+				
 				lex.advanceChar(lex.ErrorOnEOF.Yes);
 
 				eatBase64Whitespace();
@@ -581,8 +603,14 @@ class Lexer
 				if(lex.isEOF)
 					lex.error("Unexpected end of file.");
 
-				if(lex.ch != ']' && !lex.isBase64(lex.ch))
-					lex.error("Invalid character in base64 binary literal.");
+				if(lex.ch != ']')
+				{
+					if(!lex.isBase64(lex.ch))
+						lex.error("Invalid character in base64 binary literal.");
+					
+					numInputCharsMod4++;
+					numInputCharsMod4 %= 4;
+				}
 			}
 		}
 		
@@ -1360,6 +1388,7 @@ unittest
 	testLex("[\n aGVsbG8g \n \n d29ybGQ= \n]", [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
 
 	testLexThrows("[aGVsbG8gd29ybGQ]"); // Not multiple of 4 (Java SDL throws "Input string length is not a multiple of 4")
+	testLexThrows("[aGVsbG8gd29ybGQ ]");
 
 	// Date
 	testLex( "1999/12/5", [ Token(symbol!"Value",loc,Value(Date( 1999, 12, 5))) ]);
