@@ -1016,7 +1016,7 @@ class Lexer
 		
 		auto date = makeDate(isDateNegative, yearStr, monthStr, dayStr);
 
-		if(!isEndOfNumber())
+		if(!isEndOfNumber() && ch != '/')
 			error("Dates cannot have suffixes.");
 		
 		// Date?
@@ -1025,9 +1025,18 @@ class Lexer
 		
 		auto endOfDate = location;
 		
-		//TODO: This needs to allow comments and escaped newlines
-		while(!isEOF && isWhite(ch) && !isNewline(ch))
-			advanceChar(ErrorOnEOF.No);
+		while(!isEOF && (isWhite(ch) || ch == '\\' || ch == '/'))
+		{
+			if(ch == '\\' && hasNextCh && isNewline(nextCh))
+			{
+				advanceChar(ErrorOnEOF.Yes);
+				if(ch == '\r' && hasNextCh && nextCh == '\n')
+					advanceChar(ErrorOnEOF.Yes);
+				advanceChar(ErrorOnEOF.No);
+			}
+
+			eatWhite();
+		}
 
 		// Date?
 		if(isEOF || (!isDigit(ch) && ch != '-'))
@@ -1491,6 +1500,7 @@ unittest
 	testLex( "2013/2/22 \t 07:53",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22/*foo*/07:53",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22 /*foo*/ \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 /*foo*/ \\\n\\\n  \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22/*foo*/\\\n/*bar*/07:53",      [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex("-2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
