@@ -22,7 +22,7 @@ import sdlang_impl.util;
 alias sdlang_impl.util.startsWith startsWith;
 
 // Kind of a poor-man's yield, but fast.
-// Only to be used inside Lexer.popFront.
+// Only to be used inside Lexer.popFront (and Lexer.this).
 private template accept(string symbolName)
 {
 	static assert(symbolName != "Value", "Value symbols must also take a value.");
@@ -92,10 +92,13 @@ class Lexer
 
 		this.source = source;
 		
+		if(source == "")
+			mixin(accept!"EOF");
+		
 		// Prime everything
 		hasNextCh = true;
 		nextCh = source.decode(posAfterLookahead);
-		advanceChar(ErrorOnEOF.Yes); //TODO: Emit EOF on parsing empty string
+		advanceChar(ErrorOnEOF.Yes);
 		location = Location(filename, 0, 0, 0);
 		popFront();
 	}
@@ -1238,7 +1241,10 @@ unittest
 		}
 	}
 
-	//testLex("", []);
+	testLex("",        []);
+	testLex(" ",       []);
+	testLex("/*foo*/", []);
+
 	testLex(":",  [ Token(symbol!":",  loc) ]);
 	testLex("=",  [ Token(symbol!"=",  loc) ]);
 	testLex("{",  [ Token(symbol!"{",  loc) ]);
