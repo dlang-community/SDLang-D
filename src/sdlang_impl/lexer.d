@@ -79,10 +79,34 @@ class Lexer
 	private size_t tokenLength;   // Length in UTF-8 code units
 	private size_t tokenLength32; // Length in UTF-32 code units
 	
+	// Slight kludge:
+	// If a numeric fragment is found after a Date (separated by arbitrary
+	// whitespace), it could be the "hours" part of a DateTime, or it could
+	// be a separate numeric literal that simply follows a plain Date. If the
+	// latter, then the Date must be emitted, but numeric fragment that was
+	// found after it needs to be saved for the the lexer's next iteration.
+	// 
+	// It's a slight kludge, and could instead be implemented as a slightly
+	// kludgey parser hack, but it's the only situation where SDL's lexing
+	// needs to lookahead more than one character, so this is good enough.
+	private struct LookaheadTokenInfo
+	{
+		string   numericFragment="";
+		bool     isNegative=false;
+		Location tokenStart;
+		
+		@property bool exists()
+		{
+			return numericFragment != "";
+		}
+	}
+	private LookaheadTokenInfo lookaheadTokenInfo;
+	
 	///.
 	this(string source=null, string filename=null)
 	{
 		_front = Token(symbol!"Error", Location());
+		lookaheadTokenInfo = LookaheadTokenInfo.init;
 
 		if( source.startsWith( ByteOrderMarks[BOM.UTF8] ) )
 			source = source[ ByteOrderMarks[BOM.UTF8].length .. $ ];
@@ -120,7 +144,7 @@ class Lexer
 	///.
 	@property bool isEOF()
 	{
-		return location.index == source.length;
+		return location.index == source.length && !lookaheadTokenInfo.exists;
 	}
 
 	private void error(string msg)
@@ -310,6 +334,16 @@ class Lexer
 		tokenLength   = 0;
 		tokenLength32 = 0;
 		isEndOfIdentCached = false;
+		
+		if(lookaheadTokenInfo.exists)
+		{
+			tokenStart = lookaheadTokenInfo.tokenStart;
+
+			auto prevLATokenInfo = lookaheadTokenInfo;
+			lookaheadTokenInfo = LookaheadTokenInfo.init;
+			lexNumeric(prevLATokenInfo);
+			return;
+		}
 		
 		if(ch == '=')
 		{
@@ -672,28 +706,38 @@ class Lexer
 	}
 
 	/// Lex anything that starts with 0-9 or '-'. Ints, floats, dates, etc.
-	private void lexNumeric()
+	private void lexNumeric(LookaheadTokenInfo laTokenInfo = LookaheadTokenInfo.init)
 	{
-		assert(ch == '-' || ch == '.' || isDigit(ch));
-
-		// Check for negative
-		bool isNegative = ch == '-';
-		if(isNegative)
-			advanceChar(ErrorOnEOF.Yes);
-
-		// Some floating point with omitted leading zero?
-		if(ch == '.')
+		bool isNegative;
+		string firstFragment;
+		if(laTokenInfo.exists)
 		{
-			lexFloatingPoint("");
-			return;
+			firstFragment = laTokenInfo.numericFragment;
+			isNegative    = laTokenInfo.isNegative;
 		}
-		
-		auto numStr = lexNumericFragment();
+		else
+		{
+			assert(ch == '-' || ch == '.' || isDigit(ch));
+
+			// Check for negative
+			isNegative = ch == '-';
+			if(isNegative)
+				advanceChar(ErrorOnEOF.Yes);
+
+			// Some floating point with omitted leading zero?
+			if(ch == '.')
+			{
+				lexFloatingPoint("");
+				return;
+			}
+
+			firstFragment = lexNumericFragment();
+		}
 		
 		// Integer (32-bit signed)?
 		if(isEndOfNumber())
 		{
-			auto num = toBigInt(isNegative, numStr);
+			auto num = toBigInt(isNegative, firstFragment);
 			if(num < int.min || num > int.max)
 				error(tokenStart, "Value doesn't fit in 32-bit signed integer: "~to!string(num));
 
@@ -706,7 +750,7 @@ class Lexer
 			advanceChar(ErrorOnEOF.No);
 
 			// BigInt(long.min) is a workaround for DMD issue #9548
-			auto num = toBigInt(isNegative, numStr);
+			auto num = toBigInt(isNegative, firstFragment);
 			if(num < BigInt(long.min) || num > long.max)
 				error(tokenStart, "Value doesn't fit in 64-bit signed long integer: "~to!string(num));
 
@@ -715,15 +759,15 @@ class Lexer
 		
 		// Some floating point?
 		else if(ch == '.')
-			lexFloatingPoint(numStr);
+			lexFloatingPoint(firstFragment);
 		
 		// Some date?
 		else if(ch == '/')
-			lexDate(isNegative, numStr);
+			lexDate(isNegative, firstFragment);
 		
 		// Some time span?
 		else if(ch == ':' || ch == 'd')
-			lexTimeSpan(isNegative, numStr);
+			lexTimeSpan(isNegative, firstFragment);
 
 		// Invalid suffix
 		else
@@ -1041,6 +1085,8 @@ class Lexer
 		if(isEOF || (!isDigit(ch) && ch != '-'))
 			mixin(accept!("Value", "date", "", "endOfDate.index"));
 		
+		auto startOfTime = location;
+
 		// Is time negative?
 		bool isTimeNegative = ch == '-';
 		if(isTimeNegative)
@@ -1052,9 +1098,12 @@ class Lexer
 		// Lex minutes
 		if(ch != ':')
 		{
-			//TODO: This really shouldn't be an error. It should be
-			//      "accept the plain Date, and then continue lexing normally from there."
-			error("Invalid date-time format: Missing minutes.");
+			// No minutes found. Therefore we had a plain Date followed
+			// by a numeric literal, not a DateTime.
+			lookaheadTokenInfo.numericFragment = hourStr;
+			lookaheadTokenInfo.isNegative      = isTimeNegative;
+			lookaheadTokenInfo.tokenStart      = startOfTime;
+			mixin(accept!("Value", "date", "", "endOfDate.index"));
 		}
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		auto minuteStr = lexNumericFragment();
@@ -1522,9 +1571,24 @@ unittest
 	testLexThrows("2013/2/22 07:53:34.123f");
 	testLexThrows("2013/2/22a 07:53");
 
+	testLex(`2013/2/22 "foo"`, [
+		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",loc,Value("foo")),
+	]);
+
 	testLex("2013/2/22 07", [
 		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
 		Token(symbol!"Value",loc,Value(cast(int)7)),
+	]);
+
+	testLex("2013/2/22 1.2F", [
+		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",loc,Value(cast(float)1.2)),
+	]);
+
+	testLex("2013/2/22 -1.2F", [
+		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",loc,Value(cast(float)-1.2)),
 	]);
 
 	// DateTime, with known timezone
