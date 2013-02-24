@@ -914,6 +914,8 @@ class Lexer
 		return duration;
 	}
 
+	// This has to reproduce some weird corner case behaviors from the
+	// original Java version of SDL. So some of this may seem weird.
 	private Nullable!Duration getTimeZoneOffset(string str)
 	{
 		if(str.length < 2)
@@ -1014,12 +1016,16 @@ class Lexer
 		
 		auto date = makeDate(isDateNegative, yearStr, monthStr, dayStr);
 
+		if(!isEndOfNumber())
+			error("Dates cannot have suffixes.");
+		
 		// Date?
 		if(isEOF)
 			mixin(accept!("Value", "date"));
 		
 		auto endOfDate = location;
 		
+		//TODO: This needs to allow comments and escaped newlines
 		while(!isEOF && isWhite(ch) && !isNewline(ch))
 			advanceChar(ErrorOnEOF.No);
 
@@ -1076,9 +1082,6 @@ class Lexer
 				advanceChar(ErrorOnEOF.No);
 			
 			auto timezoneStr = source[timezoneStart.index..location.index];
-
-			// This has to reproduce some weird corner case behaviors from the
-			// original Java version of SDL. So some of this may seem weird.
 			if(timezoneStr.startsWith("GMT"))
 			{
 				auto isoPart = timezoneStr["GMT".length..$];
@@ -1110,8 +1113,11 @@ class Lexer
 			// Unknown time zone
 			mixin(accept!("Value", "DateTimeFracUnknownZone(dateTimeFrac.dateTime, dateTimeFrac.fracSec, timezoneStr)"));
 		}
-		else
-			mixin(accept!("Value", "dateTimeFrac"));
+
+		if(!isEndOfNumber())
+			error("Date-Times cannot have suffixes.");
+
+		mixin(accept!("Value", "dateTimeFrac"));
 	}
 
 	/// Lex time span (after the initial numeric fragment was lexed)
@@ -1157,6 +1163,9 @@ class Lexer
 			advanceChar(ErrorOnEOF.Yes); // Skip '.'
 			millisecondStr = lexNumericFragment();
 		}
+
+		if(!isEndOfNumber())
+			error("Time spans cannot have suffixes.");
 		
 		auto duration = makeDuration(isNegative, dayStr, hourStr, minuteStr, secondStr, millisecondStr);
 		mixin(accept!("Value", "duration"));
@@ -1466,8 +1475,8 @@ unittest
 	testLex("[ aGVsbG8gd29ybGQ= ]",            [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
 	testLex("[\n aGVsbG8g \n \n d29ybGQ= \n]", [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
 
-	testLexThrows("[aGVsbG8gd29ybGQ]"); // Not multiple of 4 (Java SDL throws "Input string length is not a multiple of 4")
-	testLexThrows("[aGVsbG8gd29ybGQ ]");
+	testLexThrows("[aGVsbG8gd29ybGQ]"); // Ie: Not multiple of 4
+	testLexThrows("[ aGVsbG8gd29ybGQ ]");
 
 	// Date
 	testLex( "1999/12/5", [ Token(symbol!"Value",loc,Value(Date( 1999, 12, 5))) ]);
@@ -1502,6 +1511,7 @@ unittest
 	testLexThrows("2013/2/22 07:53f");
 	testLexThrows("2013/2/22 07:53:34.123a");
 	testLexThrows("2013/2/22 07:53:34.123f");
+	testLexThrows("2013/2/22a 07:53");
 
 	// DateTime, with known timezone
 	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
@@ -1590,6 +1600,10 @@ unittest
 	testLex( "23d:05:21:23.532", [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(532))) ]);
 	testLex("-23d:05:21:23.532", [ Token(symbol!"Value",loc,Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(532))) ]);
 	testLex( "23d:05:21:23",     [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(  0))) ]);
+
+	testLexThrows("12:14:42a");
+	testLexThrows("23d:05:21:23.532a");
+	testLexThrows("23d:05:21:23.532f");
 
 	// Combination
 	testLex(`
