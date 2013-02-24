@@ -999,7 +999,6 @@ class Lexer
 	}
 	
 	/// Lex date or datetime (after the initial numeric fragment was lexed)
-	//TODO: How does the spec handle a date (not datetime) followed by an int? As a date (not datetime) followed by an int
 	private void lexDate(bool isDateNegative, string yearStr)
 	{
 		assert(ch == '/');
@@ -1522,6 +1521,11 @@ unittest
 	testLexThrows("2013/2/22 07:53:34.123a");
 	testLexThrows("2013/2/22 07:53:34.123f");
 	testLexThrows("2013/2/22a 07:53");
+
+	testLex("2013/2/22 07", [
+		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",loc,Value(cast(int)7)),
+	]);
 
 	// DateTime, with known timezone
 	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
