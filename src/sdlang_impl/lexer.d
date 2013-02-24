@@ -914,6 +914,88 @@ class Lexer
 		return duration;
 	}
 
+	private Nullable!Duration getTimeZoneOffset(string str)
+	{
+		if(str.length < 2)
+			return Nullable!Duration(); // Unknown timezone
+		
+		if(str[0] != '+' && str[0] != '-')
+			return Nullable!Duration(); // Unknown timezone
+
+		auto isNegative = str[0] == '-';
+
+		string numHoursStr;
+		string numMinutesStr;
+		if(str[1] == ':')
+		{
+			numMinutesStr = str[1..$];
+			numHoursStr = "";
+		}
+		else
+		{
+			numMinutesStr = str.find(':');
+			numHoursStr = str[1 .. $-numMinutesStr.length];
+		}
+		
+		long numHours = 0;
+		long numMinutes = 0;
+		bool isUnknown = false;
+		try
+		{
+			switch(numHoursStr.length)
+			{
+			case 0:
+				if(numMinutesStr.length == 3)
+				{
+					numHours   = 0;
+					numMinutes = to!long(numMinutesStr[1..$]);
+				}
+				else
+					isUnknown = true;
+				break;
+
+			case 1:
+			case 2:
+				if(numMinutesStr.length == 0)
+				{
+					numHours   = to!long(numHoursStr);
+					numMinutes = 0;
+				}
+				else if(numMinutesStr.length == 3)
+				{
+					numHours   = to!long(numHoursStr);
+					numMinutes = to!long(numMinutesStr[1..$]);
+				}
+				else
+					isUnknown = true;
+				break;
+
+			default:
+				if(numMinutesStr.length == 0)
+				{
+					// Yes, this is correct
+					numHours   = 0;
+					numMinutes = to!long(numHoursStr[1..$]);
+				}
+				else
+					isUnknown = true;
+				break;
+			}
+		}
+		catch(ConvException e)
+			isUnknown = true;
+		
+		if(isUnknown)
+			return Nullable!Duration(); // Unknown timezone
+
+		auto timeZoneOffset = hours(numHours) + minutes(numMinutes);
+		if(isNegative)
+			timeZoneOffset = -timeZoneOffset;
+
+		// Timezone valid
+		return Nullable!Duration(timeZoneOffset);
+	}
+	
 	/// Lex date or datetime (after the initial numeric fragment was lexed)
 	//TODO: How does the spec handle a date (not datetime) followed by an int? As a date (not datetime) followed by an int
 	private void lexDate(bool isDateNegative, string yearStr)
@@ -1000,81 +1082,16 @@ class Lexer
 			if(timezoneStr.startsWith("GMT"))
 			{
 				auto isoPart = timezoneStr["GMT".length..$];
-				if(isoPart.length >= 2)
-				if(isoPart[0] == '+' || isoPart[0] == '-')
+				auto offset = getTimeZoneOffset(isoPart);
+				
+				if(offset.isNull())
 				{
-					auto isNegative = isoPart[0] == '-';
-
-					string numHoursStr;
-					string numMinutesStr;
-					if(isoPart[1] == ':')
-					{
-						numMinutesStr = isoPart[1..$];
-						numHoursStr = "";
-					}
-					else
-					{
-						numMinutesStr = isoPart.find(':');
-						numHoursStr = isoPart[1 .. $-numMinutesStr.length];
-					}
-					
-					long numHours = 0;
-					long numMinutes = 0;
-					bool isUnknown = false;
-					try
-					{
-						switch(numHoursStr.length)
-						{
-						case 0:
-							if(numMinutesStr.length == 3)
-							{
-								numHours   = 0;
-								numMinutes = to!long(numMinutesStr[1..$]);
-							}
-							else
-								isUnknown = true;
-							break;
-
-						case 1:
-						case 2:
-							if(numMinutesStr.length == 0)
-							{
-								numHours   = to!long(numHoursStr);
-								numMinutes = 0;
-							}
-							else if(numMinutesStr.length == 3)
-							{
-								numHours   = to!long(numHoursStr);
-								numMinutes = to!long(numMinutesStr[1..$]);
-							}
-							else
-								isUnknown = true;
-							break;
-
-						default:
-							if(numMinutesStr.length == 0)
-							{
-								// Yes, this is correct
-								numHours   = 0;
-								numMinutes = to!long(numHoursStr[1..$]);
-							}
-							else
-								isUnknown = true;
-							break;
-						}
-					}
-					catch(ConvException e)
-						isUnknown = true;
-					
-					// Unknown time zone?
-					if(isUnknown)
-						mixin(accept!("Value", "DateTimeFracUnknownZone(dateTimeFrac.dateTime, dateTimeFrac.fracSec, timezoneStr)"));
-
-					auto timeZoneOffset = hours(numHours) + minutes(numMinutes);
-					if(isNegative)
-						timeZoneOffset = -timeZoneOffset;
-
-					auto timezone = new SimpleTimeZone(timeZoneOffset);
+					// Unknown time zone
+					mixin(accept!("Value", "DateTimeFracUnknownZone(dateTimeFrac.dateTime, dateTimeFrac.fracSec, timezoneStr)"));
+				}
+				else
+				{
+					auto timezone = new SimpleTimeZone(offset.get());
 					mixin(accept!("Value", "SysTime(dateTimeFrac.dateTime, dateTimeFrac.fracSec, timezone)"));
 				}
 			}
