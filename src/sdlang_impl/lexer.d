@@ -1426,11 +1426,18 @@ unittest
 	testLex(";",  [ Token(symbol!"EOL",loc) ]);
 	testLex("\n", [ Token(symbol!"EOL",loc) ]);
 
-	testLex("foo", [ Token(symbol!"Ident",loc,Value(null),"foo") ]);
+	testLex("foo",     [ Token(symbol!"Ident",loc,Value(null),"foo")     ]);
+	testLex("_foo",    [ Token(symbol!"Ident",loc,Value(null),"_foo")    ]);
+	testLex("foo.bar", [ Token(symbol!"Ident",loc,Value(null),"foo.bar") ]);
+	testLex("foo-bar", [ Token(symbol!"Ident",loc,Value(null),"foo-bar") ]);
+	testLex("foo.",    [ Token(symbol!"Ident",loc,Value(null),"foo.")    ]);
+	testLex("foo-",    [ Token(symbol!"Ident",loc,Value(null),"foo-")    ]);
 	testLex("foo bar", [
 		Token(symbol!"Ident",loc,Value(null),"foo"),
 		Token(symbol!"Ident",loc,Value(null),"bar"),
 	]);
+
+	testLexThrows(".foo");
 
 	testLex("foo : = { } ; \n bar \n", [
 		Token(symbol!"Ident",loc,Value(null),"foo"),
@@ -1710,8 +1717,13 @@ unittest
 	testLexThrows("23d:05:21:23.532f");
 
 	// Combination
+	testLex("foo. 7", [
+		Token(symbol!"Ident",loc,Value(      null),"foo."),
+		Token(symbol!"Value",loc,Value(cast(int)7))
+	]);
+	
 	testLex(`
-		namespace:person "foo" "bar" 1 23L first="ひとみ" last="Smith" {
+		namespace:person "foo" "bar" 1 23L name.first="ひとみ" name.last="Smith" {
 			namespace:age 37; namespace:favorite_color "blue" // comment
 			somedate 2013/2/22  07:53 -- comment
 			
@@ -1730,10 +1742,10 @@ unittest
 		Token(symbol!"Value", loc, Value(        "bar" ), `"bar"`),
 		Token(symbol!"Value", loc, Value( cast( int) 1 ), "1"),
 		Token(symbol!"Value", loc, Value( cast(long)23 ), "23L"),
-		Token(symbol!"Ident", loc, Value(         null ), "first"),
+		Token(symbol!"Ident", loc, Value(         null ), "name.first"),
 		Token(symbol!"=",     loc, Value(         null ), "="),
 		Token(symbol!"Value", loc, Value(       "ひとみ" ), `"ひとみ"`),
-		Token(symbol!"Ident", loc, Value(         null ), "last"),
+		Token(symbol!"Ident", loc, Value(         null ), "name.last"),
 		Token(symbol!"=",     loc, Value(         null ), "="),
 		Token(symbol!"Value", loc, Value(      "Smith" ), `"Smith"`),
 		Token(symbol!"{",     loc, Value(         null ), "{"),
