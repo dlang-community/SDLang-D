@@ -168,6 +168,16 @@ class Lexer
 		return ch == '+' || ch == '/' || ch == '=';
 	}
 	
+	/// Is the current character one that's allowed
+	/// immediately *after* an int/float literal?
+	private bool isEndOfNumber()
+	{
+		if(isEOF)
+			return true;
+		
+		return ch == ';' || isWhite(ch);
+	}
+	
 	/// Is current character the last one in an ident?
 	private bool isEndOfIdentCached = false;
 	private bool _isEndOfIdent;
@@ -648,8 +658,18 @@ class Lexer
 		
 		auto numStr = lexNumericFragment();
 		
+		// Integer (32-bit signed)?
+		if(isEndOfNumber())
+		{
+			auto num = toBigInt(isNegative, numStr);
+			if(num < int.min || num > int.max)
+				error(tokenStart, "Value doesn't fit in 32-bit signed integer: "~to!string(num));
+
+			mixin(accept!("Value", "num.toInt()"));
+		}
+
 		// Long integer (64-bit signed)?
-		if(ch == 'L' || ch == 'l')
+		else if(ch == 'L' || ch == 'l')
 		{
 			advanceChar(ErrorOnEOF.No);
 
@@ -673,15 +693,9 @@ class Lexer
 		else if(ch == ':' || ch == 'd')
 			lexTimeSpan(isNegative, numStr);
 
-		// Integer (32-bit signed)
+		// Invalid suffix
 		else
-		{
-			auto num = toBigInt(isNegative, numStr);
-			if(num < int.min || num > int.max)
-				error(tokenStart, "Value doesn't fit in 32-bit signed integer: "~to!string(num));
-
-			mixin(accept!("Value", "num.toInt()"));
-		}
+			error("Invalid integer suffix.");
 	}
 	
 	/// Lex any floating-point literal (after the initial numeric fragment was lexed)
@@ -692,16 +706,12 @@ class Lexer
 		
 		auto secondPart = lexNumericFragment();
 		
-		//TODO: How does spec handle invalid suffix like "1.23a" or "1.23bda"?
-		//      An error? Or a value and ident? (An "unexpected token EOL"?!?)
-
 		try
 		{
-			// Float (32-bit signed)?
-			if(ch == 'F' || ch == 'f')
+			// Double float (64-bit signed) without suffix?
+			if(isEOF || isWhite(ch))
 			{
-				auto value = to!float(tokenData);
-				advanceChar(ErrorOnEOF.No);
+				auto value = to!double(tokenData);
 				mixin(accept!("Value", "value"));
 			}
 
@@ -713,27 +723,33 @@ class Lexer
 				mixin(accept!("Value", "value"));
 			}
 
+			// Float (32-bit signed)?
+			else if(ch == 'F' || ch == 'f')
+			{
+				auto value = to!float(tokenData);
+				advanceChar(ErrorOnEOF.No);
+				mixin(accept!("Value", "value"));
+			}
+
 			// Decimal (128+ bits signed)?
 			else if(ch == 'B' || ch == 'b')
 			{
 				auto value = to!real(tokenData);
 				advanceChar(ErrorOnEOF.Yes);
-				if(ch == 'D' || ch == 'd')
+
+				if(!isEOF && (ch == 'D' || ch == 'd'))
 				{
 					advanceChar(ErrorOnEOF.No);
-					mixin(accept!("Value", "value"));
+					if(isEndOfNumber())
+						mixin(accept!("Value", "value"));
 				}
 
-				else
-					error("Invalid floating point suffix.");
+				error("Invalid floating point suffix.");
 			}
 
-			// Double float (64-bit signed) without suffix
+			// Invalid suffix
 			else
-			{
-				auto value = to!double(tokenData);
-				mixin(accept!("Value", "value"));
-			}
+				error("Invalid floating point suffix.");
 		}
 		catch(ConvException e)
 			error("Invalid floating point literal.");
@@ -932,8 +948,6 @@ class Lexer
 		}
 
 		auto dateTimeFrac = makeDateTimeFrac(isTimeNegative, date, hourStr, minuteStr, secondStr, millisecondStr);
-		//auto timeWithFracSec = makeTimeWithFracSec(isTimeNegative, hourStr, minuteStr, secondStr, millisecondStr);
-		//auto dateTime = DateTime(date, timeWithFracSec.timeOfDay);
 		
 		// Lex zone, if exists
 		if(ch == '-')
@@ -1157,33 +1171,70 @@ unittest
 	int numErrors = 0;
 	void testLex(string file=__FILE__, size_t line=__LINE__)(string source, Token[] expected)
 	{
-		auto lexer = new Lexer(source, "filename");
-		auto actual = array(lexer);
+		Token[] actual;
+		try
+		{
+			auto lexer = new Lexer(source, "filename");
+			actual = array(lexer);
+		}
+		catch(SDLangException e)
+		{
+			numErrors++;
+			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
+			stderr.writeln("    Expected:");
+			stderr.writeln("        ", expected);
+			stderr.writeln("    Actual: SDLangException thrown:");
+			stderr.writeln("        ", e.msg);
+			return;
+		}
+		
 		if(actual != expected)
 		{
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
-			stderr.writeln("Actual:");
-			stderr.writeln("    ", actual);
-			stderr.writeln("Expected:");
-			stderr.writeln("    ", expected);
+			stderr.writeln("    Expected:");
+			stderr.writeln("        ", expected);
+			stderr.writeln("    Actual:");
+			stderr.writeln("        ", actual);
 
 			if(expected.length > 1 || actual.length > 1)
 			{
-				stderr.writeln("actual.length:   ", actual.length);
-				stderr.writeln("expected.length: ", expected.length);
+				stderr.writeln("    expected.length: ", expected.length);
+				stderr.writeln("    actual.length:   ", actual.length);
 
 				if(actual.length == expected.length)
 				foreach(i; 0..actual.length)
 				if(actual[i] != expected[i])
 				{
-					stderr.writeln("Unequal at index #", i, ":");
-					stderr.writeln("    Actual:");
-					stderr.writeln("        ", actual[i]);
-					stderr.writeln("    Expected:");
-					stderr.writeln("        ", expected[i]);
+					stderr.writeln("    Unequal at index #", i, ":");
+					stderr.writeln("        Expected:");
+					stderr.writeln("            ", expected[i]);
+					stderr.writeln("        Actual:");
+					stderr.writeln("            ", actual[i]);
 				}
 			}
+		}
+	}
+
+	void testLexThrows(string file=__FILE__, size_t line=__LINE__)(string source)
+	{
+		bool hadException = false;
+		Token[] actual;
+		try
+		{
+			auto lexer = new Lexer(source, "filename");
+			actual = array(lexer);
+		}
+		catch(SDLangException e)
+			hadException = true;
+
+		if(!hadException)
+		{
+			numErrors++;
+			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
+			stderr.writeln("Expected SDLangException");
+			stderr.writeln("Actual:");
+			stderr.writeln("    ", actual);
 		}
 	}
 
@@ -1213,12 +1264,21 @@ unittest
 		Token(symbol!"EOL",loc),
 	]);
 
+	testLex("<", [ Token(symbol!"Error",loc) ]);
+	testLex("*", [ Token(symbol!"Error",loc) ]);
+
 	// Integers
 	testLex(  "7", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
 	testLex( "-7", [ Token(symbol!"Value",loc,Value(cast( int)-7)) ]);
 	testLex( "7L", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
 	testLex( "7l", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
 	testLex("-7L", [ Token(symbol!"Value",loc,Value(cast(long)-7)) ]);
+
+	testLex("7 A", [
+		Token(symbol!"Value",loc,Value(cast(int)7)),
+		Token(symbol!"Ident",loc,Value(      null),"A"),
+	]);
+	testLexThrows("7A");
 
 	// Floats
 	testLex("1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
@@ -1230,6 +1290,14 @@ unittest
 	testLex("1.2bd", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
 	testLex("1.2Bd", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
 	testLex("1.2bD", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
+
+	testLex("1.2 F", [
+		Token(symbol!"Value",loc,Value(cast(double)1.2)),
+		Token(symbol!"Ident",loc,Value(           null),"F"),
+	]);
+	testLexThrows("1.2A");
+	testLexThrows("1.2B");
+	testLexThrows("1.2BDF");
 
 	// Booleans and null
 	testLex("true",   [ Token(symbol!"Value",loc,Value( true)) ]);
