@@ -1472,6 +1472,21 @@ unittest
 	testLex("1.2Bd", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
 	testLex("1.2bD", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
 
+	testLex(".2F" , [ Token(symbol!"Value",loc,Value(cast( float)0.2)) ]);
+	testLex(".2"  , [ Token(symbol!"Value",loc,Value(cast(double)0.2)) ]);
+	testLex(".2D" , [ Token(symbol!"Value",loc,Value(cast(double)0.2)) ]);
+	testLex(".2BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.2)) ]);
+
+	testLex("-1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)-1.2)) ]);
+	testLex("-1.2"  , [ Token(symbol!"Value",loc,Value(cast(double)-1.2)) ]);
+	testLex("-1.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-1.2)) ]);
+	testLex("-1.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-1.2)) ]);
+
+	testLex("-.2F" , [ Token(symbol!"Value",loc,Value(cast( float)-0.2)) ]);
+	testLex("-.2"  , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
+	testLex("-.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
+	testLex("-.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-0.2)) ]);
+
 	testLex("1.2 F", [
 		Token(symbol!"Value",loc,Value(cast(double)1.2)),
 		Token(symbol!"Ident",loc,Value(           null),"F"),
@@ -1586,9 +1601,19 @@ unittest
 		Token(symbol!"Value",loc,Value(cast(float)1.2)),
 	]);
 
+	testLex("2013/2/22 .2F", [
+		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",loc,Value(cast(float)0.2)),
+	]);
+
 	testLex("2013/2/22 -1.2F", [
 		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
 		Token(symbol!"Value",loc,Value(cast(float)-1.2)),
+	]);
+
+	testLex("2013/2/22 -.2F", [
+		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",loc,Value(cast(float)-0.2)),
 	]);
 
 	// DateTime, with known timezone
