@@ -100,5 +100,6 @@ void doLex(string filename)
 void doParse(string filename)
 {
 	auto root = parseFile(filename);
-	writeln(root.toDebugString());
+	stdout.rawWrite(root.toDebugString());
+	writeln();
 }
