@@ -16,7 +16,7 @@ version(SDLang_TraceParse)
 {
 	import std.stdio;
 
-	void trace(string file=__FILE__, size_t line=__LINE__, TArgs...)(TArgs args)
+	private void trace(string file=__FILE__, size_t line=__LINE__, TArgs...)(TArgs args)
 	{
 		writeln(file, "(", line, "): ", args);
 		stdout.flush();
