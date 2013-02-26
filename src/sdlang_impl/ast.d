@@ -99,25 +99,25 @@ class Tag(ExtraInfo extraInfo = ExtraInfo.Locations)
 			buf.put("    (%s): %s\n".format(.toString(val.type), val));
 
 		// Attributes
-		foreach(attrsByNamespace; attributes)
-		foreach(attrsByName; attrsByNamespace)
-		foreach(attr; attrsByName)
+		foreach(attrNamespace; attributes.keys.sort)
+		foreach(attrName; attributes[attrNamespace].keys.sort)
+		foreach(attr; attributes[attrNamespace][attrName])
 		{
-			string attrNamespace;
+			string namespaceStr;
 			if(attr.namespace != "")
-				attrNamespace = "["~attr.namespace~"]";
+				namespaceStr = "["~attr.namespace~"]";
 			
 			buf.put(
 				"    %s%s(%s): %s\n".format(
-					attrNamespace, attr.name, .toString(attr.value.type), attr.value
+					namespaceStr, attr.name, .toString(attr.value.type), attr.value
 				)
 			);
 		}
 		
 		// Children
-		foreach(tagsByNamespace; tags)
-		foreach(tagsByName; tagsByNamespace)
-		foreach(tag; tagsByName)
+		foreach(tagNamespace; tags.keys.sort)
+		foreach(tagName; tags[tagNamespace].keys.sort)
+		foreach(tag; tags[tagNamespace][tagName])
 			buf.put( tag.toDebugString().replace("\n", "\n    ") );
 		
 		return buf.data;
