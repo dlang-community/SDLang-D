@@ -526,28 +526,28 @@ class Lexer
 			if(ch == '\\')
 			{
 				updateBuf();
+
+				bool wasEscSequence = true;
+				if(hasNextCh)
+				{
+					switch(nextCh)
+					{
+					case 'n':  buf.put('\n'); break;
+					case 't':  buf.put('\t'); break;
+					case '"':  buf.put('\"'); break;
+					case '\\': buf.put('\\'); break;
+					default: wasEscSequence = false; break;
+					}
+				}
 				
-				advanceChar(ErrorOnEOF.Yes);
-				if(isNewline(ch))
+				if(wasEscSequence)
 				{
 					advanceChar(ErrorOnEOF.Yes);
-					buf.put('\n');
-					eatWhite();
+					advanceChar(ErrorOnEOF.Yes);
 				}
 				else
-				{
-					//TODO: Is this list of escape chars 100% complete and correct?
-					switch(ch)
-					{
-					case 'n': buf.put('\n'); break;
-					case 't': buf.put('\t'); break;
-					
-					// Handles ' " \ and anything else
-					default: buf.put(ch); break;
-					}
+					eatWhite(false);
 
-					advanceChar(ErrorOnEOF.Yes);
-				}
 				spanStart = location.index;
 			}
 
@@ -1258,7 +1258,7 @@ class Lexer
 	}
 
 	/// Advances past whitespace and comments
-	private void eatWhite()
+	private void eatWhite(bool allowComments=true)
 	{
 		// -- Comment/Whitepace Lexer -------------
 
@@ -1272,6 +1272,18 @@ class Lexer
 		if(isEOF)
 			return;
 		
+/+		void failIfCommentsDisallowed()
+		{
+			if(allowComments)
+				return;
+			
+			error(
+				"Inside a double-quote string or base64 binary literal, "~
+				"comments are not allowed in the whitespace after a line "~
+				"continuation backslash."
+			);
+		}
++/		
 		Location commentStart;
 		State state = State.normal;
 		bool consumeNewlines = false;
@@ -1291,6 +1303,9 @@ class Lexer
 
 				else if(ch == '#')
 				{
+					if(!allowComments)
+						return;
+
 					commentStart = location;
 					state = State.lineComment;
 				}
@@ -1300,11 +1315,17 @@ class Lexer
 					commentStart = location;
 					if(lookahead(ch))
 					{
+						if(!allowComments)
+							return;
+
 						advanceChar(ErrorOnEOF.No);
 						state = State.lineComment;
 					}
 					else if(ch == '/' && lookahead('*'))
 					{
+						if(!allowComments)
+							return;
+
 						advanceChar(ErrorOnEOF.No);
 						state = State.blockComment;
 					}
