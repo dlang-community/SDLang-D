@@ -809,15 +809,8 @@ class Lexer
 		
 		try
 		{
-			// Double float (64-bit signed) without suffix?
-			if(isEOF || isWhite(ch))
-			{
-				auto value = to!double(tokenData);
-				mixin(accept!("Value", "value"));
-			}
-
 			// Double float (64-bit signed) with suffix?
-			else if(ch == 'D' || ch == 'd')
+			if(ch == 'D' || ch == 'd')
 			{
 				auto value = to!double(tokenData);
 				advanceChar(ErrorOnEOF.No);
@@ -846,6 +839,13 @@ class Lexer
 				}
 
 				error("Invalid floating point suffix.");
+			}
+
+			// Double float (64-bit signed) without suffix?
+			else if(isEOF || !isIdentChar(ch))
+			{
+				auto value = to!double(tokenData);
+				mixin(accept!("Value", "value"));
 			}
 
 			// Invalid suffix
@@ -1487,7 +1487,12 @@ unittest
 	testLexThrows("7A");
 	testLexThrows("-A");
 	testLexThrows(`-""`);
-
+	
+	testLex("7;", [
+		Token(symbol!"Value",loc,Value(cast(int)7)),
+		Token(symbol!"EOL",loc),
+	]);
+	
 	// Floats
 	testLex("1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
 	testLex("1.2f" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
@@ -1521,6 +1526,21 @@ unittest
 	testLexThrows("1.2A");
 	testLexThrows("1.2B");
 	testLexThrows("1.2BDF");
+
+	testLex("1.2;", [
+		Token(symbol!"Value",loc,Value(cast(double)1.2)),
+		Token(symbol!"EOL",loc),
+	]);
+
+	testLex("1.2F;", [
+		Token(symbol!"Value",loc,Value(cast(float)1.2)),
+		Token(symbol!"EOL",loc),
+	]);
+
+	testLex("1.2BD;", [
+		Token(symbol!"Value",loc,Value(cast(real)1.2)),
+		Token(symbol!"EOL",loc),
+	]);
 
 	// Booleans and null
 	testLex("true",   [ Token(symbol!"Value",loc,Value( true)) ]);
