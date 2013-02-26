@@ -30,6 +30,7 @@ import std.stdio;
 
 import sdlang_impl.exception;
 import sdlang_impl.lexer;
+import sdlang_impl.parser;
 import sdlang_impl.symbol;
 import sdlang_impl.token;
 
