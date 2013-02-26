@@ -1265,7 +1265,6 @@ class Lexer
 		enum State
 		{
 			normal,
-			backslash,    // Got "\\", Eating whitespace until "\n"
 			lineComment,  // Got "#" or "//" or "--", Eating everything until "\n"
 			blockComment, // Got "/*", Eating everything until "*/"
 		}
@@ -1275,6 +1274,8 @@ class Lexer
 		
 		Location commentStart;
 		State state = State.normal;
+		bool consumeNewlines = false;
+		bool hasConsumedNewline = false;
 		while(true)
 		{
 			final switch(state)
@@ -1284,7 +1285,8 @@ class Lexer
 				if(ch == '\\')
 				{
 					commentStart = location;
-					state = State.backslash;
+					consumeNewlines = true;
+					hasConsumedNewline = false;
 				}
 
 				else if(ch == '#')
@@ -1310,17 +1312,26 @@ class Lexer
 						return; // Done
 				}
 				//TODO: Should this include all isNewline()? (except for \r, right?)
-				else if(ch == '\n' || !isWhite(ch))
-					return; // Done
-
-				break;
-			
-			case State.backslash:
-				//TODO: Should this include all isNewline()? (except for \r, right?)
-				if(ch == '\n')
-					state = State.normal;
+				else if(ch == '\n')
+				{
+					if(consumeNewlines)
+						hasConsumedNewline = true;
+					else
+						return; // Done
+				}
 				else if(!isWhite(ch))
-					error("Only whitespace can come after a line-continuation backslash.");
+				{
+					if(consumeNewlines)
+					{
+						if(hasConsumedNewline)
+							return; // Done
+						else
+							error("Only whitespace can come between a line-continuation backslash and the following newline.");
+					}
+					else
+						return; // Done
+				}
+
 				break;
 			
 			case State.lineComment:
@@ -1343,7 +1354,7 @@ class Lexer
 			{
 				// Reached EOF
 
-				if(state == State.backslash)
+				if(consumeNewlines && !hasConsumedNewline)
 					error("Missing newline after line-continuation backslash.");
 
 				else if(state == State.blockComment)
@@ -1437,6 +1448,7 @@ unittest
 	testLex("/*foo*/", []);
 	testLex("/* multiline \n comment */", []);
 	testLex("/* * */", []);
+	testLexThrows("/* ");
 
 	testLex(":",  [ Token(symbol!":",  loc) ]);
 	testLex("=",  [ Token(symbol!"=",  loc) ]);
@@ -1451,12 +1463,24 @@ unittest
 	testLex("foo-bar", [ Token(symbol!"Ident",loc,Value(null),"foo-bar") ]);
 	testLex("foo.",    [ Token(symbol!"Ident",loc,Value(null),"foo.")    ]);
 	testLex("foo-",    [ Token(symbol!"Ident",loc,Value(null),"foo-")    ]);
+	testLexThrows(".foo");
+
 	testLex("foo bar", [
 		Token(symbol!"Ident",loc,Value(null),"foo"),
 		Token(symbol!"Ident",loc,Value(null),"bar"),
 	]);
-
-	testLexThrows(".foo");
+	testLex("foo \\  \n  \n  bar", [
+		Token(symbol!"Ident",loc,Value(null),"foo"),
+		Token(symbol!"Ident",loc,Value(null),"bar"),
+	]);
+	testLex("foo \\  \n \\ \n  bar", [
+		Token(symbol!"Ident",loc,Value(null),"foo"),
+		Token(symbol!"Ident",loc,Value(null),"bar"),
+	]);
+	testLexThrows("foo \\ ");
+	testLexThrows("foo \\ bar");
+	testLexThrows("foo \\  \n  \\ ");
+	testLexThrows("foo \\  \n  \\ bar");
 
 	testLex("foo : = { } ; \n bar \n", [
 		Token(symbol!"Ident",loc,Value(null),"foo"),
@@ -1472,7 +1496,7 @@ unittest
 
 	testLexThrows("<");
 	testLexThrows("*");
-
+	
 	// Integers
 	testLex(  "7", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
 	testLex( "-7", [ Token(symbol!"Value",loc,Value(cast( int)-7)) ]);
@@ -1564,23 +1588,30 @@ unittest
 	testLex("`hello \n world`",  [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
 	testLex("`hello \"world\"`", [ Token(symbol!"Value",loc,Value(`hello "world"` )) ]);
 
-	testLexThrows(`"foo`);
-	testLexThrows(`"`);
-
-	// Double-Quote Strings
-	testLex(`"hello world"`,         [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
-	testLex(`" hello world "`,       [ Token(symbol!"Value",loc,Value(" hello world " )) ]);
-	testLex(`"hello \t world"`,      [ Token(symbol!"Value",loc,Value("hello \t world")) ]);
-	testLex("\"hello \\\n world\"",  [ Token(symbol!"Value",loc,Value("hello \nworld" )) ]);
-
 	testLexThrows("`foo");
 	testLexThrows("`");
 
+	// Double-Quote Strings
+	testLex(`"hello world"`,            [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
+	testLex(`" hello world "`,          [ Token(symbol!"Value",loc,Value(" hello world " )) ]);
+	testLex(`"hello \t world"`,         [ Token(symbol!"Value",loc,Value("hello \t world")) ]);
+	testLex(`"hello \n world"`,         [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
+	testLex("\"hello \\\n world\"",     [ Token(symbol!"Value",loc,Value("hello world" )) ]);
+	testLex("\"hello \\  \n world\"",   [ Token(symbol!"Value",loc,Value("hello world" )) ]);
+	testLex("\"hello \\  \n\n world\"", [ Token(symbol!"Value",loc,Value("hello world" )) ]);
+
+	testLexThrows("\"hello \n world\"");
+	testLexThrows(`"foo`);
+	testLexThrows(`"`);
+
 	// Characters
-	testLex("'a'",  [ Token(symbol!"Value",loc,Value(cast(dchar) 'a')) ]);
-	testLex("'\n'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
+	testLex("'a'",   [ Token(symbol!"Value",loc,Value(cast(dchar) 'a')) ]);
+	testLex("'\n'",  [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
+	testLex(`'\\n'`, [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
+	testLex(`'\\'`,  [ Token(symbol!"Value",loc,Value(cast(dchar)'\\')) ]);
 
 	testLexThrows("'a");
+	testLexThrows(`'\`);
 	testLexThrows("'");
 	
 	// Unicode
@@ -1615,6 +1646,7 @@ unittest
 	testLex( "2013/2/22 \t 07:53",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22/*foo*/07:53",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22 /*foo*/ \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 /*foo*/ \\\n\n  \n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22 /*foo*/ \\\n\\\n  \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex( "2013/2/22/*foo*/\\\n/*bar*/07:53",      [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
 	testLex("-2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 7, 53,  0)))) ]);
