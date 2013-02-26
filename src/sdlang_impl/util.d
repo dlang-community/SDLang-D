@@ -5,6 +5,7 @@ module sdlang_impl.util;
 
 import std.algorithm;
 import std.datetime;
+import std.stdio;
 import std.string;
 
 import sdlang_impl.token;
@@ -44,6 +45,15 @@ struct Location
 	string toString()
 	{
 		return "%s(%s:%s)".format(file, line+1, col+1);
+	}
+}
+
+void trace(string file=__FILE__, size_t line=__LINE__, TArgs...)(TArgs args)
+{
+	version(SDLang_Trace)
+	{
+		writeln(file, "(", line, "): ", args);
+		stdout.flush();
 	}
 }
 

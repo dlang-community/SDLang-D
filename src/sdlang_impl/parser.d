@@ -12,17 +12,6 @@ import sdlang_impl.symbol;
 import sdlang_impl.token;
 import sdlang_impl.util;
 
-version(SDLang_TraceParse)
-{
-	import std.stdio;
-
-	private void trace(string file=__FILE__, size_t line=__LINE__, TArgs...)(TArgs args)
-	{
-		writeln(file, "(", line, "): ", args);
-		stdout.flush();
-	}
-}
-
 /// Returns root tag
 Tag!extraInfo parseFile(ExtraInfo extraInfo = ExtraInfo.Locations)(string filename)
 {
@@ -61,8 +50,7 @@ private struct Parser(ExtraInfo extras)
 	/// <Root> ::= <Tags>  (Lookaheads: Anything)
 	Tag!extras parseRoot()
 	{
-		version(SDLang_TraceParse)
-			trace("Starting parse of file: ", lexer.filename);
+		trace("Starting parse of file: ", lexer.filename);
 
 		auto root = new Tag!extras(null, null, "root");
 
@@ -109,16 +97,14 @@ private struct Parser(ExtraInfo extras)
 			auto id = parseIDFull();
 			tag = new Tag!extras(parent, id.namespace, id.name);
 
-			version(SDLang_TraceParse)
-				trace("Found tag named: ", tag.fullName);
+			trace("Found tag named: ", tag.fullName);
 		}
 		else if(token.matches!"Value"())
 		{
 			tag = new Tag!extras(parent);
 			parseValue(tag);
 
-			version(SDLang_TraceParse)
-				trace("Found anonymous tag.");
+			trace("Found anonymous tag.");
 		}
 		else
 			error("Expected tag name or value, not " ~ token.symbol.name);
@@ -200,8 +186,7 @@ private struct Parser(ExtraInfo extras)
 		if(token.matches!"Value"())
 		{
 			auto value = token.value;
-			version(SDLang_TraceParse)
-				trace("In tag '", parent.fullName, "', found value: ", value);
+			trace("In tag '", parent.fullName, "', found value: ", value);
 
 			parent.values ~= value;
 			static if(extras.atLeast(ExtraInfo.All))
@@ -260,8 +245,7 @@ private struct Parser(ExtraInfo extras)
 			attr.valueToken = token;
 		
 		parent.attributes[attr.namespace][attr.name] ~= attr;
-		version(SDLang_TraceParse)
-			trace("In tag '", parent.fullName, "', found attribute '", attr.fullName, "'");
+		trace("In tag '", parent.fullName, "', found attribute '", attr.fullName, "'");
 		
 		lexer.popFront();
 	}
