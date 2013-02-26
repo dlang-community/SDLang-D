@@ -9,7 +9,9 @@ import std.base64;
 import std.bigint;
 import std.conv;
 import std.datetime;
+import std.file;
 import std.stream : ByteOrderMarks, BOM;
+import std.traits;
 import std.typecons;
 import std.uni;
 import std.utf;
@@ -21,6 +23,31 @@ import sdlang_impl.token;
 import sdlang_impl.util;
 
 alias sdlang_impl.util.startsWith startsWith;
+
+Token[] lexFile(string filename)
+{
+	auto source = cast(string)read(filename);
+	return lexSource(source, filename);
+}
+
+Token[] lexSource(string source, string filename=null)
+{
+	// Instantiate Lexer on the stack, it doesn't need to outlive this function.
+	//enum lexerBufSize =
+	//	__traits(classInstanceSize, Lexer) + classInstanceAlignment!Lexer;
+	//ubyte[lexerBufSize] lexerBuf;
+	//auto lexer = emplace!Lexer(lexerBuf, source, filename);
+
+	auto lexer = scoped!Lexer(source, filename);
+	
+	// Can't use 'std.array.array(Range)' because 'lexer' is scoped
+	// and therefore cannot have its reference copied.
+	Appender!(Token[]) tokens;
+	foreach(tok; lexer)
+		tokens.put(tok);
+
+	return tokens.data;
+}
 
 // Kind of a poor-man's yield, but fast.
 // Only to be used inside Lexer.popFront (and Lexer.this).
@@ -1349,12 +1376,9 @@ unittest
 	void testLex(string file=__FILE__, size_t line=__LINE__)(string source, Token[] expected)
 	{
 		Token[] actual;
-		//try
-		{
-			auto lexer = new Lexer(source, "filename");
-			actual = array(lexer);
-		}
-		/+catch(SDLangException e)
+		try
+			actual = lexSource(source, "filename");
+		catch(SDLangException e)
 		{
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
@@ -1363,7 +1387,7 @@ unittest
 			stderr.writeln("    Actual: SDLangException thrown:");
 			stderr.writeln("        ", e.msg);
 			return;
-		}+/
+		}
 		
 		if(actual != expected)
 		{
@@ -1398,10 +1422,7 @@ unittest
 		bool hadException = false;
 		Token[] actual;
 		try
-		{
-			auto lexer = new Lexer(source, "filename");
-			actual = array(lexer);
-		}
+			actual = lexSource(source, "filename");
 		catch(SDLangException e)
 			hadException = true;
 
