@@ -1,6 +1,6 @@
 ﻿# This is the sample SDL document, included for convenince, from:
 #   http://sdl.ikayzo.org/display/SDL/Language+Guide
- { ` ndxowq cnw k` }  : ; : 
+/* { ` ndxowq cnw k` }  : ; : 
 FOO
 {` ndxowq cnw k`}:;:foo:;
 "Aki\ ko"
@@ -9,7 +9,7 @@ ko""Aki\"ko"
 # a tag having only a name
 my_tag
 m my_tag
-68A
+//68A
 
 true f false on off null
 tru fals o of nul
@@ -19,16 +19,16 @@ truX or
 'c''h'
 
 key [sdf789GSfsb2+3324sf2] name="my key"
-image [
-    R3df789GSfsb2edfSFSDF
-    uikuikk2349GSfsb2edfS
-    vFSDFR3df789GSfsb2edf
-]
-upload from="ikayzo.org" data=[
-    R3df789GSfsb2edfSFSDF
-    uikuikk2349GSfsb2edfS
-    vFSDFR3df789GSfsb2edf
-]
+//image [
+//    R3df789GSfsb2edfSFSDF
+//    uikuikk2349GSfsb2edfS
+//    vFSDFR3df789GSfsb2edf
+//]
+//upload from="ikayzo.org" data=[
+//    R3df789GSfsb2edfSFSDF
+//    uikuikk2349GSfsb2edfS
+//    vFSDFR3df789GSfsb2edf
+//]
 
 examples
 123
@@ -44,9 +44,9 @@ examples
 -123.43 or -123.43d or -123.43D
 -123.44BD or -123.44bd
 .32bd -.32BD
-123.44A
+#123.44A
 #123.44BA
-
+*/
 timespan 12:14:42
 timespan 00:09:12
 timespan 00:00:01.023

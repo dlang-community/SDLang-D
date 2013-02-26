@@ -6,6 +6,8 @@ module sdlang_impl.util;
 import std.algorithm;
 import std.string;
 
+enum sdlangVersion = "0.8";
+
 alias immutable(ubyte)[] ByteString;
 
 auto startsWith(T)(string haystack, T needle)

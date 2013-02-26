@@ -86,6 +86,7 @@ private template acceptImpl(string symbolName, string value)
 class Lexer
 {
 	string source; ///.
+	string filename; ///.
 	Location location; /// Location of current character in source
 
 	private dchar  ch;         // Current character
@@ -122,17 +123,21 @@ class Lexer
 	///.
 	this(string source=null, string filename=null)
 	{
+		this.filename = filename;
+		this.source = source;
+		
 		_front = Token(symbol!"Error", Location());
 		lookaheadTokenInfo = LookaheadTokenInfo.init;
 
 		if( source.startsWith( ByteOrderMarks[BOM.UTF8] ) )
+		{
 			source = source[ ByteOrderMarks[BOM.UTF8].length .. $ ];
+			this.source = source;
+		}
 		
 		foreach(bom; ByteOrderMarks)
 		if( source.startsWith(bom) )
 			error(Location(filename,0,0,0), "SDL spec only supports UTF-8, not UTF-16 or UTF-32");
-
-		this.source = source;
 		
 		if(source == "")
 			mixin(accept!"EOF");
@@ -151,9 +156,8 @@ class Lexer
 		return _front.symbol == symbol!"EOF";
 	}
 	
-	///.
 	Token _front;
-	@property Token front()
+	@property Token front() ///.
 	{
 		return _front;
 	}

@@ -33,6 +33,7 @@ import sdlang_impl.lexer;
 import sdlang_impl.parser;
 import sdlang_impl.symbol;
 import sdlang_impl.token;
+import sdlang_impl.util;
 
 version(unittest_sdlang)
 	void main() {}
@@ -42,6 +43,7 @@ int main(string[] args)
 {
 	if(args.length != 3 || (args[1] != "lex" && args[1] != "parse"))
 	{
+		stderr.writeln("SDL-D v", sdlangVersion);
 		stderr.writeln("Usage: sdlang [lex|parse] filename.sdl");
 		return 1;
 	}

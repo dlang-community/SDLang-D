@@ -83,7 +83,7 @@ alias Algebraic!(
 struct Token
 {
 	Symbol symbol = sdlang_impl.symbol.symbol!"Error"; /// The "type" of this token
-	Location location;
+	Location location; ///.
 	Value value; /// Only valid when 'symbol' is symbol!"Value", otherwise null
 	string data; /// Original text from source
 
@@ -105,7 +105,7 @@ struct Token
 	{
 		return opEquals(b);
 	}
-	bool opEquals(ref Token b)
+	bool opEquals(ref Token b) ///ditto
 	{
 		if(
 			this.symbol     != b.symbol     ||
@@ -118,6 +118,12 @@ struct Token
 			return this.data == b.data;
 		
 		return true;
+	}
+	
+	///.
+	bool matches(string symbolName)()
+	{
+		return this.symbol == .symbol!symbolName;
 	}
 }
 
