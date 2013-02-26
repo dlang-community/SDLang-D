@@ -580,7 +580,23 @@ class Lexer
 		assert(ch == '\'');
 		advanceChar(ErrorOnEOF.Yes); // Skip opening single-quote
 		
-		auto value = ch;
+		dchar value;
+		if(ch == '\\')
+		{
+			advanceChar(ErrorOnEOF.Yes); // Skip escape backslash
+			switch(ch)
+			{
+			case 'n':  value = '\n'; break;
+			case 't':  value = '\t'; break;
+			case '\'': value = '\''; break;
+			case '\\': value = '\\'; break;
+			default: error("Invalid escape sequence.");
+			}
+		}
+		else if(isNewline(ch))
+			error("Newline not alowed in character literal.");
+		else
+			value = ch;
 		advanceChar(ErrorOnEOF.Yes); // Skip the character itself
 
 		if(ch == '\'')
@@ -800,10 +816,6 @@ class Lexer
 	{
 		assert(ch == '.');
 		advanceChar(ErrorOnEOF.No);
-		
-		// In case of negative floating-point with leading zero omitted
-//		if(firstPart == "-")
-//			firstPart = "-0";
 		
 		auto secondPart = lexNumericFragment();
 		
@@ -1272,18 +1284,6 @@ class Lexer
 		if(isEOF)
 			return;
 		
-/+		void failIfCommentsDisallowed()
-		{
-			if(allowComments)
-				return;
-			
-			error(
-				"Inside a double-quote string or base64 binary literal, "~
-				"comments are not allowed in the whitespace after a line "~
-				"continuation backslash."
-			);
-		}
-+/		
 		Location commentStart;
 		State state = State.normal;
 		bool consumeNewlines = false;
@@ -1466,6 +1466,7 @@ unittest
 
 	testLex("",        []);
 	testLex(" ",       []);
+	testLex("\\\n",    []);
 	testLex("/*foo*/", []);
 	testLex("/* multiline \n comment */", []);
 	testLex("/* * */", []);
@@ -1517,6 +1518,7 @@ unittest
 
 	testLexThrows("<");
 	testLexThrows("*");
+	testLexThrows(`\`);
 	
 	// Integers
 	testLex(  "7", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
@@ -1627,12 +1629,19 @@ unittest
 
 	// Characters
 	testLex("'a'",   [ Token(symbol!"Value",loc,Value(cast(dchar) 'a')) ]);
-	testLex("'\n'",  [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
-	testLex(`'\\n'`, [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
+	testLex("'\\n'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
+	testLex("'\\t'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\t')) ]);
+	testLex("'\t'",  [ Token(symbol!"Value",loc,Value(cast(dchar)'\t')) ]);
+	testLex("'\\''", [ Token(symbol!"Value",loc,Value(cast(dchar)'\'')) ]);
 	testLex(`'\\'`,  [ Token(symbol!"Value",loc,Value(cast(dchar)'\\')) ]);
 
 	testLexThrows("'a");
+	testLexThrows("'aa'");
+	testLexThrows("''");
+	testLexThrows("'\\\n'");
+	testLexThrows("'\n'");
 	testLexThrows(`'\`);
+	testLexThrows(`'\'`);
 	testLexThrows("'");
 	
 	// Unicode
