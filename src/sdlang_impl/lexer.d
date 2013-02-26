@@ -1330,15 +1330,10 @@ class Lexer
 				break;
 			
 			case State.blockComment:
-				if(ch == '*')
+				if(ch == '*' && lookahead('/'))
 				{
-					if(lookahead('/'))
-					{
-						advanceChar(ErrorOnEOF.No);
-						state = State.normal;
-					}
-					else
-						return; // Done
+					advanceChar(ErrorOnEOF.No);
+					state = State.normal;
 				}
 				break;
 			}
@@ -1440,6 +1435,8 @@ unittest
 	testLex("",        []);
 	testLex(" ",       []);
 	testLex("/*foo*/", []);
+	testLex("/* multiline \n comment */", []);
+	testLex("/* * */", []);
 
 	testLex(":",  [ Token(symbol!":",  loc) ]);
 	testLex("=",  [ Token(symbol!"=",  loc) ]);
