@@ -1361,7 +1361,7 @@ class Lexer
 	}
 }
 
-version(unittest_sdlang)
+version(SDLang_Unittest)
 unittest
 {
 	import std.stdio;

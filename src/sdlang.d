@@ -35,15 +35,15 @@ import sdlang_impl.symbol;
 import sdlang_impl.token;
 import sdlang_impl.util;
 
-version(unittest_sdlang)
+version(SDLang_Unittest)
 	void main() {}
 
-version(unittest_sdlang) {} else
+version(SDLang_Unittest) {} else
 int main(string[] args)
 {
 	if(args.length != 3 || (args[1] != "lex" && args[1] != "parse"))
 	{
-		stderr.writeln("SDL-D v", sdlangVersion);
+		stderr.writeln("SDLang-D v", sdlangVersion);
 		stderr.writeln("Usage: sdlang [lex|parse] filename.sdl");
 		return 1;
 	}
