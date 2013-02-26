@@ -32,12 +32,6 @@ Token[] lexFile(string filename)
 
 Token[] lexSource(string source, string filename=null)
 {
-	// Instantiate Lexer on the stack, it doesn't need to outlive this function.
-	//enum lexerBufSize =
-	//	__traits(classInstanceSize, Lexer) + classInstanceAlignment!Lexer;
-	//ubyte[lexerBufSize] lexerBuf;
-	//auto lexer = emplace!Lexer(lexerBuf, source, filename);
-
 	auto lexer = scoped!Lexer(source, filename);
 	
 	// Can't use 'std.array.array(Range)' because 'lexer' is scoped
