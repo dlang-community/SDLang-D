@@ -31,13 +31,22 @@ struct Attribute(ExtraInfo extraInfo = ExtraInfo.Locations)
 
 class Tag(ExtraInfo extraInfo = ExtraInfo.Locations)
 {
-	Value[]             values;
-	Attribute[string][] attributes;
-	Tag[string][]       tags;
+	static immutable defaultName = "content";
+
+	string  name;
+	Value[] values;
+
+	Attribute!extraInfo[string][] attributes;
+	Tag!extraInfo[string][]       tags;
 
 	static if(extraInfo.atLeast(ExtraInfo.Locations))
 		Location location;
 
 	static if(extraInfo.atLeast(ExtraInfo.All))
 		Token[] valueTokens;
+	
+	this(string name=null)
+	{
+		this.name = name;
+	}
 }
