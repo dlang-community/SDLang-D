@@ -224,18 +224,7 @@ class Lexer
 		if(isEOF)
 			return true;
 		
-		if(ch == '/' && hasNextCh && !isDigit(nextCh))
-			return true;
-		
-		//return !isDigit(ch) && ch != ':' && ch != '_' && !isAlpha(ch);
-		//TODO: There's gotta be a more reliable way to do this.
-		return
-			ch == ';' ||
-			ch == '#' ||
-			ch == '"' ||
-			ch == '\'' ||
-			ch == '{' ||
-			isWhite(ch);
+		return !isDigit(ch) && ch != ':' && ch != '_' && !isAlpha(ch);
 	}
 	
 	/// Is current character the last one in an ident?
@@ -781,19 +770,9 @@ class Lexer
 
 			firstFragment = lexNumericFragment();
 		}
-		
-		// Integer (32-bit signed)?
-		if(isEndOfNumber())
-		{
-			auto num = toBigInt(isNegative, firstFragment);
-			if(num < int.min || num > int.max)
-				error(tokenStart, "Value doesn't fit in 32-bit signed integer: "~to!string(num));
-
-			mixin(accept!("Value", "num.toInt()"));
-		}
 
 		// Long integer (64-bit signed)?
-		else if(ch == 'L' || ch == 'l')
+		if(ch == 'L' || ch == 'l')
 		{
 			advanceChar(ErrorOnEOF.No);
 
@@ -839,12 +818,22 @@ class Lexer
 			lexFloatingPoint(firstFragment);
 		
 		// Some date?
-		else if(ch == '/')
+		else if(ch == '/' && hasNextCh && isDigit(nextCh))
 			lexDate(isNegative, firstFragment);
 		
 		// Some time span?
 		else if(ch == ':' || ch == 'd')
 			lexTimeSpan(isNegative, firstFragment);
+
+		// Integer (32-bit signed)?
+		else if(isEndOfNumber())
+		{
+			auto num = toBigInt(isNegative, firstFragment);
+			if(num < int.min || num > int.max)
+				error(tokenStart, "Value doesn't fit in 32-bit signed integer: "~to!string(num));
+
+			mixin(accept!("Value", "num.toInt()"));
+		}
 
 		// Invalid suffix
 		else
