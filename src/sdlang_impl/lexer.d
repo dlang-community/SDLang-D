@@ -717,7 +717,7 @@ class Lexer
 	private BigInt toBigInt(bool isNegative, string absValue)
 	{
 		auto num = BigInt(absValue);
-		assert(num > 0);
+		assert(num >= 0);
 
 		if(isNegative)
 			num = -num;
@@ -1526,6 +1526,8 @@ unittest
 	testLex( "7L", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
 	testLex( "7l", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
 	testLex("-7L", [ Token(symbol!"Value",loc,Value(cast(long)-7)) ]);
+	testLex(  "0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
+	testLex( "-0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
 
 	testLex("7 A", [
 		Token(symbol!"Value",loc,Value(cast(int)7)),
@@ -1565,6 +1567,9 @@ unittest
 	testLex("-.2"  , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
 	testLex("-.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
 	testLex("-.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-0.2)) ]);
+
+	testLex("0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
+	testLex("0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
 
 	testLex("1.2 F", [
 		Token(symbol!"Value",loc,Value(cast(double)1.2)),
