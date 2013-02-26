@@ -224,7 +224,18 @@ class Lexer
 		if(isEOF)
 			return true;
 		
-		return ch == ';' || isWhite(ch);
+		if(ch == '/' && hasNextCh && !isDigit(nextCh))
+			return true;
+		
+		//return !isDigit(ch) && ch != ':' && ch != '_' && !isAlpha(ch);
+		//TODO: There's gotta be a more reliable way to do this.
+		return
+			ch == ';' ||
+			ch == '#' ||
+			ch == '"' ||
+			ch == '\'' ||
+			ch == '{' ||
+			isWhite(ch);
 	}
 	
 	/// Is current character the last one in an ident?
@@ -1558,6 +1569,9 @@ unittest
 	testLex(  "0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
 	testLex( "-0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
 
+	testLex("7/**/", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
+	testLex("7#",    [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
+
 	testLex("7 A", [
 		Token(symbol!"Value",loc,Value(cast(int)7)),
 		Token(symbol!"Ident",loc,Value(      null),"A"),
@@ -1710,6 +1724,7 @@ unittest
 	testLex( "2013/2/22", [ Token(symbol!"Value",loc,Value(Date( 2013, 2, 22))) ]);
 	testLex("-2013/2/22", [ Token(symbol!"Value",loc,Value(Date(-2013, 2, 22))) ]);
 
+	testLexThrows("7/");
 	testLexThrows("2013/2/22a");
 	testLexThrows("2013/2/22f");
 
