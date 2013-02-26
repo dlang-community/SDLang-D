@@ -794,6 +794,35 @@ class Lexer
 			mixin(accept!("Value", "num.toLong()"));
 		}
 		
+		// Float (32-bit signed)?
+		else if(ch == 'F' || ch == 'f')
+		{
+			auto value = to!float(tokenData);
+			advanceChar(ErrorOnEOF.No);
+			mixin(accept!("Value", "value"));
+		}
+		
+		// Double float (64-bit signed) with suffix?
+		else if((ch == 'D' || ch == 'd') && !lookahead(':')
+		)
+		{
+			auto value = to!double(tokenData);
+			advanceChar(ErrorOnEOF.No);
+			mixin(accept!("Value", "value"));
+		}
+		
+		// Decimal (128+ bits signed)?
+		else if(
+			(ch == 'B' || ch == 'b') &&
+			(lookahead('D') || lookahead('d'))
+		)
+		{
+			auto value = to!real(tokenData);
+			advanceChar(ErrorOnEOF.No);
+			advanceChar(ErrorOnEOF.No);
+			mixin(accept!("Value", "value"));
+		}
+		
 		// Some floating point?
 		else if(ch == '.')
 			lexFloatingPoint(firstFragment);
@@ -1568,8 +1597,21 @@ unittest
 	testLex("-.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
 	testLex("-.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-0.2)) ]);
 
-	testLex("0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
-	testLex("0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
+	testLex( "0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
+	testLex( "0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
+	testLex( "0.0BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
+	testLex("-0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
+	testLex("-0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
+	testLex("-0.0BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
+	testLex( "7F"   , [ Token(symbol!"Value",loc,Value(cast( float)7.0)) ]);
+	testLex( "7D"   , [ Token(symbol!"Value",loc,Value(cast(double)7.0)) ]);
+	testLex( "7BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)7.0)) ]);
+	testLex( "0F"   , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
+	testLex( "0D"   , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
+	testLex( "0BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
+	testLex("-0F"   , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
+	testLex("-0D"   , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
+	testLex("-0BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
 
 	testLex("1.2 F", [
 		Token(symbol!"Value",loc,Value(cast(double)1.2)),
