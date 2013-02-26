@@ -110,7 +110,7 @@ private struct Parser(ExtraInfo extras)
 			tag = new Tag!extras(parent, id.namespace, id.name);
 
 			version(SDLang_TraceParse)
-				trace("Found tag named: ", id);
+				trace("Found tag named: ", tag.fullName);
 		}
 		else if(token.matches!"Value"())
 		{

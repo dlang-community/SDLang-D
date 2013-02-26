@@ -3,7 +3,9 @@
 
 module sdlang_impl.ast;
 
+import std.array;
 import std.conv;
+import std.string;
 
 import sdlang_impl.token;
 import sdlang_impl.util;
@@ -75,5 +77,36 @@ class Tag(ExtraInfo extraInfo = ExtraInfo.Locations)
 		this.parent    = parent;
 		this.namespace = namespace;
 		this.name      = name;
+	}
+	
+	/// Not the most efficient, but it works.
+	string toDebugString()
+	{
+		Appender!string buf;
+		
+		buf.put("Namespace '%s' Tag '%s':\n".format(namespace, name));
+
+		buf.put("Values:\n");
+		foreach(val; values)
+			buf.put("    %s: %s\n".format(.toString(val.type), val));
+
+		buf.put("Attributes:\n");
+		foreach(attrsByNamespace; attributes)
+		foreach(attrsByName; attrsByNamespace)
+		foreach(attr; attrsByName)
+			buf.put(
+				"    [%s]%s - %s: %s\n".format(
+					attr.namespace, attr.name, .toString(attr.value.type), attr.value
+				)
+			);
+		
+		buf.put("Children:\n");
+		foreach(tagsByNamespace; tags)
+		foreach(tagsByName; tagsByNamespace)
+		foreach(tag; tagsByName)
+			buf.put( tag.toDebugString().replace("\n", "\n    ") );
+		buf.put("\n");
+		
+		return buf.data;
 	}
 }

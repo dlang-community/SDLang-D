@@ -65,7 +65,7 @@ about_two_days_ago -2d:00:04:00
 # Examples: Date and Date/Time Literals
 date 2005/12/05
 date -2005/12/05
-date 2005/12/05 	foo
+date 2005/12/05
 #date_and_int 2005/12/05 7
 here 2005/12/05 14:12:23.345
 here 2005/12/05 14:12.345

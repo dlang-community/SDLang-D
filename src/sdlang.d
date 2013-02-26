@@ -100,25 +100,5 @@ void doLex(string filename)
 void doParse(string filename)
 {
 	auto root = parseFile(filename);
-}
-
-string toString(TypeInfo ti)
-{
-	if     (ti == typeid( bool         )) return "bool";
-	else if(ti == typeid( string       )) return "string";
-	else if(ti == typeid( dchar        )) return "dchar";
-	else if(ti == typeid( int          )) return "int";
-	else if(ti == typeid( long         )) return "long";
-	else if(ti == typeid( float        )) return "float";
-	else if(ti == typeid( double       )) return "double";
-	else if(ti == typeid( real         )) return "real";
-	else if(ti == typeid( Date         )) return "Date";
-	else if(ti == typeid( DateTimeFrac )) return "DateTimeFrac";
-	else if(ti == typeid( DateTimeFracUnknownZone )) return "DateTimeFracUnknownZone";
-	else if(ti == typeid( SysTime      )) return "SysTime";
-	else if(ti == typeid( Duration     )) return "Duration";
-	else if(ti == typeid( ubyte[]      )) return "ubyte[]";
-	else if(ti == typeid( typeof(null) )) return "null";
-	
-	return "{unknown}";
+	writeln(root.toDebugString());
 }
