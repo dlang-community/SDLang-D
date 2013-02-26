@@ -1093,7 +1093,10 @@ class Lexer
 		
 		auto endOfDate = location;
 		
-		while(!isEOF && (isWhite(ch) || ch == '\\' || ch == '/'))
+		while(
+			!isEOF &&
+			( ch == '\\' || ch == '/' || (isWhite(ch) && !isNewline(ch)) )
+		)
 		{
 			if(ch == '\\' && hasNextCh && isNewline(nextCh))
 			{
@@ -1584,6 +1587,11 @@ unittest
 
 	testLexThrows("2013/2/22a");
 	testLexThrows("2013/2/22f");
+
+	testLex("1999/12/5\n", [
+		Token(symbol!"Value",loc,Value(Date(1999, 12, 5))),
+		Token(symbol!"EOL",loc),
+	]);
 
 	// DateTime, no timezone
 	testLex( "2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
