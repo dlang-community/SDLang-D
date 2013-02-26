@@ -418,7 +418,7 @@ class Lexer
 		else
 		{
 			advanceChar(ErrorOnEOF.No);
-			mixin(accept!"Error");
+			error("Syntax error");
 		}
 	}
 
@@ -1473,8 +1473,8 @@ unittest
 		Token(symbol!"EOL",loc),
 	]);
 
-	testLex("<", [ Token(symbol!"Error",loc) ]);
-	testLex("*", [ Token(symbol!"Error",loc) ]);
+	testLexThrows("<");
+	testLexThrows("*");
 
 	// Integers
 	testLex(  "7", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
