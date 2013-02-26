@@ -84,28 +84,41 @@ class Tag(ExtraInfo extraInfo = ExtraInfo.Locations)
 	{
 		Appender!string buf;
 		
-		buf.put("Namespace '%s' Tag '%s':\n".format(namespace, name));
+		buf.put("\n");
+		buf.put("Tag ");
+		if(namespace != "")
+		{
+			buf.put("[");
+			buf.put(namespace);
+			buf.put("]");
+		}
+		buf.put("'%s':\n".format(name));
 
-		buf.put("Values:\n");
+		// Values
 		foreach(val; values)
-			buf.put("    %s: %s\n".format(.toString(val.type), val));
+			buf.put("    (%s): %s\n".format(.toString(val.type), val));
 
-		buf.put("Attributes:\n");
+		// Attributes
 		foreach(attrsByNamespace; attributes)
 		foreach(attrsByName; attrsByNamespace)
 		foreach(attr; attrsByName)
+		{
+			string attrNamespace;
+			if(attr.namespace != "")
+				attrNamespace = "["~attr.namespace~"]";
+			
 			buf.put(
-				"    [%s]%s - %s: %s\n".format(
-					attr.namespace, attr.name, .toString(attr.value.type), attr.value
+				"    %s%s(%s): %s\n".format(
+					attrNamespace, attr.name, .toString(attr.value.type), attr.value
 				)
 			);
+		}
 		
-		buf.put("Children:\n");
+		// Children
 		foreach(tagsByNamespace; tags)
 		foreach(tagsByName; tagsByNamespace)
 		foreach(tag; tagsByName)
 			buf.put( tag.toDebugString().replace("\n", "\n    ") );
-		buf.put("\n");
 		
 		return buf.data;
 	}
