@@ -13,21 +13,21 @@ import sdlang_impl.token;
 import sdlang_impl.util;
 
 /// Returns root tag
-Tag!extraInfo parseFile(ExtraInfo extraInfo = ExtraInfo.Locations)(string filename)
+Tag parseFile(string filename)
 {
 	auto source = cast(string)read(filename);
 	return parseSource(source, filename);
 }
 
 /// Returns root tag
-Tag!extraInfo parseSource(ExtraInfo extraInfo = ExtraInfo.Locations)(string source, string filename=null)
+Tag parseSource(string source, string filename=null)
 {
 	auto lexer = new Lexer(source, filename);
-	auto parser = Parser!extraInfo(lexer);
+	auto parser = Parser(lexer);
 	return parser.parseRoot();
 }
 
-private struct Parser(ExtraInfo extras)
+private struct Parser
 {
 	Lexer lexer;
 	
@@ -48,14 +48,12 @@ private struct Parser(ExtraInfo extras)
 	}
 
 	/// <Root> ::= <Tags>  (Lookaheads: Anything)
-	Tag!extras parseRoot()
+	Tag parseRoot()
 	{
 		trace("Starting parse of file: ", lexer.filename);
 
-		auto root = new Tag!extras(null, null, "root");
-
-		static if(extras.atLeast(ExtraInfo.Locations))
-			root.location = Location(lexer.filename, 0, 0, 0);
+		auto root = new Tag(null, null, "root");
+		root.location = Location(lexer.filename, 0, 0, 0);
 
 		parseTags(root);
 		return root;
@@ -64,7 +62,7 @@ private struct Parser(ExtraInfo extras)
 	/// <Tags> ::= <Tag> <Tags>  (Lookaheads: Ident Value)
 	///        |   EOL   <Tags>  (Lookaheads: EOL)
 	///        |   {empty}       (Lookaheads: Anything else)
-	void parseTags(ref Tag!extras parent)
+	void parseTags(ref Tag parent)
 	{
 		while(true)
 		{
@@ -87,21 +85,21 @@ private struct Parser(ExtraInfo extras)
 	/// <Tag>
 	///     ::= <IDFull> <Values> <Attributes> <OptChild> <TagTerminator>  (Lookaheads: Ident)
 	///     |   <Value>  <Values> <Attributes> <OptChild> <TagTerminator>  (Lookaheads: Value)
-	void parseTag(ref Tag!extras parent)
+	void parseTag(ref Tag parent)
 	{
 		auto token = lexer.front;
-		Tag!extras tag;
+		Tag tag;
 		
 		if(token.matches!"Ident"())
 		{
 			auto id = parseIDFull();
-			tag = new Tag!extras(parent, id.namespace, id.name);
+			tag = new Tag(parent, id.namespace, id.name);
 
 			trace("Found tag named: ", tag.fullName);
 		}
 		else if(token.matches!"Value"())
 		{
-			tag = new Tag!extras(parent);
+			tag = new Tag(parent);
 			parseValue(tag);
 
 			trace("Found anonymous tag.");
@@ -109,9 +107,7 @@ private struct Parser(ExtraInfo extras)
 		else
 			error("Expected tag name or value, not " ~ token.symbol.name);
 
-		static if(extras.atLeast(ExtraInfo.Locations))
-			tag.location = token.location;
-		
+		tag.location = token.location;
 		parent.tags[tag.namespace][tag.name] ~= tag;
 
 		parseValues(tag);
@@ -164,7 +160,7 @@ private struct Parser(ExtraInfo extras)
 	/// <Values>
 	///     ::= Value <Values>  (Lookaheads: Value)
 	///     |   {empty}         (Lookaheads: Anything else)
-	void parseValues(ref Tag!extras parent)
+	void parseValues(ref Tag parent)
 	{
 		while(true)
 		{
@@ -180,17 +176,14 @@ private struct Parser(ExtraInfo extras)
 	}
 
 	/// Handle Value terminals that aren't part of an attribute
-	void parseValue(ref Tag!extras parent)
+	void parseValue(ref Tag parent)
 	{
 		auto token = lexer.front;
 		if(token.matches!"Value"())
 		{
 			auto value = token.value;
 			trace("In tag '", parent.fullName, "', found value: ", value);
-
 			parent.values ~= value;
-			static if(extras.atLeast(ExtraInfo.All))
-				parent.valueTokens ~= token;
 			
 			lexer.popFront();
 		}
@@ -201,7 +194,7 @@ private struct Parser(ExtraInfo extras)
 	/// <Attributes>
 	///     ::= <Attribute> <Attributes>  (Lookaheads: Ident)
 	///     |   {empty}                   (Lookaheads: Anything else)
-	void parseAttributes(ref Tag!extras parent)
+	void parseAttributes(ref Tag parent)
 	{
 		while(true)
 		{
@@ -217,19 +210,17 @@ private struct Parser(ExtraInfo extras)
 	}
 
 	/// <Attribute> ::= <IDFull> '=' Value  (Lookaheads: Ident)
-	void parseAttribute(ref Tag!extras parent)
+	void parseAttribute(ref Tag parent)
 	{
 		auto token = lexer.front;
 		if(!token.matches!"Ident"())
 			error("Expected attribute name, not "~token.symbol.name);
 		
 		auto id = parseIDFull();
-		Attribute!extras attr;
+		Attribute attr;
 		attr.namespace = id.namespace;
 		attr.name      = id.name;
-
-		static if(extras.atLeast(ExtraInfo.Locations))
-			attr.location = token.location;
+		attr.location  = token.location;
 		
 		token = lexer.front;
 		if(!token.matches!"="())
@@ -241,8 +232,6 @@ private struct Parser(ExtraInfo extras)
 			error("Expected attribute value, not "~token.symbol.name);
 		
 		attr.value = token.value;
-		static if(extras.atLeast(ExtraInfo.All))
-			attr.valueToken = token;
 		
 		parent.attributes[attr.namespace][attr.name] ~= attr;
 		trace("In tag '", parent.fullName, "', found attribute '", attr.fullName, "'");
@@ -253,7 +242,7 @@ private struct Parser(ExtraInfo extras)
 	/// <OptChild>
 	///      ::= '{' EOL <Tags> '}'  (Lookaheads: '{')
 	///      |   {empty}             (Lookaheads: Anything else)
-	void parseOptChild(ref Tag!extras parent)
+	void parseOptChild(ref Tag parent)
 	{
 		auto token = lexer.front;
 		if(token.matches!"{")
@@ -278,7 +267,7 @@ private struct Parser(ExtraInfo extras)
 	/// <TagTerminator>
 	///     ::= EOL  (Lookahead: EOL)
 	///     |   EOF  (Lookahead: EOF)
-	void parseTagTerminator(ref Tag!extras parent)
+	void parseTagTerminator(ref Tag parent)
 	{
 		auto token = lexer.front;
 		if(token.matches!"EOL" || token.matches!"EOF")
