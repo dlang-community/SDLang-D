@@ -954,6 +954,11 @@ class Lexer
 			if(biTmp < 0 || biTmp > int.max)
 				error(tokenStart, "Datetime's millisecond is out of range.");
 			millisecond = biTmp.toInt();
+
+			if(millisecondStr.length == 1)
+				millisecond *= 100;
+			else if(millisecondStr.length == 2)
+				millisecond *= 10;
 		}
 
 		FracSec fracSecs;
@@ -1009,6 +1014,11 @@ class Lexer
 			if(biTmp < long.min || biTmp > long.max)
 				error(tokenStart, "Time span's millisecond is out of range.");
 			millisecond = biTmp.toLong();
+
+			if(millisecondStr.length == 1)
+				millisecond *= 100;
+			else if(millisecondStr.length == 2)
+				millisecond *= 10;
 		}
 		
 		auto duration =
@@ -1654,12 +1664,13 @@ unittest
 	testLex("trueX",  [ Token(symbol!"Ident",loc,Value(null),"trueX") ]);
 
 	// Raw Backtick Strings
-	testLex("`hello world`",     [ Token(symbol!"Value",loc,Value(`hello world`   )) ]);
-	testLex("` hello world `",   [ Token(symbol!"Value",loc,Value(` hello world ` )) ]);
-	testLex("`hello \\t world`", [ Token(symbol!"Value",loc,Value(`hello \t world`)) ]);
-	testLex("`hello \\n world`", [ Token(symbol!"Value",loc,Value(`hello \n world`)) ]);
-	testLex("`hello \n world`",  [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
-	testLex("`hello \"world\"`", [ Token(symbol!"Value",loc,Value(`hello "world"` )) ]);
+	testLex("`hello world`",      [ Token(symbol!"Value",loc,Value(`hello world`   )) ]);
+	testLex("` hello world `",    [ Token(symbol!"Value",loc,Value(` hello world ` )) ]);
+	testLex("`hello \\t world`",  [ Token(symbol!"Value",loc,Value(`hello \t world`)) ]);
+	testLex("`hello \\n world`",  [ Token(symbol!"Value",loc,Value(`hello \n world`)) ]);
+	testLex("`hello \n world`",   [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
+	testLex("`hello \r\n world`", [ Token(symbol!"Value",loc,Value("hello \r\n world")) ]);
+	testLex("`hello \"world\"`",  [ Token(symbol!"Value",loc,Value(`hello "world"` )) ]);
 
 	testLexThrows("`foo");
 	testLexThrows("`");
@@ -1735,6 +1746,8 @@ unittest
 	testLex("-2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
 	testLex( "2013/2/22 07:53:34",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34)))) ]);
 	testLex( "2013/2/22 07:53:34.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123)))) ]);
+	testLex( "2013/2/22 07:53:34.12",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(120)))) ]);
+	testLex( "2013/2/22 07:53:34.1",   [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(100)))) ]);
 	testLex( "2013/2/22 07:53.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123)))) ]);
 
 	testLex( "2013/2/22 34:65",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0)))) ]);
@@ -1866,7 +1879,10 @@ unittest
 	testLex( "00:09:12",         [ Token(symbol!"Value",loc,Value( days( 0)+hours( 0)+minutes( 9)+seconds(12)+msecs(  0))) ]);
 	testLex( "00:00:01.023",     [ Token(symbol!"Value",loc,Value( days( 0)+hours( 0)+minutes( 0)+seconds( 1)+msecs( 23))) ]);
 	testLex( "23d:05:21:23.532", [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(532))) ]);
+	testLex( "23d:05:21:23.53",  [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(530))) ]);
+	testLex( "23d:05:21:23.5",   [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(500))) ]);
 	testLex("-23d:05:21:23.532", [ Token(symbol!"Value",loc,Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(532))) ]);
+	testLex("-23d:05:21:23.5",   [ Token(symbol!"Value",loc,Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(500))) ]);
 	testLex( "23d:05:21:23",     [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(  0))) ]);
 
 	testLexThrows("12:14:42a");
