@@ -154,9 +154,9 @@ alias Algebraic!(
 
 ```console
 > build
-> bin\sdlang lex sample.sdl
+> bin/sdlang lex sample.sdl
 (...output...)
-> bin\sdlang parse sample.sdl
+> bin/sdlang parse sample.sdl
 (...output...)
 ```
 
@@ -164,7 +164,7 @@ alias Algebraic!(
 
 ```console
 > build-unittests
-> bin\sdlang-unittest
+> bin/sdlang-unittest
 (...output...)
 ```
 
