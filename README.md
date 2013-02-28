@@ -44,14 +44,14 @@ See also: [API Reference](http://semitwist.com/sdlang-d-api)
 The only external requirement is [DMD](http://dlang.org) v2.061 or newer.
 
 Obtain SDLang-D:
-```
-git clone https://github.com/Abscissa/SDLang-D.git
-cd SDLang-D
-git checkout v0.8.1
+```console
+> git clone https://github.com/Abscissa/SDLang-D.git
+> cd SDLang-D
+> git checkout v0.8.1
 ```
 
 example.d (Note: API to be improved and documented):
-```
+```d
 import std.stdio;
 import sdlang;
 
@@ -98,7 +98,7 @@ int main()
 ```
 
 Compile and run:
-```
+```console
 > rdmd --build-only -I{path to sdlang}/src example.d
 > example
 Hello world
@@ -107,7 +107,7 @@ Age: 36
 ```
 
 The type ```Value``` is defined as such:
-```
+```d
 /++
 SDL's datatypes map to D's datatypes as described below.
 Most are straightforward, but take special note of the date/time-related types.
@@ -152,7 +152,7 @@ alias Algebraic!(
 
 ### Lex or Parse an SDL file
 
-```
+```console
 > build
 > bin\sdlang lex sample.sdl
 (...output...)
@@ -162,7 +162,7 @@ alias Algebraic!(
 
 ### Unittests
 
-```
+```console
 > build-unittests
 > bin\sdlang-unittest
 (...output...)
@@ -173,7 +173,7 @@ alias Algebraic!(
 Make sure [ddox](https://github.com/rejectedsoftware/ddox) is installed and
 on the PATH. Then, run:
 
-```
+```console
 > build-docs
 ```
 
