@@ -37,7 +37,7 @@ Tags are of this form:
 
 Tag and attribute names can optionally inlcude a namespace prefix (ie, ```namespace:name```). All parts are optional, the only exception being that an anonymous (ie, no name) tag must have at least one value.
 
-See also: [API Reference](http://semitwist.com/sdlang-d)
+See also: [API Reference](http://semitwist.com/sdlang-d-api)
 
 == How to use SDLang-D
 
