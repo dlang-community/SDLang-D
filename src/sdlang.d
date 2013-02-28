@@ -28,12 +28,20 @@ import std.datetime;
 import std.file;
 import std.stdio;
 
+import sdlang_impl.ast;
 import sdlang_impl.exception;
 import sdlang_impl.lexer;
 import sdlang_impl.parser;
 import sdlang_impl.symbol;
 import sdlang_impl.token;
 import sdlang_impl.util;
+
+// Expose main public API
+public import sdlang_impl.ast       : Attribute, Tag;
+public import sdlang_impl.exception : SDLangException;
+public import sdlang_impl.parser    : parseFile, parseSource;
+public import sdlang_impl.token     : Value, Token, DateTimeFrac, DateTimeFracUnknownZone;
+public import sdlang_impl.util      : sdlangVersion, Location;
 
 version(SDLang_Unittest)
 	void main() {}
