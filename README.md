@@ -146,7 +146,7 @@ alias Algebraic!(
 * API is completely redesigned for D.
 * License is zlib/libpng, not LGPL. (No source from the Java or Ruby implementations was used or looked at.)
 * Anonymous tags are named ```""``` (ie, empty string) not ```"content"```. Not sure yet whether or not this will change in the future.
-* Dates with unknown or invalid time zones use a special type indicating "unknown time zone" (```DateTimeFracUnknownZone```) instead of assumming GMT.
+* Dates with unknown or invalid time zones use a special type indicating "unknown time zone" (```DateTimeFracUnknownZone```) instead of assuming GMT.
 
 ## Included tools
 
@@ -185,6 +185,6 @@ In no order:
 
 * Major improvements to API for Tags.
 * Ability to write SDL output, not just read it.
-* Make sure that all forms of newlines are handled correctly. (Unix-style '\n' defintiely works right. Not certian about Win-style '\r\n', Mac9-style '\r' or special Unicode newlines.)
+* Make sure that all forms of newlines are handled correctly. (Unix-style '\n' definitely works right. Not certian about Win-style '\r\n', Mac9-style '\r' or special Unicode newlines.)
 * Make this a [DUB](https://github.com/rejectedsoftware/dub) package.
 * Improve docs.
