@@ -2,14 +2,14 @@
 // Written in the D programming language.
 
 /++
-Library for parsing SDL (Simple Declarative Language).
+SDLang-D v0.8: Library for parsing SDL (Simple Declarative Language).
 
 Import this module to use SDLang-D as a library.
 
 This should work with DMD 2.061 and up.
 
 Homepage: http://github.com/Abscissa/SDLang-D
-API:      http://semitwist.com/sdlang-d
+API:      http://semitwist.com/sdlang-d-api
 SDL:      http://sdl.ikayzo.org/display/SDL/Language+Guide
 
 Authors: Nick Sabalausky ("Abscissa") http://semitwist.com/contact
@@ -22,20 +22,20 @@ import std.datetime;
 import std.file;
 import std.stdio;
 
-import sdlang_impl.ast;
-import sdlang_impl.exception;
-import sdlang_impl.lexer;
-import sdlang_impl.parser;
-import sdlang_impl.symbol;
-import sdlang_impl.token;
-import sdlang_impl.util;
+import sdlang_.ast;
+import sdlang_.exception;
+import sdlang_.lexer;
+import sdlang_.parser;
+import sdlang_.symbol;
+import sdlang_.token;
+import sdlang_.util;
 
 // Expose main public API
-public import sdlang_impl.ast       : Attribute, Tag;
-public import sdlang_impl.exception : SDLangException;
-public import sdlang_impl.parser    : parseFile, parseSource;
-public import sdlang_impl.token     : Value, Token, DateTimeFrac, DateTimeFracUnknownZone;
-public import sdlang_impl.util      : sdlangVersion, Location;
+public import sdlang_.ast       : Attribute, Tag;
+public import sdlang_.exception : SDLangException;
+public import sdlang_.parser    : parseFile, parseSource;
+public import sdlang_.token     : Value, Token, DateTimeFrac, DateTimeFracUnknownZone;
+public import sdlang_.util      : sdlangVersion, Location;
 
 version(SDLang_Unittest)
 	void main() {}

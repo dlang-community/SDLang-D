@@ -1,14 +1,14 @@
 // SDLang-D
 // Written in the D programming language.
 
-module sdlang_impl.ast;
+module sdlang_.ast;
 
 import std.array;
 import std.conv;
 import std.string;
 
-import sdlang_impl.token;
-import sdlang_impl.util;
+import sdlang_.token;
+import sdlang_.util;
 
 struct Attribute
 {

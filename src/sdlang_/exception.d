@@ -1,12 +1,12 @@
 // SDLang-D
 // Written in the D programming language.
 
-module sdlang_impl.exception;
+module sdlang_.exception;
 
 import std.exception;
 import std.string;
 
-import sdlang_impl.util;
+import sdlang_.util;
 
 class SDLangException : Exception
 {

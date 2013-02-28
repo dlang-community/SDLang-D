@@ -1,16 +1,16 @@
 ﻿// SDLang-D
 // Written in the D programming language.
 
-module sdlang_impl.parser;
+module sdlang_.parser;
 
 import std.file;
 
-import sdlang_impl.ast;
-import sdlang_impl.exception;
-import sdlang_impl.lexer;
-import sdlang_impl.symbol;
-import sdlang_impl.token;
-import sdlang_impl.util;
+import sdlang_.ast;
+import sdlang_.exception;
+import sdlang_.lexer;
+import sdlang_.symbol;
+import sdlang_.token;
+import sdlang_.util;
 
 /// Returns root tag
 Tag parseFile(string filename)

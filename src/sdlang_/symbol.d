@@ -1,7 +1,7 @@
 // SDLang-D
 // Written in the D programming language.
 
-module sdlang_impl.symbol;
+module sdlang_.symbol;
 
 import std.algorithm;
 

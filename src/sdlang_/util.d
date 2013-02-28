@@ -1,14 +1,14 @@
 // SDLang-D
 // Written in the D programming language.
 
-module sdlang_impl.util;
+module sdlang_.util;
 
 import std.algorithm;
 import std.datetime;
 import std.stdio;
 import std.string;
 
-import sdlang_impl.token;
+import sdlang_.token;
 
 enum sdlangVersion = "0.8";
 

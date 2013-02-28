@@ -1,13 +1,13 @@
 // SDLang-D
 // Written in the D programming language.
 
-module sdlang_impl.token;
+module sdlang_.token;
 
 import std.datetime;
 import std.variant;
 
-import sdlang_impl.symbol;
-import sdlang_impl.util;
+import sdlang_.symbol;
+import sdlang_.util;
 
 /// DateTime doesn't support milliseconds, but SDL's "Date Time" type does.
 /// So this is needed for any SDL "Date Time" that doesn't include a time zone.
@@ -82,7 +82,7 @@ alias Algebraic!(
 /// constructed since the AST is directly built during parsing.
 struct Token
 {
-	Symbol symbol = sdlang_impl.symbol.symbol!"Error"; /// The "type" of this token
+	Symbol symbol = sdlang_.symbol.symbol!"Error"; /// The "type" of this token
 	Location location;
 	Value value; /// Only valid when 'symbol' is symbol!"Value", otherwise null
 	string data; /// Original text from source
