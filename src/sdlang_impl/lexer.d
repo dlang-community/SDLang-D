@@ -1,5 +1,5 @@
-﻿/// SDLang-D
-/// Written in the D programming language.
+﻿// SDLang-D
+// Written in the D programming language.
 
 module sdlang_impl.lexer;
 
@@ -82,11 +82,11 @@ private template acceptImpl(string symbolName, string value)
 		}
 	").replace("\n", "");
 }
-///.
+
 class Lexer
 {
-	string source; ///.
-	string filename; ///.
+	string source;
+	string filename;
 	Location location; /// Location of current character in source
 
 	private dchar  ch;         // Current character
@@ -120,7 +120,6 @@ class Lexer
 	}
 	private LookaheadTokenInfo lookaheadTokenInfo;
 	
-	///.
 	this(string source=null, string filename=null)
 	{
 		this.filename = filename;
@@ -150,19 +149,17 @@ class Lexer
 		popFront();
 	}
 	
-	///.
 	@property bool empty()
 	{
 		return _front.symbol == symbol!"EOF";
 	}
 	
 	Token _front;
-	@property Token front() ///.
+	@property Token front()
 	{
 		return _front;
 	}
 
-	///.
 	@property bool isEOF()
 	{
 		return location.index == source.length && !lookaheadTokenInfo.exists;
@@ -341,7 +338,6 @@ class Lexer
 		isEndOfIdentCached = false;
 	}
 
-	///.
 	void popFront()
 	{
 		// -- Main Lexer -------------

@@ -1,6 +1,9 @@
----------------------------------------------------
+-------------------------------------------------------------------------
+The images, css stylesheets and js scripts in the 'docs' directory are
+copyright their respective owners and licensed separately.
+
 SDLib-D is licensed under The zlib/libpng License:
----------------------------------------------------
+-------------------------------------------------------------------------
 
 Copyright (c) 2012-2013 Nick Sabalausky
 

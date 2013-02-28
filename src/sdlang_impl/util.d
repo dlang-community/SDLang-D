@@ -1,5 +1,5 @@
-/// SDLang-D
-/// Written in the D programming language.
+// SDLang-D
+// Written in the D programming language.
 
 module sdlang_impl.util;
 

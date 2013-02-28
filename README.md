@@ -6,8 +6,7 @@ SDL is similar to JSON or XML, except it's:
 * Less verbose
 * [Type](http://sdl.ikayzo.org/display/SDL/Language+Guide#LanguageGuide-literals)-aware
 
-This is what SDL looks like (some of these examples, and more, are from
-[the SDL site](http://sdl.ikayzo.org/display/SDL/Language+Guide)):
+This is what SDL looks like (some of these examples, and more, are from [the SDL site](http://sdl.ikayzo.org/display/SDL/Language+Guide)):
 ```
 first "Joe"
 last "Coder"
@@ -37,6 +36,8 @@ Tags are of this form:
 ```
 
 Tag and attribute names can optionally inlcude a namespace prefix (ie, ```namespace:name```). All parts are optional, the only exception being that an anonymous (ie, no name) tag must have at least one value.
+
+See also: [API Reference](http://semitwist.com/sdlang-d)
 
 == How to use SDLang-D
 
@@ -167,12 +168,23 @@ alias Algebraic!(
 (...output...)
 ```
 
+=== Build Docs
+
+Make sure [ddox](https://github.com/rejectedsoftware/ddox) is installed and
+on the PATH. Then, run:
+
+```
+> build-docs
+```
+
+Finally, open 'docs/index.html' in your browser.
+
 == TODO
 
 In no order:
 
-* Genrate API documentation.
 * Major improvements to API for Tags.
 * Ability to write SDL output, not just read it.
 * Make sure that all forms of newlines are handled correctly. (Unix-style '\n' defintiely works right. Not certian about Win-style '\r\n', Mac9-style '\r' or special Unicode newlines.)
 * Make this a [DUB](https://github.com/rejectedsoftware/dub) package.
+* Improve docs.

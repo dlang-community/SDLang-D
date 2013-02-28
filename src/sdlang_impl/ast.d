@@ -1,5 +1,5 @@
-/// SDLang-D
-/// Written in the D programming language.
+// SDLang-D
+// Written in the D programming language.
 
 module sdlang_impl.ast;
 
@@ -10,15 +10,13 @@ import std.string;
 import sdlang_impl.token;
 import sdlang_impl.util;
 
-///.
 struct Attribute
 {
-	string   namespace; ///.
-	string   name;      ///.
-	Location location;  ///.
-	Value    value;     ///.
+	string   namespace;
+	string   name;
+	Location location;
+	Value    value;
 
-	///.
 	@property string fullName()
 	{
 		return namespace==""? name : text(namespace, ":", name);
@@ -29,13 +27,12 @@ class Tag
 {
 	static immutable defaultName = "content";
 
-	Tag      parent;    ///.
-	string   namespace; ///.
+	Tag      parent;
+	string   namespace;
 	string   name;      /// Not including namespace
-	Location location;  ///.
-	Value[]  values;    ///.
+	Location location;
+	Value[]  values;
 	
-	///.
 	@property string fullName()
 	{
 		return namespace==""? name : text(namespace, ":", name);
@@ -44,13 +41,11 @@ class Tag
 	Attribute[][string][string] attributes; /// attributes[namespace][name][0..$]
 	Tag[][string][string]       tags;       /// tags[namespace][name][0..$]
 
-	///.
 	this(Tag parent)
 	{
 		this.parent = parent;
 	}
 
-	///.
 	this(Tag parent, string namespace, string name)
 	{
 		this.parent    = parent;

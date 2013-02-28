@@ -1,24 +1,18 @@
-/// SDLang-D
-/// Written in the D programming language.
+// SDLang-D
+// Written in the D programming language.
 
 /++
 Library for parsing SDL (Simple Declarative Language).
-SDL: http://sdl.ikayzo.org/display/SDL/Language+Guide
 
-Author:
-$(WEB www.semitwist.com, Nick Sabalausky)
+Import this module to use SDLang-D as a library.
 
 This should work with DMD 2.061 and up.
 
-To compile test app manually:
-	Win:   build [rdmd and compiler options]
-	Other: ./build [rdmd and compiler options]
+Homepage: http://github.com/Abscissa/SDLang-D
+API:      http://semitwist.com/sdlang-d
+SDL:      http://sdl.ikayzo.org/display/SDL/Language+Guide
 
-You can also compile the test app with stbuild (part of SemiTwist D Tools):
-	semitwist-stbuild all [release|debug|all]
-
-	Installation instructions for SemiTwist D Tools are here:
-		http://semitwist.com/goldie/Start/Install/
+Authors: Nick Sabalausky ("Abscissa") http://semitwist.com/contact
 +/
 
 module sdlang;

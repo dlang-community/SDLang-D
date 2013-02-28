@@ -1,5 +1,5 @@
-/// SDLang-D
-/// Written in the D programming language.
+// SDLang-D
+// Written in the D programming language.
 
 module sdlang_impl.token;
 
@@ -83,12 +83,12 @@ alias Algebraic!(
 struct Token
 {
 	Symbol symbol = sdlang_impl.symbol.symbol!"Error"; /// The "type" of this token
-	Location location; ///.
+	Location location;
 	Value value; /// Only valid when 'symbol' is symbol!"Value", otherwise null
 	string data; /// Original text from source
 
 	@disable this();
-	this(Symbol symbol, Location location, Value value=Value(null), string data=null) ///.
+	this(Symbol symbol, Location location, Value value=Value(null), string data=null)
 	{
 		this.symbol   = symbol;
 		this.location = location;
@@ -120,7 +120,6 @@ struct Token
 		return true;
 	}
 	
-	///.
 	bool matches(string symbolName)()
 	{
 		return this.symbol == .symbol!symbolName;
