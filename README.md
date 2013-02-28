@@ -185,6 +185,7 @@ In no order:
 
 * Major improvements to API for Tags.
 * Ability to write SDL output, not just read it.
+* Convert SDL documents to XML and JSON
 * Make sure that all forms of newlines are handled correctly. (Unix-style '\n' definitely works right. Not certian about Win-style '\r\n', Mac9-style '\r' or special Unicode newlines.)
-* Make this a [DUB](https://github.com/rejectedsoftware/dub) package.
+* [DUB](https://github.com/rejectedsoftware/dub) and [Orbit](https://github.com/jacob-carlborg/orbit/wiki) packages.
 * Improve docs.
