@@ -1,4 +1,4 @@
-= SDLang-D
+# SDLang-D
 
 An [SDL (Simple Declarative Language)](http://sdl.ikayzo.org/display/SDL/Language+Guide) library for [D](http://dlang.org).
 
@@ -39,7 +39,7 @@ Tag and attribute names can optionally inlcude a namespace prefix (ie, ```namesp
 
 See also: [API Reference](http://semitwist.com/sdlang-d-api)
 
-== How to use SDLang-D
+## How to use SDLang-D
 
 The only external requirement is [DMD](http://dlang.org) v2.061 or newer.
 
@@ -141,16 +141,16 @@ alias Algebraic!(
 ) Value;
 ```
 
-== Differences from original Java implementation
+## Differences from original Java implementation
 
 * API is completely redesigned for D.
 * License is zlib/libpng, not LGPL. (No source from the Java or Ruby implementations was used or looked at.)
 * Anonymous tags are named ```""``` (ie, empty string) not ```"content"```. Not sure yet whether or not this will change in the future.
 * Dates with unknown or invalid time zones use a special type indicating "unknown time zone" (```DateTimeFracUnknownZone```) instead of assumming GMT.
 
-== Included tools
+## Included tools
 
-=== Lex or Parse an SDL file
+### Lex or Parse an SDL file
 
 ```
 > build
@@ -160,7 +160,7 @@ alias Algebraic!(
 (...output...)
 ```
 
-=== Unittests
+### Unittests
 
 ```
 > build-unittests
@@ -168,7 +168,7 @@ alias Algebraic!(
 (...output...)
 ```
 
-=== Build Docs
+### Build Docs
 
 Make sure [ddox](https://github.com/rejectedsoftware/ddox) is installed and
 on the PATH. Then, run:
@@ -179,7 +179,7 @@ on the PATH. Then, run:
 
 Finally, open 'docs/index.html' in your browser.
 
-== TODO
+## TODO
 
 In no order:
 
