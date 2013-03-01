@@ -16,12 +16,7 @@
 
 		"sdlang": {
 			"versions": ["SDLang_TestApp"],
-			"dflags-dmd": ["-ofbin/sdlang", "-O", "-inline"]
-		},
-
-		"sdlang-debug": {
-			"versions": ["SDLang_TestApp"],
-			"dflags-dmd": ["-ofbin/sdlang-debug", "-debug", "-gc"]
+			"dflags-dmd": ["-ofbin/sdlang"]
 		},
 
 		"unittest": {
