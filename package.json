@@ -1,0 +1,32 @@
+{
+	"name":        "sdlang-d",
+	"description": "An SDL (Simple Declarative Language) library for D.",
+	"homepage":    "http://github.com/Abscissa/SDLang-D",
+	"authors":     ["Nick Sabalausky"],
+	"license":     "zlib/libpng",
+	"copyright":   "©2012-2013 Nick Sabalausky",
+
+	"sourcePaths": ["src"],
+	"importPaths": ["src"],
+
+	"dflags-dmd": ["-wi"],
+
+	"configurations": {
+		"default": "sdlang",
+
+		"sdlang": {
+			"versions": ["SDLang_TestApp"],
+			"dflags-dmd": ["-ofbin/sdlang", "-O", "-inline"]
+		},
+
+		"sdlang-debug": {
+			"versions": ["SDLang_TestApp"],
+			"dflags-dmd": ["-ofbin/sdlang-debug", "-debug", "-gc"]
+		},
+
+		"unittest": {
+			"versions": ["SDLang_Unittest"],
+			"dflags-dmd": ["-ofbin/sdlang-unittest", "-debug", "-gc", "-unittest"]
+		}
+	}
+}
