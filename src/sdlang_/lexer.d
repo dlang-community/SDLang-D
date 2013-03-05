@@ -195,8 +195,14 @@ class Lexer
 
 	private bool isNewline(dchar ch)
 	{
-		//TODO: Not entirely sure if this list is 100% complete and correct per spec.
 		return ch == '\n' || ch == '\r' || ch == lineSep || ch == paraSep;
+	}
+
+	private bool isAtNewline()
+	{
+		return
+			ch == '\n' || ch == lineSep || ch == paraSep ||
+			(ch == '\r' && lookahead('\n'));
 	}
 
 	/// Is 'ch' a valid base 64 character?
@@ -302,8 +308,7 @@ class Lexer
 	/// Returns false if EOF was reached
 	private void advanceChar(ErrorOnEOF errorOnEOF)
 	{
-		//TODO: Should this include all isNewline()? (except for \r, right?)
-		if(ch == '\n')
+		if(isAtNewline())
 		{
 			location.line++;
 			location.col = 0;
@@ -386,8 +391,7 @@ class Lexer
 			mixin(accept!":");
 		}
 		
-		//TODO: Should this include all isNewline()? (except for \r, right?)
-		else if(ch == ';' || ch == '\n')
+		else if(ch == ';' || isAtNewline())
 		{
 			advanceChar(ErrorOnEOF.No);
 			mixin(accept!"EOL");
@@ -529,6 +533,7 @@ class Lexer
 					switch(nextCh)
 					{
 					case 'n':  buf.put('\n'); break;
+					case 'r':  buf.put('\r'); break;
 					case 't':  buf.put('\t'); break;
 					case '"':  buf.put('\"'); break;
 					case '\\': buf.put('\\'); break;
@@ -583,6 +588,7 @@ class Lexer
 			switch(ch)
 			{
 			case 'n':  value = '\n'; break;
+			case 'r':  value = '\r'; break;
 			case 't':  value = '\t'; break;
 			case '\'': value = '\''; break;
 			case '\\': value = '\\'; break;
@@ -1148,7 +1154,7 @@ class Lexer
 			if(ch == '\\' && hasNextCh && isNewline(nextCh))
 			{
 				advanceChar(ErrorOnEOF.Yes);
-				if(ch == '\r' && hasNextCh && nextCh == '\n')
+				if(isAtNewline())
 					advanceChar(ErrorOnEOF.Yes);
 				advanceChar(ErrorOnEOF.No);
 			}
@@ -1312,7 +1318,7 @@ class Lexer
 		enum State
 		{
 			normal,
-			lineComment,  // Got "#" or "//" or "--", Eating everything until "\n"
+			lineComment,  // Got "#" or "//" or "--", Eating everything until newline
 			blockComment, // Got "/*", Eating everything until "*/"
 		}
 
@@ -1367,8 +1373,7 @@ class Lexer
 					else
 						return; // Done
 				}
-				//TODO: Should this include all isNewline()? (except for \r, right?)
-				else if(ch == '\n')
+				else if(isAtNewline())
 				{
 					if(consumeNewlines)
 						hasConsumedNewline = true;
@@ -1391,8 +1396,7 @@ class Lexer
 				break;
 			
 			case State.lineComment:
-				//TODO: Should this include all isNewline()? (except for \r, right?)
-				if(lookahead('\n'))
+				if(!hasNextCh || isNewline(nextCh))
 					state = State.normal;
 				break;
 			
