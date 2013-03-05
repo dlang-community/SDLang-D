@@ -170,7 +170,7 @@ See [Changelog](https://raw.github.com/Abscissa/SDLang-D/master/CHANGELOG.txt)
 ### Unittests
 
 ```console
-> build-unittests
+> build-unittest
 > bin/sdlang-unittest
 (...output...)
 ```
