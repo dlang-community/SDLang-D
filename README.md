@@ -3,8 +3,8 @@
 An [SDL (Simple Declarative Language)](http://sdl.ikayzo.org/display/SDL/Language+Guide) library for [D](http://dlang.org).
 
 SDL is similar to JSON, XML or YAML, except it's:
-* Less verbose than JSON and XML
-* [Type](http://sdl.ikayzo.org/display/SDL/Language+Guide#LanguageGuide-literals)-aware
+* Less verbose than JSON and XML.
+* [Type](http://sdl.ikayzo.org/display/SDL/Language+Guide#LanguageGuide-literals)-aware.
 * Easier to learn and read than YAML.
 
 This is what SDL looks like (some of these examples, and more, are from [the SDL site](http://sdl.ikayzo.org/display/SDL/Language+Guide)):
