@@ -2,9 +2,10 @@
 
 An [SDL (Simple Declarative Language)](http://sdl.ikayzo.org/display/SDL/Language+Guide) library for [D](http://dlang.org).
 
-SDL is similar to JSON or XML, except it's:
-* Less verbose
+SDL is similar to JSON, XML or YAML, except it's:
+* Less verbose than JSON and XML
 * [Type](http://sdl.ikayzo.org/display/SDL/Language+Guide#LanguageGuide-literals)-aware
+* Easier to learn and read than YAML.
 
 This is what SDL looks like (some of these examples, and more, are from [the SDL site](http://sdl.ikayzo.org/display/SDL/Language+Guide)):
 ```
@@ -35,9 +36,7 @@ Tags are of this form:
 [tag name] [values] [attributes] [children]
 ```
 
-Tag and attribute names can optionally inlcude a namespace prefix (ie, ```namespace:name```). All parts are optional, the only exception being that an anonymous (ie, no name) tag must have at least one value.
-
-See also: [API Reference](http://semitwist.com/sdlang-d-api)
+Tag and attribute names can optionally include a namespace prefix (ie, ```namespace:name```). All parts are optional, the only exception being that an anonymous (ie, no name) tag must have at least one value.
 
 ## How to use SDLang-D
 
@@ -50,7 +49,7 @@ Obtain SDLang-D:
 > git checkout v0.8.1
 ```
 
-example.d (Note: API to be improved and documented):
+example.d (Note: [API](http://semitwist.com/sdlang-d-api) to be greatly improved):
 ```d
 import std.stdio;
 import sdlang;
@@ -141,6 +140,14 @@ alias Algebraic!(
 ) Value;
 ```
 
+## API Reference
+
+See [API Reference](http://semitwist.com/sdlang-d-api)
+
+## Changelog
+
+See [Changelog](https://raw.github.com/Abscissa/SDLang-D/master/CHANGELOG.txt)
+
 ## Differences from original Java implementation
 
 * API is completely redesigned for D.
@@ -168,7 +175,7 @@ alias Algebraic!(
 (...output...)
 ```
 
-### Build Docs
+### Build API Reference
 
 Make sure [ddox](https://github.com/rejectedsoftware/ddox) is installed and
 on the PATH. Then, run:
@@ -179,6 +186,12 @@ on the PATH. Then, run:
 
 Finally, open 'docs/index.html' in your browser.
 
+### Project/Package Files
+
+Project files for [Programmer's Notepad 2](http://www.pnotepad.org/) are included. Just open ```SDLang-D.ppg```.
+
+Starting with the upcoming SDLang-D v0.8.2, SDLang-D is a [DUB](https://github.com/rejectedsoftware/dub) package and can therefore be used with DUB. The package name is ```sdlang-d```.
+
 ## TODO
 
 In no order:
@@ -186,5 +199,4 @@ In no order:
 * Major improvements to API for Tags.
 * Ability to write SDL output, not just read it.
 * Convert SDL documents to XML and JSON
-* [DUB](https://github.com/rejectedsoftware/dub) and [Orbit](https://github.com/jacob-carlborg/orbit/wiki) packages.
-* Improve docs.
+* Improve API reference.
