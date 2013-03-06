@@ -2,7 +2,7 @@
 // Written in the D programming language.
 
 /++
-SDLang-D v0.8.2-dev: Library for parsing SDL (Simple Declarative Language).
+SDLang-D v0.8.2: Library for parsing SDL (Simple Declarative Language).
 
 Import this module to use SDLang-D as a library.
 

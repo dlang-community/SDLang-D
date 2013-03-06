@@ -46,7 +46,7 @@ Obtain SDLang-D:
 ```console
 > git clone https://github.com/Abscissa/SDLang-D.git
 > cd SDLang-D
-> git checkout v0.8.1
+> git checkout v0.8.2
 ```
 
 example.d (Note: [API](http://semitwist.com/sdlang-d-api) to be greatly improved):
@@ -196,13 +196,12 @@ Finally, open 'docs/index.html' in your browser.
 
 Project files for [Programmer's Notepad 2](http://www.pnotepad.org/) are included. Just open ```SDLang-D.ppg```.
 
-Starting with the upcoming SDLang-D v0.8.2, SDLang-D is a [DUB](https://github.com/rejectedsoftware/dub) package and can therefore be used with DUB. The package name is ```sdlang-d```.
+As of SDLang-D v0.8.2, SDLang-D is a [DUB](https://github.com/rejectedsoftware/dub) package and is available in the DUB repository. The package name is ```sdlang-d```.
 
 ## TODO
 
 In no order:
 
 * Major improvements to API for Tags.
-* Ability to write SDL output, not just read it.
 * Convert SDL documents to XML and JSON
 * Improve API reference.
