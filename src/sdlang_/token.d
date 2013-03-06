@@ -1,4 +1,4 @@
-// SDLang-D
+﻿// SDLang-D
 // Written in the D programming language.
 
 module sdlang_.token;
@@ -399,4 +399,98 @@ unittest
 	assert(Token(symbol!"Value",loc,Value(   7),"foo") != Token(symbol!"Value",loc, Value(   2),"foo"));
 	assert(Token(symbol!"Value",loc,Value(cast(int)7)) != Token(symbol!"Value",loc, Value(cast(long)7)));
 	assert(Token(symbol!"Value",loc,Value(cast(float)1.2)) != Token(symbol!"Value",loc, Value(cast(double)1.2)));
+}
+
+version(SDLang_Unittest)
+unittest
+{
+	import std.stdio;
+	writeln("Unittesting sdlang Value.toSDLString()...");
+	stdout.flush();
+	
+	// Bool and null
+	assert(Value(null ).toSDLString() == "null");
+	assert(Value(true ).toSDLString() == "true");
+	assert(Value(false).toSDLString() == "false");
+	
+	// Base64 Binary
+	assert(Value(cast(ubyte[])"hello world".dup).toSDLString() == "[aGVsbG8gd29ybGQ=]");
+
+	// Integer
+	assert(Value(cast( int) 7).toSDLString() ==  "7");
+	assert(Value(cast( int)-7).toSDLString() == "-7");
+	assert(Value(cast( int) 0).toSDLString() ==  "0");
+
+	assert(Value(cast(long) 7).toSDLString() ==  "7L");
+	assert(Value(cast(long)-7).toSDLString() == "-7L");
+	assert(Value(cast(long) 0).toSDLString() ==  "0L");
+
+	// Floating point
+	assert(Value(cast(float) 1.5).toSDLString() ==  "1.5F");
+	assert(Value(cast(float)-1.5).toSDLString() == "-1.5F");
+	assert(Value(cast(float)   0).toSDLString() ==    "0F");
+
+	assert(Value(cast(double) 1.5).toSDLString() ==  "1.5D");
+	assert(Value(cast(double)-1.5).toSDLString() == "-1.5D");
+	assert(Value(cast(double)   0).toSDLString() ==    "0D");
+
+	assert(Value(cast(real) 1.5).toSDLString() ==  "1.5BD");
+	assert(Value(cast(real)-1.5).toSDLString() == "-1.5BD");
+	assert(Value(cast(real)   0).toSDLString() ==    "0BD");
+
+	// String
+	assert(Value("hello"  ).toSDLString() == `"hello"`);
+	assert(Value(" hello ").toSDLString() == `" hello "`);
+	assert(Value(""       ).toSDLString() == `""`);
+	assert(Value("hello \r\n\t\"\\ world").toSDLString() == `"hello \r\n\t\"\\ world"`);
+	assert(Value("日本語").toSDLString() == `"日本語"`);
+
+	// Chars
+	assert(Value(cast(dchar) 'A').toSDLString() ==  `'A'`);
+	assert(Value(cast(dchar)'\r').toSDLString() == `'\r'`);
+	assert(Value(cast(dchar)'\n').toSDLString() == `'\n'`);
+	assert(Value(cast(dchar)'\t').toSDLString() == `'\t'`);
+	assert(Value(cast(dchar)'\'').toSDLString() == `'\''`);
+	assert(Value(cast(dchar)'\\').toSDLString() == `'\\'`);
+	assert(Value(cast(dchar) '月').toSDLString() ==  `'月'`);
+
+	// Date
+	assert(Value(Date( 2004,10,31)).toSDLString() == "2004/10/31");
+	assert(Value(Date(-2004,10,31)).toSDLString() == "-2004/10/31");
+
+	// DateTimeFrac w/o Frac
+	assert(Value(DateTimeFrac(DateTime(2004,10,31,  14,30,15))).toSDLString() == "2004/10/31 14:30:15");
+	assert(Value(DateTimeFrac(DateTime(2004,10,31,   1, 2, 3))).toSDLString() == "2004/10/31 01:02:03");
+	assert(Value(DateTimeFrac(DateTime(-2004,10,31, 14,30,15))).toSDLString() == "-2004/10/31 14:30:15");
+
+	// DateTimeFrac w/ Frac
+	assert(Value(DateTimeFrac(DateTime(2004,10,31,  14,30,15), FracSec.from!"msecs"(123))).toSDLString() == "2004/10/31 14:30:15.123");
+	assert(Value(DateTimeFrac(DateTime(2004,10,31,  14,30,15), FracSec.from!"msecs"(120))).toSDLString() == "2004/10/31 14:30:15.120");
+	assert(Value(DateTimeFrac(DateTime(2004,10,31,  14,30,15), FracSec.from!"msecs"(100))).toSDLString() == "2004/10/31 14:30:15.100");
+	assert(Value(DateTimeFrac(DateTime(2004,10,31,  14,30,15), FracSec.from!"msecs"( 12))).toSDLString() == "2004/10/31 14:30:15.012");
+	assert(Value(DateTimeFrac(DateTime(2004,10,31,  14,30,15), FracSec.from!"msecs"(  1))).toSDLString() == "2004/10/31 14:30:15.001");
+	assert(Value(DateTimeFrac(DateTime(-2004,10,31, 14,30,15), FracSec.from!"msecs"(123))).toSDLString() == "-2004/10/31 14:30:15.123");
+
+	// DateTimeFracUnknownZone
+	assert(Value(DateTimeFracUnknownZone(DateTime(2004,10,31, 14,30,15), FracSec.from!"msecs"(123), "Foo/Bar")).toSDLString() == "2004/10/31 14:30:15.123-Foo/Bar");
+
+	// SysTime
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new SimpleTimeZone( hours(0)             ))).toSDLString() == "2004/10/31 14:30:15-GMT+00:00");
+	assert(Value(SysTime(DateTime(2004,10,31,  1, 2, 3), new SimpleTimeZone( hours(0)             ))).toSDLString() == "2004/10/31 01:02:03-GMT+00:00");
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new SimpleTimeZone( hours(2)+minutes(10) ))).toSDLString() == "2004/10/31 14:30:15-GMT+02:10");
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new SimpleTimeZone(-hours(5)-minutes(30) ))).toSDLString() == "2004/10/31 14:30:15-GMT-05:30");
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new SimpleTimeZone( hours(2)+minutes( 3) ))).toSDLString() == "2004/10/31 14:30:15-GMT+02:03");
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(0) ))).toSDLString() == "2004/10/31 14:30:15.123-GMT+00:00");
+
+	// Duration
+	assert( "12:14:42"         == Value( days( 0)+hours(12)+minutes(14)+seconds(42)+msecs(  0)).toSDLString());
+	assert("-12:14:42"         == Value(-days( 0)-hours(12)-minutes(14)-seconds(42)-msecs(  0)).toSDLString());
+	assert( "00:09:12"         == Value( days( 0)+hours( 0)+minutes( 9)+seconds(12)+msecs(  0)).toSDLString());
+	assert( "00:00:01.023"     == Value( days( 0)+hours( 0)+minutes( 0)+seconds( 1)+msecs( 23)).toSDLString());
+	assert( "23d:05:21:23.532" == Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(532)).toSDLString());
+	assert( "23d:05:21:23.530" == Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(530)).toSDLString());
+	assert( "23d:05:21:23.500" == Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(500)).toSDLString());
+	assert("-23d:05:21:23.532" == Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(532)).toSDLString());
+	assert("-23d:05:21:23.500" == Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(500)).toSDLString());
+	assert( "23d:05:21:23"     == Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(  0)).toSDLString());
 }
