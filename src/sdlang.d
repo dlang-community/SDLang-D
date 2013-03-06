@@ -44,10 +44,13 @@ version(SDLang_TestApp)
 {
 	int main(string[] args)
 	{
-		if(args.length != 3 || (args[1] != "lex" && args[1] != "parse"))
+		if(
+			args.length != 3 ||
+			(args[1] != "lex" && args[1] != "parse" && args[1] != "to-sdl")
+		)
 		{
 			stderr.writeln("SDLang-D v", sdlangVersion);
-			stderr.writeln("Usage: sdlang [lex|parse] filename.sdl");
+			stderr.writeln("Usage: sdlang [lex|parse|to-sdl] filename.sdl");
 			return 1;
 		}
 		
@@ -57,8 +60,10 @@ version(SDLang_TestApp)
 		{
 			if(args[1] == "lex")
 				doLex(filename);
-			else
+			else if(args[1] == "parse")
 				doParse(filename);
+			else
+				doToSDL(filename);
 		}
 		catch(SDLangException e)
 		{
@@ -105,5 +110,15 @@ version(SDLang_TestApp)
 		auto root = parseFile(filename);
 		stdout.rawWrite(root.toDebugString());
 		writeln();
+	}
+
+	void doToSDL(string filename)
+	{
+		auto root = parseFile(filename);
+		writeln(Value("hello\nworld").toSDLString());
+		writeln(Value(1.1234567890123456789L).toSDLString());
+		writeln(Value([cast(ubyte)'h', cast(ubyte)'i']).toSDLString());
+		//stdout.rawWrite(root.toSDLString());
+		//writeln();
 	}
 }

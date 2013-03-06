@@ -3,7 +3,11 @@
 
 module sdlang_.token;
 
+import std.array;
+import std.base64;
+import std.conv;
 import std.datetime;
+import std.string;
 import std.variant;
 
 import sdlang_.symbol;
@@ -77,6 +81,106 @@ alias Algebraic!(
 	ubyte[],
 	typeof(null),
 ) Value;
+
+//TODO: Figure out how to properly handle strings/chars containing lineSep or paraSep
+string toSDLString(Value value)
+{
+	if(value.type == typeid(typeof(null)))
+		return "null";
+
+	else if(value.type == typeid(bool))
+		return value.get!bool()? "true" : "false";
+
+	else if(value.type == typeid(string))
+	{
+		Appender!string buf;
+		auto str = value.get!string();
+		
+		buf.put('"');
+		
+		// This loop is UTF-safe
+		foreach(char ch; str)
+		{
+			if     (ch == '\n') buf.put(`\n`);
+			else if(ch == '\r') buf.put(`\r`);
+			else if(ch == '\t') buf.put(`\t`);
+			else if(ch == '\"') buf.put(`\"`);
+			else if(ch == '\\') buf.put(`\\`);
+			else
+				buf.put(ch);
+		}
+
+		buf.put('"');
+		return buf.data;
+	}
+
+	else if(value.type == typeid(dchar))
+	{
+		Appender!string buf;
+		auto ch = value.get!dchar();
+		
+		buf.put('\'');
+		
+		if     (ch == '\n') buf.put(`\n`);
+		else if(ch == '\r') buf.put(`\r`);
+		else if(ch == '\t') buf.put(`\t`);
+		else if(ch == '\'') buf.put(`\'`);
+		else if(ch == '\\') buf.put(`\\`);
+		else
+			buf.put(ch);
+
+		buf.put('\'');
+		return buf.data;
+	}
+
+	else if(value.type == typeid(int))
+		return "%s".format(value.get!int());
+	
+	else if(value.type == typeid(long))
+		return "%sL".format(value.get!long());
+
+	else if(value.type == typeid(float))
+		return "%.30sF".format(value.get!float());
+		
+	else if(value.type == typeid(double))
+		return "%.30sD".format(value.get!double());
+
+	else if(value.type == typeid(real))
+		return "%.30sBD".format(value.get!real());
+
+	else if(value.type == typeid(Date))
+	{
+	
+	}
+	else if(value.type == typeid(DateTimeFrac))
+	{
+	
+	}
+	else if(value.type == typeid(SysTime))
+	{
+	
+	}
+	else if(value.type == typeid(DateTimeFracUnknownZone))
+	{
+	
+	}
+	else if(value.type == typeid(Duration))
+	{
+	
+	}
+	else if(value.type == typeid(ubyte[]))
+	{
+		Appender!string buf;
+
+		buf.put('[');
+		buf.put( Base64.encode(value.get!(ubyte[])) );
+		buf.put(']');
+
+		return buf.data;
+	}
+
+	throw new Exception("Internal SDLang-D error: Unhandled value type: "~to!string(value.type));
+}
 
 /// This only represents terminals. Nonterminals aren't
 /// constructed since the AST is directly built during parsing.
