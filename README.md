@@ -91,6 +91,9 @@ int main()
     
     int age = person.tags[""]["age"].values[0].get!int();
     writeln("Age: ", age);
+	
+	// Output back to SDL
+	writeln(root.toSDLString());
     
     return 0;
 }
@@ -103,6 +106,7 @@ Compile and run:
 Hello world
 Name: Joe Coder
 Age: 36
+(...SDL output...)
 ```
 
 The type ```Value``` is defined as such:
