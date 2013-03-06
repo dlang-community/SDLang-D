@@ -8,6 +8,7 @@ import std.base64;
 import std.conv;
 import std.datetime;
 import std.string;
+import std.typetuple;
 import std.variant;
 
 import sdlang_.symbol;
@@ -72,7 +73,7 @@ Date Time (no timezone):              DateTimeFrac
 Date Time (with a known timezone):    SysTime
 Date Time (with an unknown timezone): DateTimeFracUnknownZone
 +/
-alias Algebraic!(
+alias TypeTuple!(
 	bool,
 	string, dchar,
 	int, long,
@@ -80,106 +81,242 @@ alias Algebraic!(
 	Date, DateTimeFrac, SysTime, DateTimeFracUnknownZone, Duration,
 	ubyte[],
 	typeof(null),
-) Value;
+) ValueTypes;
+
+alias Algebraic!( ValueTypes ) Value; ///ditto
 
 //TODO: Figure out how to properly handle strings/chars containing lineSep or paraSep
 string toSDLString(Value value)
 {
-	if(value.type == typeid(typeof(null)))
-		return "null";
-
-	else if(value.type == typeid(bool))
-		return value.get!bool()? "true" : "false";
-
-	else if(value.type == typeid(string))
+	foreach(T; ValueTypes)
 	{
-		Appender!string buf;
-		auto str = value.get!string();
-		
-		buf.put('"');
-		
-		// This loop is UTF-safe
-		foreach(char ch; str)
-		{
-			if     (ch == '\n') buf.put(`\n`);
-			else if(ch == '\r') buf.put(`\r`);
-			else if(ch == '\t') buf.put(`\t`);
-			else if(ch == '\"') buf.put(`\"`);
-			else if(ch == '\\') buf.put(`\\`);
-			else
-				buf.put(ch);
-		}
-
-		buf.put('"');
-		return buf.data;
+		if(value.type == typeid(T))
+			return toSDLString( value.get!T() );
 	}
+	
+	throw new Exception("Internal SDLang-D error: Unhandled value type: "~to!string(value.type));
+}
 
-	else if(value.type == typeid(dchar))
+string toSDLString(typeof(null) value)
+{
+	return "null";
+}
+
+string toSDLString(bool value)
+{
+	return value? "true" : "false";
+}
+
+string toSDLString(string value)
+{
+	Appender!string buf;
+	buf.put('"');
+	
+	// This loop is UTF-safe
+	foreach(char ch; value)
 	{
-		Appender!string buf;
-		auto ch = value.get!dchar();
-		
-		buf.put('\'');
-		
 		if     (ch == '\n') buf.put(`\n`);
 		else if(ch == '\r') buf.put(`\r`);
 		else if(ch == '\t') buf.put(`\t`);
-		else if(ch == '\'') buf.put(`\'`);
+		else if(ch == '\"') buf.put(`\"`);
 		else if(ch == '\\') buf.put(`\\`);
 		else
 			buf.put(ch);
-
-		buf.put('\'');
-		return buf.data;
 	}
 
-	else if(value.type == typeid(int))
-		return "%s".format(value.get!int());
-	
-	else if(value.type == typeid(long))
-		return "%sL".format(value.get!long());
+	buf.put('"');
+	return buf.data;
+}
 
-	else if(value.type == typeid(float))
-		return "%.30sF".format(value.get!float());
+string toSDLString(dchar value)
+{
+	Appender!string buf;
+	buf.put('\'');
+	
+	if     (value == '\n') buf.put(`\n`);
+	else if(value == '\r') buf.put(`\r`);
+	else if(value == '\t') buf.put(`\t`);
+	else if(value == '\'') buf.put(`\'`);
+	else if(value == '\\') buf.put(`\\`);
+	else
+		buf.put(value);
+
+	buf.put('\'');
+	return buf.data;
+}
+
+string toSDLString(int value)
+{
+	return "%s".format(value);
+}
+
+string toSDLString(long value)
+{
+	return "%sL".format(value);
+}
+
+string toSDLString(float value)
+{
+	return "%.30sF".format(value);
+}
+
+string toSDLString(double value)
+{
+	return "%.30sD".format(value);
+}
+
+string toSDLString(real value)
+{
+	return "%.30sBD".format(value);
+}
+
+string toSDLString(Date value)
+{
+	Appender!string buf;
+	toSDLString(value, buf);
+	return buf.data;
+}
+
+void toSDLString(Date value, ref Appender!string buf)
+{
+	buf.put(to!string(value.year));
+	buf.put('/');
+	buf.put(to!string(cast(int)value.month));
+	buf.put('/');
+	buf.put(to!string(value.day));
+}
+
+string toSDLString(DateTimeFrac value)
+{
+	Appender!string buf;
+	toSDLString(value, buf);
+	return buf.data;
+}
+
+void toSDLString(DateTimeFrac value, ref Appender!string buf)
+{
+	toSDLString(value.dateTime.date, buf);
+	buf.put(' ');
+	buf.put("%.2s".format(value.dateTime.hour));
+	buf.put(':');
+	buf.put("%.2s".format(value.dateTime.minute));
+	
+	if(value.dateTime.second != 0)
+	{
+		buf.put(':');
+		buf.put("%.2s".format(value.dateTime.second));
+	}
+
+	if(value.fracSec.msecs != 0)
+	{
+		buf.put('.');
+		buf.put("%.3s".format(value.fracSec.msecs));
+	}
+}
+
+string toSDLString(SysTime value)
+{
+	Appender!string buf;
+
+	auto dateTimeFrac = DateTimeFrac(cast(DateTime)value, value.fracSec);
+	toSDLString(dateTimeFrac, buf);
+	
+	buf.put("-");
+	
+	auto tzString = value.timezone.name;
+	
+	// If name didn't exist, try abbreviation.
+	// Note that according to std.datetime docs, on Windows the
+	// stdName/dstName may not be properly abbreviated.
+	version(Windows) {} else
+	if(tzString == "")
+	{
+		auto tz = value.timezone;
+		auto stdTime = value.stdTime;
 		
-	else if(value.type == typeid(double))
-		return "%.30sD".format(value.get!double());
-
-	else if(value.type == typeid(real))
-		return "%.30sBD".format(value.get!real());
-
-	else if(value.type == typeid(Date))
-	{
+		if(tz.hasDST())
+			tzString = tz.dstInEffect(stdTime)? tz.dstName : tz.stdName;
+		else
+			tzString = tz.stdName;
+	}
 	
-	}
-	else if(value.type == typeid(DateTimeFrac))
+	if(tzString == "")
 	{
-	
-	}
-	else if(value.type == typeid(SysTime))
-	{
-	
-	}
-	else if(value.type == typeid(DateTimeFracUnknownZone))
-	{
-	
-	}
-	else if(value.type == typeid(Duration))
-	{
-	
-	}
-	else if(value.type == typeid(ubyte[]))
-	{
-		Appender!string buf;
+		auto offset = value.timezone.utcOffsetAt(value.stdTime);
+		buf.put("GMT");
 
-		buf.put('[');
-		buf.put( Base64.encode(value.get!(ubyte[])) );
-		buf.put(']');
+		if(offset < seconds(0))
+		{
+			buf.put("-");
+			offset = -offset;
+		}
+		else
+			buf.put("+");
+		
+		buf.put("%.2s".format(offset.hours));
+		buf.put(":");
+		buf.put("%.2s".format(offset.minutes));
+	}
+	else
+		buf.put(tzString);
 
-		return buf.data;
+	return buf.data;
+}
+
+string toSDLString(DateTimeFracUnknownZone value)
+{
+	Appender!string buf;
+
+	auto dateTimeFrac = DateTimeFrac(value.dateTime, value.fracSec);
+	toSDLString(dateTimeFrac, buf);
+	
+	buf.put("-");
+	buf.put(value.timeZone);
+
+	return buf.data;
+}
+
+string toSDLString(Duration value)
+{
+	Appender!string buf;
+
+	if(value < seconds(0))
+	{
+		buf.put("-");
+		value = -value;
+	}
+	
+	auto days = value.total!"days"();
+	if(days != 0)
+	{
+		buf.put("%s".format(days));
+		buf.put("d:");
 	}
 
-	throw new Exception("Internal SDLang-D error: Unhandled value type: "~to!string(value.type));
+	buf.put("%.2s".format(value.hours));
+	buf.put(':');
+	buf.put("%.2s".format(value.minutes));
+	buf.put(':');
+	buf.put("%.2s".format(value.seconds));
+
+	if(value.fracSec.msecs != 0)
+	{
+		buf.put('.');
+		buf.put("%.3s".format(value.fracSec.msecs));
+	}
+
+	return buf.data;
+}
+
+string toSDLString(ubyte[] value)
+{
+	Appender!string buf;
+
+	buf.put('[');
+	buf.put( Base64.encode(value) );
+	buf.put(']');
+
+	return buf.data;
 }
 
 /// This only represents terminals. Nonterminals aren't
