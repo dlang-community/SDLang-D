@@ -115,7 +115,7 @@ version(SDLang_TestApp)
 	void doToSDL(string filename)
 	{
 		auto root = parseFile(filename);
-		//stdout.rawWrite(root.toSDLString());
-		//writeln();
+		stdout.rawWrite(root.toSDLString());
+		writeln();
 	}
 }

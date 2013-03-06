@@ -5,8 +5,10 @@ module sdlang_.ast;
 
 import std.array;
 import std.conv;
+import std.range;
 import std.string;
 
+import sdlang_.exception;
 import sdlang_.token;
 import sdlang_.util;
 
@@ -20,6 +22,26 @@ struct Attribute
 	@property string fullName()
 	{
 		return namespace==""? name : text(namespace, ":", name);
+	}
+	
+	string toSDLString()()
+	{
+		Appender!string sink;
+		this.toSDLString(sink);
+		return sink.data;
+	}
+
+	void toSDLString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char))
+	{
+		if(namespace != "")
+		{
+			sink.put(namespace);
+			sink.put(':');
+		}
+
+		sink.put(name);
+		sink.put('=');
+		value.toSDLString(sink);
 	}
 }
 
@@ -53,6 +75,77 @@ class Tag
 		this.name      = name;
 	}
 	
+	string toSDLString()()
+	{
+		Appender!string sink;
+		toSDLString(sink);
+		return sink.data;
+	}
+
+	void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0) if(isOutputRange!(Sink,char))
+	{
+		if(name == "" && values.length == 0)
+			throw new SDLangException("Anonymous tags must have at least one value.");
+		
+		if(name == "" && namespace != "")
+			throw new SDLangException("Anonymous tags cannot have a namespace.");
+		
+		// Indent
+		foreach(i; 0..indentLevel)
+			sink.put(indent);
+		
+		// Name
+		if(namespace != "")
+		{
+			sink.put(namespace);
+			sink.put(':');
+		}
+		sink.put(name);
+		
+		// Values
+		foreach(i, v; values)
+		{
+			// Omit the first space for anonymous tags
+			if(name != "" || i > 0)
+				sink.put(' ');
+			
+			v.toSDLString(sink);
+		}
+		
+		// Attributes
+		foreach(attrsByNamespace; attributes)
+		foreach(attrsByName; attrsByNamespace)
+		foreach(attr; attrsByName)
+		{
+			sink.put(' ');
+			attr.toSDLString(sink);
+		}
+		
+		// Child tags
+		bool foundChild=false;
+		foreach(tagsByNamespace; tags)
+		foreach(tagsByName; tagsByNamespace)
+		foreach(tag; tagsByName)
+		{
+			if(!foundChild)
+			{
+				sink.put(" {\n");
+				foundChild = true;
+			}
+
+			tag.toSDLString(sink, indent, indentLevel+1);
+		}
+		if(foundChild)
+		{
+			foreach(i; 0..indentLevel)
+				sink.put(indent);
+
+			sink.put("}\n");
+		}
+		else
+			sink.put("\n");
+	}
+
 	/// Not the most efficient, but it works.
 	string toDebugString()
 	{

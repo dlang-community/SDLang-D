@@ -1,12 +1,13 @@
 v0.8.2 - TBD
 =====================
+- Can now output SDL. (Via 'toSDLString()' funcs.)
 - Properly handle non-Unix newlines.
 - Allow '\r' escape sequences.
 - Make DUB package <https://github.com/rejectedsoftware/dub>
 - Fixed Windows buildscript.
 - Fixed build-docs script so API reference properly excludes private modules.
 - Rename 'build-unittests' -> 'build-unittest' (for consistency with
-'bin/sdlang-unittest').
+  'bin/sdlang-unittest').
 
 v0.8.1 - 2013/02/28
 =====================

@@ -165,6 +165,8 @@ See [Changelog](https://raw.github.com/Abscissa/SDLang-D/master/CHANGELOG.txt)
 (...output...)
 > bin/sdlang parse sample.sdl
 (...output...)
+> bin/sdlang to-sdl sample.sdl
+(...output...)
 ```
 
 ### Unittests

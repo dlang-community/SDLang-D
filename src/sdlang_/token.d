@@ -188,7 +188,7 @@ void toSDLString(Sink)(long value, ref Sink sink) if(isOutputRange!(Sink,char))
 
 void toSDLString(Sink)(float value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	sink.put( "%.30sF".format(value) );
+	sink.put( "%.10sF".format(value) );
 }
 
 void toSDLString(Sink)(double value, ref Sink sink) if(isOutputRange!(Sink,char))
