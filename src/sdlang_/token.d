@@ -7,6 +7,7 @@ import std.array;
 import std.base64;
 import std.conv;
 import std.datetime;
+import std.range;
 import std.string;
 import std.typetuple;
 import std.variant;
@@ -85,143 +86,157 @@ alias TypeTuple!(
 
 alias Algebraic!( ValueTypes ) Value; ///ditto
 
-//TODO: Figure out how to properly handle strings/chars containing lineSep or paraSep
-string toSDLString(Value value)
+template isSDLSink(T)
+{
+	enum isSink =
+		isOutputRange!T &&
+		is(ElementType!(T)[] == string);
+}
+
+string toSDLString(T)(T value) if(
+	is( T : Value        ) ||
+	is( T : bool         ) ||
+	is( T : string       ) ||
+	is( T : dchar        ) ||
+	is( T : int          ) ||
+	is( T : long         ) ||
+	is( T : float        ) ||
+	is( T : double       ) ||
+	is( T : real         ) ||
+	is( T : Date         ) ||
+	is( T : DateTimeFrac ) ||
+	is( T : SysTime      ) ||
+	is( T : DateTimeFracUnknownZone ) ||
+	is( T : Duration     ) ||
+	is( T : ubyte[]      ) ||
+	is( T : typeof(null) )
+)
+{
+	Appender!string sink;
+	toSDLString(value, sink);
+	return sink.data;
+}
+
+void toSDLString(Sink)(Value value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
 	foreach(T; ValueTypes)
 	{
 		if(value.type == typeid(T))
-			return toSDLString( value.get!T() );
+		{
+			toSDLString( value.get!T(), sink );
+			return;
+		}
 	}
 	
-	throw new Exception("Internal SDLang-D error: Unhandled value type: "~to!string(value.type));
+	throw new Exception("Internal SDLang-D error: Unhandled type of Value. Contains: "~value.toString());
 }
 
-string toSDLString(typeof(null) value)
+void toSDLString(Sink)(typeof(null) value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	return "null";
+	sink.put("null");
 }
 
-string toSDLString(bool value)
+void toSDLString(Sink)(bool value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	return value? "true" : "false";
+	sink.put(value? "true" : "false");
 }
 
-string toSDLString(string value)
+//TODO: Figure out how to properly handle strings/chars containing lineSep or paraSep
+void toSDLString(Sink)(string value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	Appender!string buf;
-	buf.put('"');
+	sink.put('"');
 	
 	// This loop is UTF-safe
 	foreach(char ch; value)
 	{
-		if     (ch == '\n') buf.put(`\n`);
-		else if(ch == '\r') buf.put(`\r`);
-		else if(ch == '\t') buf.put(`\t`);
-		else if(ch == '\"') buf.put(`\"`);
-		else if(ch == '\\') buf.put(`\\`);
+		if     (ch == '\n') sink.put(`\n`);
+		else if(ch == '\r') sink.put(`\r`);
+		else if(ch == '\t') sink.put(`\t`);
+		else if(ch == '\"') sink.put(`\"`);
+		else if(ch == '\\') sink.put(`\\`);
 		else
-			buf.put(ch);
+			sink.put(ch);
 	}
 
-	buf.put('"');
-	return buf.data;
+	sink.put('"');
 }
 
-string toSDLString(dchar value)
+void toSDLString(Sink)(dchar value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	Appender!string buf;
-	buf.put('\'');
+	sink.put('\'');
 	
-	if     (value == '\n') buf.put(`\n`);
-	else if(value == '\r') buf.put(`\r`);
-	else if(value == '\t') buf.put(`\t`);
-	else if(value == '\'') buf.put(`\'`);
-	else if(value == '\\') buf.put(`\\`);
+	if     (value == '\n') sink.put(`\n`);
+	else if(value == '\r') sink.put(`\r`);
+	else if(value == '\t') sink.put(`\t`);
+	else if(value == '\'') sink.put(`\'`);
+	else if(value == '\\') sink.put(`\\`);
 	else
-		buf.put(value);
+		sink.put(value);
 
-	buf.put('\'');
-	return buf.data;
+	sink.put('\'');
 }
 
-string toSDLString(int value)
+void toSDLString(Sink)(int value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	return "%s".format(value);
+	sink.put( "%s".format(value) );
 }
 
-string toSDLString(long value)
+void toSDLString(Sink)(long value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	return "%sL".format(value);
+	sink.put( "%sL".format(value) );
 }
 
-string toSDLString(float value)
+void toSDLString(Sink)(float value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	return "%.30sF".format(value);
+	sink.put( "%.30sF".format(value) );
 }
 
-string toSDLString(double value)
+void toSDLString(Sink)(double value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	return "%.30sD".format(value);
+	sink.put( "%.30sD".format(value) );
 }
 
-string toSDLString(real value)
+void toSDLString(Sink)(real value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	return "%.30sBD".format(value);
+	sink.put( "%.30sBD".format(value) );
 }
 
-string toSDLString(Date value)
+void toSDLString(Sink)(Date value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	Appender!string buf;
-	toSDLString(value, buf);
-	return buf.data;
+	sink.put(to!string(value.year));
+	sink.put('/');
+	sink.put(to!string(cast(int)value.month));
+	sink.put('/');
+	sink.put(to!string(value.day));
 }
 
-void toSDLString(Date value, ref Appender!string buf)
+void toSDLString(Sink)(DateTimeFrac value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	buf.put(to!string(value.year));
-	buf.put('/');
-	buf.put(to!string(cast(int)value.month));
-	buf.put('/');
-	buf.put(to!string(value.day));
-}
-
-string toSDLString(DateTimeFrac value)
-{
-	Appender!string buf;
-	toSDLString(value, buf);
-	return buf.data;
-}
-
-void toSDLString(DateTimeFrac value, ref Appender!string buf)
-{
-	toSDLString(value.dateTime.date, buf);
-	buf.put(' ');
-	buf.put("%.2s".format(value.dateTime.hour));
-	buf.put(':');
-	buf.put("%.2s".format(value.dateTime.minute));
+	toSDLString(value.dateTime.date, sink);
+	sink.put(' ');
+	sink.put("%.2s".format(value.dateTime.hour));
+	sink.put(':');
+	sink.put("%.2s".format(value.dateTime.minute));
 	
 	if(value.dateTime.second != 0)
 	{
-		buf.put(':');
-		buf.put("%.2s".format(value.dateTime.second));
+		sink.put(':');
+		sink.put("%.2s".format(value.dateTime.second));
 	}
 
 	if(value.fracSec.msecs != 0)
 	{
-		buf.put('.');
-		buf.put("%.3s".format(value.fracSec.msecs));
+		sink.put('.');
+		sink.put("%.3s".format(value.fracSec.msecs));
 	}
 }
 
-string toSDLString(SysTime value)
+void toSDLString(Sink)(SysTime value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	Appender!string buf;
-
 	auto dateTimeFrac = DateTimeFrac(cast(DateTime)value, value.fracSec);
-	toSDLString(dateTimeFrac, buf);
+	toSDLString(dateTimeFrac, sink);
 	
-	buf.put("-");
+	sink.put("-");
 	
 	auto tzString = value.timezone.name;
 	
@@ -243,80 +258,66 @@ string toSDLString(SysTime value)
 	if(tzString == "")
 	{
 		auto offset = value.timezone.utcOffsetAt(value.stdTime);
-		buf.put("GMT");
+		sink.put("GMT");
 
 		if(offset < seconds(0))
 		{
-			buf.put("-");
+			sink.put("-");
 			offset = -offset;
 		}
 		else
-			buf.put("+");
+			sink.put("+");
 		
-		buf.put("%.2s".format(offset.hours));
-		buf.put(":");
-		buf.put("%.2s".format(offset.minutes));
+		sink.put("%.2s".format(offset.hours));
+		sink.put(":");
+		sink.put("%.2s".format(offset.minutes));
 	}
 	else
-		buf.put(tzString);
-
-	return buf.data;
+		sink.put(tzString);
 }
 
-string toSDLString(DateTimeFracUnknownZone value)
+void toSDLString(Sink)(DateTimeFracUnknownZone value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	Appender!string buf;
-
 	auto dateTimeFrac = DateTimeFrac(value.dateTime, value.fracSec);
-	toSDLString(dateTimeFrac, buf);
+	toSDLString(dateTimeFrac, sink);
 	
-	buf.put("-");
-	buf.put(value.timeZone);
-
-	return buf.data;
+	sink.put("-");
+	sink.put(value.timeZone);
 }
 
-string toSDLString(Duration value)
+void toSDLString(Sink)(Duration value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	Appender!string buf;
-
 	if(value < seconds(0))
 	{
-		buf.put("-");
+		sink.put("-");
 		value = -value;
 	}
 	
 	auto days = value.total!"days"();
 	if(days != 0)
 	{
-		buf.put("%s".format(days));
-		buf.put("d:");
+		sink.put("%s".format(days));
+		sink.put("d:");
 	}
 
-	buf.put("%.2s".format(value.hours));
-	buf.put(':');
-	buf.put("%.2s".format(value.minutes));
-	buf.put(':');
-	buf.put("%.2s".format(value.seconds));
+	sink.put("%.2s".format(value.hours));
+	sink.put(':');
+	sink.put("%.2s".format(value.minutes));
+	sink.put(':');
+	sink.put("%.2s".format(value.seconds));
 
 	if(value.fracSec.msecs != 0)
 	{
-		buf.put('.');
-		buf.put("%.3s".format(value.fracSec.msecs));
+		sink.put('.');
+		sink.put("%.3s".format(value.fracSec.msecs));
 	}
-
-	return buf.data;
 }
 
-string toSDLString(ubyte[] value)
+void toSDLString(Sink)(ubyte[] value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
-	Appender!string buf;
-
-	buf.put('[');
-	buf.put( Base64.encode(value) );
-	buf.put(']');
-
-	return buf.data;
+	sink.put('[');
+	sink.put( Base64.encode(value) );
+	sink.put(']');
 }
 
 /// This only represents terminals. Nonterminals aren't

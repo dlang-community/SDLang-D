@@ -115,15 +115,6 @@ version(SDLang_TestApp)
 	void doToSDL(string filename)
 	{
 		auto root = parseFile(filename);
-		writeln(Value("hello\nworld").toSDLString());
-		writeln(Value(1.1234567890123456789L).toSDLString());
-		writeln(Value([cast(ubyte)'h', cast(ubyte)'i']).toSDLString());
-		writeln(Value(Clock.currTime()).toSDLString());
-		writeln(Value(days(10) + minutes(20)).toSDLString());
-		writeln(Value(hours(20)).toSDLString());
-		writeln(Value(days(-10) + minutes(-20)).toSDLString());
-		writeln(Value(days(-10) + hours(-20)).toSDLString());
-		writeln(Value(hours(-20)).toSDLString());
 		//stdout.rawWrite(root.toSDLString());
 		//writeln();
 	}
