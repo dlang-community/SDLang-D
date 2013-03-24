@@ -83,7 +83,6 @@ class Tag
 		if(parent)
 		{
 			parent.updateId++;
-		
 			//TODO: Adjust parent's 'tagIndicies' and '_tags'
 		}
 	}
@@ -94,11 +93,15 @@ class Tag
 	{
 		return _name;
 	}
-	@property void name(string value)
+	// This shouldn't be public until it's adjusted to properly update the parent.
+	private @property void name(string value)
 	{
 		_name = value;
 		if(parent)
+		{
 			parent.updateId++;
+			//TODO: Adjust parent's '_tags'
+		}
 	}
 	
 	// Tracks dirtiness. This is incremented every time a change is made which
@@ -204,23 +207,29 @@ class Tag
 		return this;
 	}
 	
-	struct MemberRange(T, string allMembers, string memberIndicies)
+	//TODO: Implement this for namespace=="*"
+	struct MembersByName(T, string allMembers, string memberIndicies, string membersGrouped)
 	{
 		private Tag tag;
 		private string namespace; // "*" indicates "all namespaces" (ok since it's not a valid namespace name)
+		private string name;
 		private size_t updateId;  // Tag's updateId when this range was created.
 
-		this(Tag tag, string namespace)
+		this(Tag tag, string namespace, string name, size_t updateId)
 		{
-			this.tag = tag;
+			this.tag       = tag;
 			this.namespace = namespace;
-			this.updateId = tag.updateId;
+			this.name      = name;
+			this.updateId  = updateId;
 			frontIndex = 0;
 
 			if(namespace == "*")
-				endIndex = mixin("tag."~allMembers~".length");
-			else if(namespace in mixin("tag."~memberIndicies))
-				endIndex = mixin("tag."~memberIndicies~"[namespace].length");
+				throw new Exception("'All namespaces' version of getting members by name is not yet supported.");
+			else if(
+				namespace in mixin("tag."~membersGrouped) &&
+				name in mixin("tag."~membersGrouped~"[namespace]")
+			)
+				endIndex = mixin("tag."~membersGrouped~"[namespace][name].length");
 			else
 				endIndex = 0;
 		}
@@ -272,9 +281,103 @@ class Tag
 		
 		@property typeof(this) save()
 		{
-			auto r = typeof(this)(this.tag, this.namespace);
+			auto r = typeof(this)(this.tag, this.namespace, this.name, this.updateId);
 			r.frontIndex = this.frontIndex;
 			r.endIndex   = this.endIndex;
+			return r;
+		}
+		
+		ref T opIndex(size_t index)
+		{
+			if(empty)
+				throw new RangeError("Range is empty");
+
+			if(namespace == "*")
+				throw new Exception("'All namespaces' version of getting members by name is not yet supported.");
+			else
+				return mixin("tag."~membersGrouped~"[namespace][name][frontIndex+index]");
+		}
+	}
+
+	//TODO? Create "maybe.*" versions of accessors which,
+	//      upon invalid opIndex(string), return empty range
+	//      instead of throwing.
+	struct MemberRange(T, string allMembers, string memberIndicies, string membersGrouped)
+	{
+		private Tag tag;
+		private string namespace; // "*" indicates "all namespaces" (ok since it's not a valid namespace name)
+		private size_t updateId;  // Tag's updateId when this range was created.
+		private size_t initialEndIndex;
+
+		this(Tag tag, string namespace)
+		{
+			this.tag = tag;
+			this.namespace = namespace;
+			this.updateId = tag.updateId;
+			frontIndex = 0;
+
+			if(namespace == "*")
+				initialEndIndex = mixin("tag."~allMembers~".length");
+			else if(namespace in mixin("tag."~memberIndicies))
+				initialEndIndex = mixin("tag."~memberIndicies~"[namespace].length");
+			else
+				initialEndIndex = 0;
+			
+			endIndex = initialEndIndex;
+		}
+		
+		invariant()
+		{
+			assert(
+				this.updateId == tag.updateId,
+				"This range has been invalidated by a change to the tag."
+			);
+		}
+
+		@property bool empty()
+		{
+			return frontIndex == endIndex;
+		}
+		
+		private size_t frontIndex;
+		@property ref T front()
+		{
+			return this[0];
+		}
+		void popFront()
+		{
+			if(empty)
+				throw new RangeError("Range is empty");
+
+			frontIndex++;
+		}
+
+		private size_t endIndex; // One past the last element
+		@property ref T back()
+		{
+			return this[$-1];
+		}
+		void popBack()
+		{
+			if(empty)
+				throw new RangeError("Range is empty");
+
+			endIndex--;
+		}
+		
+		alias length opDollar;
+		@property size_t length()
+		{
+			return endIndex - frontIndex;
+		}
+		
+		@property typeof(this) save()
+		{
+			auto r = typeof(this)(this.tag, this.namespace);
+			r.frontIndex      = this.frontIndex;
+			r.endIndex        = this.endIndex;
+			r.initialEndIndex = this.initialEndIndex;
+			r.updateId        = this.updateId;
 			return r;
 		}
 		
@@ -288,9 +391,39 @@ class Tag
 			else
 				return mixin("tag."~allMembers~"[ tag."~memberIndicies~"[namespace][frontIndex+index] ]");
 		}
+		
+		alias MembersByName!(T,allMembers,memberIndicies,membersGrouped) ThisMembersByName;
+		ThisMembersByName opIndex(string name)
+		{
+			if(frontIndex != 0 || endIndex != initialEndIndex)
+			{
+				throw new SDLangException(
+					"Cannot lookup tags/attributes by name on a subset of a range, "~
+					"only across the entire tag. "~
+					"Please make sure you haven't called popFront or popBack on this "~
+					"range and that you aren't using a slice of the range."
+				);
+			}
+			
+			if(empty)
+				throw new RangeError("Range is empty");
+			
+			if(name !in this)
+				throw new RangeError(`No such `~T.stringof~` named: "`~namespace~`"`);
+
+			return ThisMembersByName(tag, namespace, name, updateId);
+		}
+
+		bool opBinaryRight(string op)(string name) if(op=="in")
+		{
+			return
+				namespace in mixin("tag."~membersGrouped) &&
+				name in mixin("tag."~membersGrouped~"[namespace]") && 
+				mixin("tag."~membersGrouped~"[namespace][name].length") > 0;
+		}
 	}
-	alias MemberRange!(Attribute, "allAttributes", "attributeIndicies") AttributeRange;
-	alias MemberRange!(Tag,       "allTags",       "tagIndicies"      ) TagRange;
+	alias MemberRange!(Attribute, "allAttributes", "attributeIndicies", "_attributes") AttributeRange;
+	alias MemberRange!(Tag,       "allTags",       "tagIndicies",       "_tags"      ) TagRange;
 	static assert(isRandomAccessRange!AttributeRange);
 	static assert(isRandomAccessRange!TagRange);
 
@@ -376,6 +509,7 @@ class Tag
 			auto r = NamespaceRange(this.tag);
 			r.frontIndex = this.frontIndex;
 			r.endIndex   = this.endIndex;
+			r.updateId   = this.updateId;
 			return r;
 		}
 		
@@ -423,7 +557,7 @@ class Tag
 	/// Access all attributes and tags regardless of namespace.
 	@property NamespaceAccess all()
 	{
-		// "*" isn't a valid namespace name, so we can use it to indicate "all"
+		// "*" isn't a valid namespace name, so we can use it to indicate "all namespaces"
 		return NamespaceAccess(
 			"*",
 			AttributeRange(this, "*"),
@@ -907,6 +1041,23 @@ unittest
 	testRandomAccessRange(root.namespaces["stuff"].tags, [orange, square, triangle]);
 	testRandomAccessRange(root.all.attributes, cast(Attribute[])[]);
 	testRandomAccessRange(root.all.tags,       [blue3, blue5, orange, square, triangle, nothing, namespaces, people]);
+	assert("blue"    in root.tags);
+	assert("nothing" in root.tags);
+	assert("people"  in root.tags);
+	assert("orange" !in root.tags);
+	assert("square" !in root.tags);
+	assert("orange"  in root.namespaces["stuff"].tags);
+	assert("square"  in root.namespaces["stuff"].tags);
+	assert("foobar" !in root.tags);
+	assert("square"  in root.namespaces["stuff"].tags);
+	assert("foobar" !in root.attributes);
+	assert("foobar" !in root.namespaces["stuff"].attributes);
+	assert("blue"   !in root.attributes);
+	assert("blue"   !in root.namespaces["stuff"].attributes);
+	testRandomAccessRange(root.tags["nothing"],                    [nothing]);
+	testRandomAccessRange(root.tags["blue"],                       [blue3, blue5]);
+	testRandomAccessRange(root.namespaces["stuff"].tags["orange"], [orange]);
+	
 
 	testRandomAccessRange(blue3.attributes,     [ Attribute("", "isThree", loc, Value(true)) ]);
 	testRandomAccessRange(blue3.tags,           cast(Tag[])[]);
@@ -1002,6 +1153,31 @@ unittest
 		Attribute("big",   "B", loc, Value(30)),
 	]);
 	testRandomAccessRange(namespaces.all.tags, cast(Tag[])[]);
+	assert("A"      !in namespaces.attributes);
+	assert("B"      !in namespaces.attributes);
+	assert("foobar" !in namespaces.attributes);
+	assert("A"       in namespaces.namespaces["small"].attributes);
+	assert("B"       in namespaces.namespaces["small"].attributes);
+	assert("foobar" !in namespaces.namespaces["small"].attributes);
+	assert("A"       in namespaces.namespaces["med"].attributes);
+	assert("B"      !in namespaces.namespaces["med"].attributes);
+	assert("foobar" !in namespaces.namespaces["med"].attributes);
+	assert("A"       in namespaces.namespaces["big"].attributes);
+	assert("B"       in namespaces.namespaces["big"].attributes);
+	assert("foobar" !in namespaces.namespaces["big"].attributes);
+	assert("foobar" !in namespaces.tags);
+	assert("foobar" !in namespaces.namespaces["small"].tags);
+	assert("A"      !in namespaces.tags);
+	assert("A"      !in namespaces.namespaces["small"].tags);
+	testRandomAccessRange(namespaces.namespaces["small"].attributes["A"], [
+		Attribute("small", "A", loc, Value(1)),
+	]);
+	testRandomAccessRange(namespaces.namespaces["med"].attributes["A"], [
+		Attribute("med", "A", loc, Value(2)),
+	]);
+	testRandomAccessRange(namespaces.namespaces["big"].attributes["A"], [
+		Attribute("big", "A", loc, Value(3)),
+	]);
 
 	testRandomAccessRange(chiyo.attributes, [
 		Attribute("", "nemesis", loc, Value("Car")),

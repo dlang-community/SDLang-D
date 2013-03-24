@@ -20,7 +20,7 @@
 		},
 
 		"unittest": {
-			"versions": ["SDLang_Unittest"],
+			"versions": ["SDLang_Unittest", "SDLang_Trace"],
 			"dflags-dmd": ["-ofbin/sdlang-unittest", "-debug", "-gc", "-unittest"]
 		}
 	}

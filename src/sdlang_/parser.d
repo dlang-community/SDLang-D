@@ -50,7 +50,7 @@ private struct Parser
 	/// <Root> ::= <Tags>  (Lookaheads: Anything)
 	Tag parseRoot()
 	{
-		trace("Starting parse of file: ", lexer.filename);
+		//trace("Starting parse of file: ", lexer.filename);
 
 		auto root = new Tag(null, null, "root");
 		root.location = Location(lexer.filename, 0, 0, 0);
@@ -95,14 +95,14 @@ private struct Parser
 			auto id = parseIDFull();
 			tag = new Tag(parent, id.namespace, id.name);
 
-			trace("Found tag named: ", tag.fullName);
+			//trace("Found tag named: ", tag.fullName);
 		}
 		else if(token.matches!"Value"())
 		{
 			tag = new Tag(parent);
 			parseValue(tag);
 
-			trace("Found anonymous tag.");
+			//trace("Found anonymous tag.");
 		}
 		else
 			error("Expected tag name or value, not " ~ token.symbol.name);
@@ -182,7 +182,7 @@ private struct Parser
 		if(token.matches!"Value"())
 		{
 			auto value = token.value;
-			trace("In tag '", parent.fullName, "', found value: ", value);
+			//trace("In tag '", parent.fullName, "', found value: ", value);
 			parent.add(value);
 			
 			lexer.popFront();
@@ -234,7 +234,7 @@ private struct Parser
 		attr.value = token.value;
 		
 		parent.add(attr);
-		trace("In tag '", parent.fullName, "', found attribute '", attr.fullName, "'");
+		//trace("In tag '", parent.fullName, "', found attribute '", attr.fullName, "'");
 		
 		lexer.popFront();
 	}
