@@ -81,7 +81,7 @@ struct Attribute
 	}
 }
 
-//TODO: Add opSlice to ranges
+//TODO: How to handle "str in range" when range is a slice or has done a popFront/popBack?
 class Tag
 {
 	static immutable defaultName = "content";
@@ -306,6 +306,27 @@ class Tag
 			return r;
 		}
 		
+		typeof(this) opSlice()
+		{
+			return save();
+		}
+		
+		typeof(this) opSlice(size_t start, size_t end)
+		{
+			auto r = save();
+			r.frontIndex = this.frontIndex + start;
+			r.endIndex   = this.frontIndex + end;
+			
+			if(
+				r.frontIndex > this.endIndex ||
+				r.endIndex > this.endIndex ||
+				r.frontIndex > r.endIndex
+			)
+				throw new RangeError("Slice out of range");
+			
+			return r;
+		}
+
 		ref T opIndex(size_t index)
 		{
 			if(empty)
@@ -393,6 +414,27 @@ class Tag
 			r.endIndex        = this.endIndex;
 			r.initialEndIndex = this.initialEndIndex;
 			r.updateId        = this.updateId;
+			return r;
+		}
+		
+		typeof(this) opSlice()
+		{
+			return save();
+		}
+		
+		typeof(this) opSlice(size_t start, size_t end)
+		{
+			auto r = save();
+			r.frontIndex = this.frontIndex + start;
+			r.endIndex   = this.frontIndex + end;
+			
+			if(
+				r.frontIndex > this.endIndex ||
+				r.endIndex > this.endIndex ||
+				r.frontIndex > r.endIndex
+			)
+				throw new RangeError("Slice out of range");
+			
 			return r;
 		}
 		
@@ -504,6 +546,27 @@ class Tag
 			r.frontIndex = this.frontIndex;
 			r.endIndex   = this.endIndex;
 			r.updateId   = this.updateId;
+			return r;
+		}
+		
+		typeof(this) opSlice()
+		{
+			return save();
+		}
+		
+		typeof(this) opSlice(size_t start, size_t end)
+		{
+			auto r = save();
+			r.frontIndex = this.frontIndex + start;
+			r.endIndex   = this.frontIndex + end;
+			
+			if(
+				r.frontIndex > this.endIndex ||
+				r.endIndex > this.endIndex ||
+				r.frontIndex > r.endIndex
+			)
+				throw new RangeError("Slice out of range");
+			
 			return r;
 		}
 		
@@ -1100,6 +1163,8 @@ unittest
 	testRandomAccessRange(root.namespaces["stuff"].tags, [orange, square, triangle]);
 	testRandomAccessRange(root.all.attributes, cast(Attribute[])[]);
 	testRandomAccessRange(root.all.tags,       [blue3, blue5, orange, square, triangle, nothing, namespaces, people]);
+	testRandomAccessRange(root.all.tags[],     [blue3, blue5, orange, square, triangle, nothing, namespaces, people]);
+	testRandomAccessRange(root.all.tags[3..6], [square, triangle, nothing]);
 	assert("blue"    in root.tags);
 	assert("nothing" in root.tags);
 	assert("people"  in root.tags);
@@ -1140,6 +1205,9 @@ unittest
 	testRandomAccessRange(root.maybe.namespaces["stuff"].tags["orange"], [orange]);
 	testRandomAccessRange(root.maybe.all.tags["nothing"],                [nothing]);
 	testRandomAccessRange(root.maybe.all.tags["blue"],                   [blue3, blue5]);
+	testRandomAccessRange(root.maybe.all.tags["blue"][],                 [blue3, blue5]);
+	testRandomAccessRange(root.maybe.all.tags["blue"][0..1],             [blue3]);
+	testRandomAccessRange(root.maybe.all.tags["blue"][1..2],             [blue5]);
 	testRandomAccessRange(root.maybe.all.tags["orange"],                 [orange]);
 	testRandomAccessRange(root.maybe.tags["foobar"],                      cast(Tag[])[]);
 	testRandomAccessRange(root.maybe.all.tags["foobar"],                  cast(Tag[])[]);
@@ -1147,7 +1215,6 @@ unittest
 	testRandomAccessRange(root.maybe.attributes["foobar"],                      cast(Attribute[])[]);
 	testRandomAccessRange(root.maybe.all.attributes["foobar"],                  cast(Attribute[])[]);
 	testRandomAccessRange(root.maybe.namespaces["foobar"].attributes["foobar"], cast(Attribute[])[]);
-	
 
 	testRandomAccessRange(blue3.attributes,     [ Attribute("isThree", Value(true)) ]);
 	testRandomAccessRange(blue3.tags,           cast(Tag[])[]);
@@ -1206,9 +1273,11 @@ unittest
 	testRandomAccessRange(nothing.all.attributes, cast(Attribute[])[]);
 	testRandomAccessRange(nothing.all.tags,       cast(Tag[])[]);
 	
-	testRandomAccessRange(namespaces.attributes, cast(Attribute[])[]);
-	testRandomAccessRange(namespaces.tags,       cast(Tag[])[]);
-	testRandomAccessRange(namespaces.namespaces, [NSA("small"), NSA("med"), NSA("big")], &namespaceEquals);
+	testRandomAccessRange(namespaces.attributes,   cast(Attribute[])[]);
+	testRandomAccessRange(namespaces.tags,         cast(Tag[])[]);
+	testRandomAccessRange(namespaces.namespaces,   [NSA("small"), NSA("med"), NSA("big")], &namespaceEquals);
+	testRandomAccessRange(namespaces.namespaces[], [NSA("small"), NSA("med"), NSA("big")], &namespaceEquals);
+	testRandomAccessRange(namespaces.namespaces[1..2], [NSA("med")], &namespaceEquals);
 	testRandomAccessRange(namespaces.namespaces[0].attributes, [
 		Attribute("small", "A", Value(1)),
 		Attribute("small", "B", Value(10)),
@@ -1219,6 +1288,9 @@ unittest
 	testRandomAccessRange(namespaces.namespaces[2].attributes, [
 		Attribute("big", "A", Value(3)),
 		Attribute("big", "B", Value(30)),
+	]);
+	testRandomAccessRange(namespaces.namespaces[1..2][0].attributes, [
+		Attribute("med", "A", Value(2)),
 	]);
 	assert("small"   in namespaces.namespaces);
 	assert("med"     in namespaces.namespaces);
@@ -1241,6 +1313,17 @@ unittest
 		Attribute("big",   "A", Value(3)),
 		Attribute("small", "B", Value(10)),
 		Attribute("big",   "B", Value(30)),
+	]);
+	testRandomAccessRange(namespaces.all.attributes[], [
+		Attribute("small", "A", Value(1)),
+		Attribute("med",   "A", Value(2)),
+		Attribute("big",   "A", Value(3)),
+		Attribute("small", "B", Value(10)),
+		Attribute("big",   "B", Value(30)),
+	]);
+	testRandomAccessRange(namespaces.all.attributes[2..4], [
+		Attribute("big",   "A", Value(3)),
+		Attribute("small", "B", Value(10)),
 	]);
 	testRandomAccessRange(namespaces.all.tags, cast(Tag[])[]);
 	assert("A"      !in namespaces.attributes);
