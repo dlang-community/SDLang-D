@@ -72,6 +72,11 @@ class Tag
 	Location location;
 	Value[]  values;
 	
+	// Tracks dirtiness. This is incremented every time a value, attribute,
+	// or child tag is added/removed. This way, the ranges can detect when
+	// they've been invalidated.
+	private size_t updateId=0;
+	
 	@property string fullName()
 	{
 		return namespace==""? name : text(namespace, ":", name);
@@ -110,6 +115,7 @@ class Tag
 	Tag add(Value val)
 	{
 		values ~= val;
+		updateId++;
 		return this;
 	}
 	
@@ -131,7 +137,8 @@ class Tag
 		allAttributes ~= attr;
 		attributeIndicies[attr.namespace] ~= allAttributes.length-1;
 		_attributes[attr.namespace][attr.name] ~= attr;
-		
+
+		updateId++;
 		return this;
 	}
 	
@@ -154,6 +161,7 @@ class Tag
 		tagIndicies[tag.namespace] ~= allTags.length-1;
 		_tags[tag.namespace][tag.name] ~= tag;
 		
+		updateId++;
 		return this;
 	}
 	
@@ -170,11 +178,13 @@ class Tag
 	{
 		private Tag tag;
 		private string namespace;
+		private size_t updateId;  // Tag's updateId when this range was created.
 
 		this(Tag tag, string namespace)
 		{
 			this.tag = tag;
 			this.namespace = namespace;
+			this.updateId = tag.updateId;
 			frontIndex = 0;
 
 			if(namespace in mixin("tag."~memberIndicies))
@@ -183,6 +193,14 @@ class Tag
 				endIndex = 0;
 		}
 		
+		invariant()
+		{
+			assert(
+				this.updateId == tag.updateId,
+				"This range has been invalidated by a change to the tag."
+			);
+		}
+
 		@property bool empty()
 		{
 			return frontIndex == endIndex;
@@ -260,12 +278,22 @@ class Tag
 	struct NamespaceRange
 	{
 		private Tag tag;
+		private size_t updateId;  // Tag's updateId when this range was created.
 
 		this(Tag tag)
 		{
 			this.tag = tag;
+			this.updateId = tag.updateId;
 			frontIndex = 0;
 			endIndex = tag.allNamespaces.length;
+		}
+
+		invariant()
+		{
+			assert(
+				this.updateId == tag.updateId,
+				"This range has been invalidated by a change to the tag."
+			);
 		}
 		
 		@property bool empty()
