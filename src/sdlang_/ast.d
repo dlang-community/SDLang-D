@@ -67,19 +67,49 @@ class Tag
 	static immutable defaultName = "content";
 
 	Tag      parent;
-	string   namespace;
-	string   name;      /// Not including namespace
 	Location location;
 	Value[]  values;
+
+	private string _namespace;
+	@property string namespace()
+	{
+		return _namespace;
+	}
+	// This shouldn't be public until it's adjusted to properly update the parent.
+	private @property void namespace(string value)
+	{
+		_namespace = value;
+
+		if(parent)
+		{
+			parent.updateId++;
+		
+			//TODO: Adjust parent's 'tagIndicies' and '_tags'
+		}
+	}
 	
-	// Tracks dirtiness. This is incremented every time a value, attribute,
-	// or child tag is added/removed. This way, the ranges can detect when
+	/// Not including namespace. Use 'fullName' if you want the namespace included.
+	private string _name;
+	@property string name()
+	{
+		return _name;
+	}
+	@property void name(string value)
+	{
+		_name = value;
+		if(parent)
+			parent.updateId++;
+	}
+	
+	// Tracks dirtiness. This is incremented every time a change is made which
+	// could invalidate existing ranges. This way, the ranges can detect when
 	// they've been invalidated.
 	private size_t updateId=0;
 	
+	/// This tag's name, including namespace if one exists.
 	@property string fullName()
 	{
-		return namespace==""? name : text(namespace, ":", name);
+		return _namespace==""? _name : text(_namespace, ":", _name);
 	}
 
 	this(Tag parent)
@@ -92,9 +122,9 @@ class Tag
 		Value[] values=null, Attribute[] attributes=null, Tag[] children=null
 	)
 	{
-		this.parent    = parent;
-		this.namespace = namespace;
-		this.name      = name;
+		this.parent     = parent;
+		this._namespace = namespace;
+		this._name      = name;
 		
 		this.values = values;
 		this.add(attributes);
@@ -154,12 +184,12 @@ class Tag
 	///ditto
 	Tag add(Tag tag)
 	{
-		if(!allNamespaces.canFind(tag.namespace))
-			allNamespaces ~= tag.namespace;
+		if(!allNamespaces.canFind(tag._namespace))
+			allNamespaces ~= tag._namespace;
 		
 		allTags ~= tag;
-		tagIndicies[tag.namespace] ~= allTags.length-1;
-		_tags[tag.namespace][tag.name] ~= tag;
+		tagIndicies[tag._namespace] ~= allTags.length-1;
+		_tags[tag._namespace][tag._name] ~= tag;
 		
 		updateId++;
 		return this;
@@ -400,14 +430,14 @@ class Tag
 			TagRange(this, "*")
 		);
 	}
-		
+	
 	override bool opEquals(Object o)
 	{
 		auto t = cast(Tag)o;
 		if(!t)
 			return false;
 		
-		if(namespace != t.namespace || name != t.name)
+		if(_namespace != t._namespace || _name != t._name)
 			return false;
 
 		if(
@@ -452,7 +482,7 @@ class Tag
 		if(allAttributes.length > 0)
 			throw new SDLangException("Root tags cannot have any attributes, only child tags.");
 
-		if(namespace != "")
+		if(_namespace != "")
 			throw new SDLangException("Root tags cannot have a namespace.");
 		
 		foreach(tagsByNamespace; _tags)
@@ -475,10 +505,10 @@ class Tag
 	private void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
 		if(isOutputRange!(Sink,char))
 	{
-		if(name == "" && values.length == 0)
+		if(_name == "" && values.length == 0)
 			throw new SDLangException("Anonymous tags must have at least one value.");
 		
-		if(name == "" && namespace != "")
+		if(_name == "" && _namespace != "")
 			throw new SDLangException("Anonymous tags cannot have a namespace.");
 	
 		// Indent
@@ -486,18 +516,18 @@ class Tag
 			sink.put(indent);
 		
 		// Name
-		if(namespace != "")
+		if(_namespace != "")
 		{
-			sink.put(namespace);
+			sink.put(_namespace);
 			sink.put(':');
 		}
-		sink.put(name);
+		sink.put(_name);
 		
 		// Values
 		foreach(i, v; values)
 		{
 			// Omit the first space for anonymous tags
-			if(name != "" || i > 0)
+			if(_name != "" || i > 0)
 				sink.put(' ');
 			
 			v.toSDLString(sink);
@@ -544,13 +574,13 @@ class Tag
 		
 		buf.put("\n");
 		buf.put("Tag ");
-		if(namespace != "")
+		if(_namespace != "")
 		{
 			buf.put("[");
-			buf.put(namespace);
+			buf.put(_namespace);
 			buf.put("]");
 		}
-		buf.put("'%s':\n".format(name));
+		buf.put("'%s':\n".format(_name));
 
 		// Values
 		foreach(val; values)
