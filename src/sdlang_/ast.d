@@ -21,10 +21,24 @@ struct Attribute
 {
 	string   namespace;
 	string   name;
-	Location location;
 	Value    value;
+	Location location;
 	
-	//TODO: Add optional simplified Attribute constructors (and use in unittests).
+	this(string namespace, string name, Value value, Location location = Location(0, 0, 0))
+	{
+		this.namespace = namespace;
+		this.name      = name;
+		this.location  = location;
+		this.value     = value;
+	}
+	
+	this(string name, Value value, Location location = Location(0, 0, 0))
+	{
+		this.namespace = "";
+		this.name      = name;
+		this.location  = location;
+		this.value     = value;
+	}
 	
 	@property string fullName()
 	{
@@ -912,17 +926,16 @@ unittest
 		}
 	`);
 
-	auto loc = Location(0, 0, 0);
 	auto blue3 = new Tag(
 		null, "", "blue",
 		[ Value(3), Value("Lee") ],
-		[ Attribute("", "isThree", loc, Value(true)) ],
+		[ Attribute("isThree", Value(true)) ],
 		null
 	);
 	auto blue5 = new Tag(
 		null, "", "blue",
 		[ Value(5), Value("Chan"), Value(12345) ],
-		[ Attribute("", "isThree", loc, Value(false)) ],
+		[ Attribute("isThree", Value(false)) ],
 		null
 	);
 	auto orange = new Tag(
@@ -935,9 +948,9 @@ unittest
 		null, "stuff", "square",
 		null,
 		[
-			Attribute("", "points", loc, Value(4)),
-			Attribute("", "dimensions", loc, Value(2)),
-			Attribute("", "points", loc, Value("Still four")),
+			Attribute("points", Value(4)),
+			Attribute("dimensions", Value(2)),
+			Attribute("points", Value("Still four")),
 		],
 		null
 	);
@@ -945,8 +958,8 @@ unittest
 		null, "stuff", "triangle",
 		null,
 		[
-			Attribute("data", "points", loc, Value(3)),
-			Attribute("data", "dimensions", loc, Value(2)),
+			Attribute("data", "points", Value(3)),
+			Attribute("data", "dimensions", Value(2)),
 		],
 		null
 	);
@@ -958,11 +971,11 @@ unittest
 		null, "", "namespaces",
 		null,
 		[
-			Attribute("small", "A", loc, Value(1)),
-			Attribute("med",   "A", loc, Value(2)),
-			Attribute("big",   "A", loc, Value(3)),
-			Attribute("small", "B", loc, Value(10)),
-			Attribute("big",   "B", loc, Value(30)),
+			Attribute("small", "A", Value(1)),
+			Attribute("med",   "A", Value(2)),
+			Attribute("big",   "A", Value(3)),
+			Attribute("small", "B", Value(10)),
+			Attribute("big",   "B", Value(30)),
 		],
 		null
 	);
@@ -970,8 +983,8 @@ unittest
 		null, "", "chiyo",
 		[ Value("Small"), Value("Flies?") ],
 		[
-			Attribute("", "nemesis", loc, Value("Car")),
-			Attribute("", "score", loc, Value(100)),
+			Attribute("nemesis", Value("Car")),
+			Attribute("score", Value(100)),
 		],
 		null
 	);
@@ -995,8 +1008,8 @@ unittest
 		null, "", "people",
 		null,
 		[
-			Attribute("visitor", "a", loc, Value(1)),
-			Attribute("", "b", loc, Value(2)),
+			Attribute("visitor", "a", Value(1)),
+			Attribute("b", Value(2)),
 		],
 		[chiyo, yukari, sana, tomo, hayama]
 	);
@@ -1068,16 +1081,16 @@ unittest
 	testRandomAccessRange(root.all.tags["orange"],                 [orange]);
 	
 
-	testRandomAccessRange(blue3.attributes,     [ Attribute("", "isThree", loc, Value(true)) ]);
+	testRandomAccessRange(blue3.attributes,     [ Attribute("isThree", Value(true)) ]);
 	testRandomAccessRange(blue3.tags,           cast(Tag[])[]);
 	testRandomAccessRange(blue3.namespaces,     [NSA("")], &namespaceEquals);
-	testRandomAccessRange(blue3.all.attributes, [ Attribute("", "isThree", loc, Value(true)) ]);
+	testRandomAccessRange(blue3.all.attributes, [ Attribute("isThree", Value(true)) ]);
 	testRandomAccessRange(blue3.all.tags,       cast(Tag[])[]);
 	
-	testRandomAccessRange(blue5.attributes,     [ Attribute("", "isThree", loc, Value(false)) ]);
+	testRandomAccessRange(blue5.attributes,     [ Attribute("isThree", Value(false)) ]);
 	testRandomAccessRange(blue5.tags,           cast(Tag[])[]);
 	testRandomAccessRange(blue5.namespaces,     [NSA("")], &namespaceEquals);
-	testRandomAccessRange(blue5.all.attributes, [ Attribute("", "isThree", loc, Value(false)) ]);
+	testRandomAccessRange(blue5.all.attributes, [ Attribute("isThree", Value(false)) ]);
 	testRandomAccessRange(blue5.all.tags,       cast(Tag[])[]);
 	
 	testRandomAccessRange(orange.attributes,     cast(Attribute[])[]);
@@ -1087,16 +1100,16 @@ unittest
 	testRandomAccessRange(orange.all.tags,       cast(Tag[])[]);
 	
 	testRandomAccessRange(square.attributes, [
-		Attribute("", "points", loc, Value(4)),
-		Attribute("", "dimensions", loc, Value(2)),
-		Attribute("", "points", loc, Value("Still four")),
+		Attribute("points", Value(4)),
+		Attribute("dimensions", Value(2)),
+		Attribute("points", Value("Still four")),
 	]);
 	testRandomAccessRange(square.tags,       cast(Tag[])[]);
 	testRandomAccessRange(square.namespaces, [NSA("")], &namespaceEquals);
 	testRandomAccessRange(square.all.attributes, [
-		Attribute("", "points", loc, Value(4)),
-		Attribute("", "dimensions", loc, Value(2)),
-		Attribute("", "points", loc, Value("Still four")),
+		Attribute("points", Value(4)),
+		Attribute("dimensions", Value(2)),
+		Attribute("points", Value("Still four")),
 	]);
 	testRandomAccessRange(square.all.tags, cast(Tag[])[]);
 	
@@ -1104,18 +1117,18 @@ unittest
 	testRandomAccessRange(triangle.tags,       cast(Tag[])[]);
 	testRandomAccessRange(triangle.namespaces, [NSA("data")], &namespaceEquals);
 	testRandomAccessRange(triangle.namespaces[0].attributes, [
-		Attribute("data", "points", loc, Value(3)),
-		Attribute("data", "dimensions", loc, Value(2)),
+		Attribute("data", "points", Value(3)),
+		Attribute("data", "dimensions", Value(2)),
 	]);
 	assert("data"    in triangle.namespaces);
 	assert("foobar" !in triangle.namespaces);
 	testRandomAccessRange(triangle.namespaces["data"].attributes, [
-		Attribute("data", "points", loc, Value(3)),
-		Attribute("data", "dimensions", loc, Value(2)),
+		Attribute("data", "points", Value(3)),
+		Attribute("data", "dimensions", Value(2)),
 	]);
 	testRandomAccessRange(triangle.all.attributes, [
-		Attribute("data", "points", loc, Value(3)),
-		Attribute("data", "dimensions", loc, Value(2)),
+		Attribute("data", "points", Value(3)),
+		Attribute("data", "dimensions", Value(2)),
 	]);
 	testRandomAccessRange(triangle.all.tags, cast(Tag[])[]);
 	
@@ -1129,37 +1142,37 @@ unittest
 	testRandomAccessRange(namespaces.tags,       cast(Tag[])[]);
 	testRandomAccessRange(namespaces.namespaces, [NSA("small"), NSA("med"), NSA("big")], &namespaceEquals);
 	testRandomAccessRange(namespaces.namespaces[0].attributes, [
-		Attribute("small", "A", loc, Value(1)),
-		Attribute("small", "B", loc, Value(10)),
+		Attribute("small", "A", Value(1)),
+		Attribute("small", "B", Value(10)),
 	]);
 	testRandomAccessRange(namespaces.namespaces[1].attributes, [
-		Attribute("med", "A", loc, Value(2)),
+		Attribute("med", "A", Value(2)),
 	]);
 	testRandomAccessRange(namespaces.namespaces[2].attributes, [
-		Attribute("big", "A", loc, Value(3)),
-		Attribute("big", "B", loc, Value(30)),
+		Attribute("big", "A", Value(3)),
+		Attribute("big", "B", Value(30)),
 	]);
 	assert("small"   in namespaces.namespaces);
 	assert("med"     in namespaces.namespaces);
 	assert("big"     in namespaces.namespaces);
 	assert("foobar" !in namespaces.namespaces);
 	testRandomAccessRange(namespaces.namespaces["small"].attributes, [
-		Attribute("small", "A", loc, Value(1)),
-		Attribute("small", "B", loc, Value(10)),
+		Attribute("small", "A", Value(1)),
+		Attribute("small", "B", Value(10)),
 	]);
 	testRandomAccessRange(namespaces.namespaces["med"].attributes, [
-		Attribute("med", "A", loc, Value(2)),
+		Attribute("med", "A", Value(2)),
 	]);
 	testRandomAccessRange(namespaces.namespaces["big"].attributes, [
-		Attribute("big", "A", loc, Value(3)),
-		Attribute("big", "B", loc, Value(30)),
+		Attribute("big", "A", Value(3)),
+		Attribute("big", "B", Value(30)),
 	]);
 	testRandomAccessRange(namespaces.all.attributes, [
-		Attribute("small", "A", loc, Value(1)),
-		Attribute("med",   "A", loc, Value(2)),
-		Attribute("big",   "A", loc, Value(3)),
-		Attribute("small", "B", loc, Value(10)),
-		Attribute("big",   "B", loc, Value(30)),
+		Attribute("small", "A", Value(1)),
+		Attribute("med",   "A", Value(2)),
+		Attribute("big",   "A", Value(3)),
+		Attribute("small", "B", Value(10)),
+		Attribute("big",   "B", Value(30)),
 	]);
 	testRandomAccessRange(namespaces.all.tags, cast(Tag[])[]);
 	assert("A"      !in namespaces.attributes);
@@ -1184,33 +1197,33 @@ unittest
 	assert("A"      !in namespaces.all.tags);
 	assert("A"      !in namespaces.namespaces["small"].tags);
 	testRandomAccessRange(namespaces.namespaces["small"].attributes["A"], [
-		Attribute("small", "A", loc, Value(1)),
+		Attribute("small", "A", Value(1)),
 	]);
 	testRandomAccessRange(namespaces.namespaces["med"].attributes["A"], [
-		Attribute("med", "A", loc, Value(2)),
+		Attribute("med", "A", Value(2)),
 	]);
 	testRandomAccessRange(namespaces.namespaces["big"].attributes["A"], [
-		Attribute("big", "A", loc, Value(3)),
+		Attribute("big", "A", Value(3)),
 	]);
 	testRandomAccessRange(namespaces.all.attributes["A"], [
-		Attribute("small", "A", loc, Value(1)),
-		Attribute("med",   "A", loc, Value(2)),
-		Attribute("big",   "A", loc, Value(3)),
+		Attribute("small", "A", Value(1)),
+		Attribute("med",   "A", Value(2)),
+		Attribute("big",   "A", Value(3)),
 	]);
 	testRandomAccessRange(namespaces.all.attributes["B"], [
-		Attribute("small", "B", loc, Value(10)),
-		Attribute("big",   "B", loc, Value(30)),
+		Attribute("small", "B", Value(10)),
+		Attribute("big",   "B", Value(30)),
 	]);
 
 	testRandomAccessRange(chiyo.attributes, [
-		Attribute("", "nemesis", loc, Value("Car")),
-		Attribute("", "score", loc, Value(100)),
+		Attribute("nemesis", Value("Car")),
+		Attribute("score", Value(100)),
 	]);
 	testRandomAccessRange(chiyo.tags,       cast(Tag[])[]);
 	testRandomAccessRange(chiyo.namespaces, [NSA("")], &namespaceEquals);
 	testRandomAccessRange(chiyo.all.attributes, [
-		Attribute("", "nemesis", loc, Value("Car")),
-		Attribute("", "score", loc, Value(100)),
+		Attribute("nemesis", Value("Car")),
+		Attribute("score", Value(100)),
 	]);
 	testRandomAccessRange(chiyo.all.tags, cast(Tag[])[]);
 	
@@ -1226,23 +1239,23 @@ unittest
 	testRandomAccessRange(sana.all.attributes, cast(Attribute[])[]);
 	testRandomAccessRange(sana.all.tags,       cast(Tag[])[]);
 	
-	testRandomAccessRange(people.attributes,         [Attribute("", "b", loc, Value(2))]);
+	testRandomAccessRange(people.attributes,         [Attribute("b", Value(2))]);
 	testRandomAccessRange(people.tags,               [chiyo, yukari, tomo]);
 	testRandomAccessRange(people.namespaces,         [NSA("visitor"), NSA("")], &namespaceEquals);
-	testRandomAccessRange(people.namespaces[0].attributes, [Attribute("visitor", "a", loc, Value(1))]);
-	testRandomAccessRange(people.namespaces[1].attributes, [Attribute("", "b", loc, Value(2))]);
+	testRandomAccessRange(people.namespaces[0].attributes, [Attribute("visitor", "a", Value(1))]);
+	testRandomAccessRange(people.namespaces[1].attributes, [Attribute("b", Value(2))]);
 	testRandomAccessRange(people.namespaces[0].tags,       [sana, hayama]);
 	testRandomAccessRange(people.namespaces[1].tags,       [chiyo, yukari, tomo]);
 	assert("visitor" in people.namespaces);
 	assert(""        in people.namespaces);
 	assert("foobar" !in people.namespaces);
-	testRandomAccessRange(people.namespaces["visitor"].attributes, [Attribute("visitor", "a", loc, Value(1))]);
-	testRandomAccessRange(people.namespaces[       ""].attributes, [Attribute("", "b", loc, Value(2))]);
+	testRandomAccessRange(people.namespaces["visitor"].attributes, [Attribute("visitor", "a", Value(1))]);
+	testRandomAccessRange(people.namespaces[       ""].attributes, [Attribute("b", Value(2))]);
 	testRandomAccessRange(people.namespaces["visitor"].tags,       [sana, hayama]);
 	testRandomAccessRange(people.namespaces[       ""].tags,       [chiyo, yukari, tomo]);
 	testRandomAccessRange(people.all.attributes, [
-		Attribute("visitor", "a", loc, Value(1)),
-		Attribute("", "b", loc, Value(2)),
+		Attribute("visitor", "a", Value(1)),
+		Attribute("b", Value(2)),
 	]);
 	testRandomAccessRange(people.all.tags, [chiyo, yukari, sana, tomo, hayama]);
 }
