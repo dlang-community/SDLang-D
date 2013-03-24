@@ -23,7 +23,9 @@ struct Attribute
 	string   name;
 	Location location;
 	Value    value;
-
+	
+	//TODO: Add optional simplified Attribute constructors (and use in unittests).
+	
 	@property string fullName()
 	{
 		return namespace==""? name : text(namespace, ":", name);
@@ -170,6 +172,7 @@ class Tag
 		allAttributes ~= attr;
 		attributeIndicies[attr.namespace] ~= allAttributes.length-1;
 		_attributes[attr.namespace][attr.name] ~= attr;
+		_attributes["*"]           [attr.name] ~= attr;
 
 		updateId++;
 		return this;
@@ -193,6 +196,7 @@ class Tag
 		allTags ~= tag;
 		tagIndicies[tag._namespace] ~= allTags.length-1;
 		_tags[tag._namespace][tag._name] ~= tag;
+		_tags["*"]           [tag._name] ~= tag;
 		
 		updateId++;
 		return this;
@@ -207,8 +211,7 @@ class Tag
 		return this;
 	}
 	
-	//TODO: Implement this for namespace=="*"
-	struct MembersByName(T, string allMembers, string memberIndicies, string membersGrouped)
+	struct MembersByName(T, string membersGrouped)
 	{
 		private Tag tag;
 		private string namespace; // "*" indicates "all namespaces" (ok since it's not a valid namespace name)
@@ -223,9 +226,7 @@ class Tag
 			this.updateId  = updateId;
 			frontIndex = 0;
 
-			if(namespace == "*")
-				throw new Exception("'All namespaces' version of getting members by name is not yet supported.");
-			else if(
+			if(
 				namespace in mixin("tag."~membersGrouped) &&
 				name in mixin("tag."~membersGrouped~"[namespace]")
 			)
@@ -292,10 +293,7 @@ class Tag
 			if(empty)
 				throw new RangeError("Range is empty");
 
-			if(namespace == "*")
-				throw new Exception("'All namespaces' version of getting members by name is not yet supported.");
-			else
-				return mixin("tag."~membersGrouped~"[namespace][name][frontIndex+index]");
+			return mixin("tag."~membersGrouped~"[namespace][name][frontIndex+index]");
 		}
 	}
 
@@ -392,7 +390,7 @@ class Tag
 				return mixin("tag."~allMembers~"[ tag."~memberIndicies~"[namespace][frontIndex+index] ]");
 		}
 		
-		alias MembersByName!(T,allMembers,memberIndicies,membersGrouped) ThisMembersByName;
+		alias MembersByName!(T,membersGrouped) ThisMembersByName;
 		ThisMembersByName opIndex(string name)
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
@@ -1046,17 +1044,28 @@ unittest
 	assert("people"  in root.tags);
 	assert("orange" !in root.tags);
 	assert("square" !in root.tags);
+	assert("foobar" !in root.tags);
+	assert("blue"    in root.all.tags);
+	assert("nothing" in root.all.tags);
+	assert("people"  in root.all.tags);
+	assert("orange"  in root.all.tags);
+	assert("square"  in root.all.tags);
+	assert("foobar" !in root.all.tags);
 	assert("orange"  in root.namespaces["stuff"].tags);
 	assert("square"  in root.namespaces["stuff"].tags);
-	assert("foobar" !in root.tags);
 	assert("square"  in root.namespaces["stuff"].tags);
 	assert("foobar" !in root.attributes);
+	assert("foobar" !in root.all.attributes);
 	assert("foobar" !in root.namespaces["stuff"].attributes);
 	assert("blue"   !in root.attributes);
+	assert("blue"   !in root.all.attributes);
 	assert("blue"   !in root.namespaces["stuff"].attributes);
 	testRandomAccessRange(root.tags["nothing"],                    [nothing]);
 	testRandomAccessRange(root.tags["blue"],                       [blue3, blue5]);
 	testRandomAccessRange(root.namespaces["stuff"].tags["orange"], [orange]);
+	testRandomAccessRange(root.all.tags["nothing"],                [nothing]);
+	testRandomAccessRange(root.all.tags["blue"],                   [blue3, blue5]);
+	testRandomAccessRange(root.all.tags["orange"],                 [orange]);
 	
 
 	testRandomAccessRange(blue3.attributes,     [ Attribute("", "isThree", loc, Value(true)) ]);
@@ -1156,6 +1165,9 @@ unittest
 	assert("A"      !in namespaces.attributes);
 	assert("B"      !in namespaces.attributes);
 	assert("foobar" !in namespaces.attributes);
+	assert("A"       in namespaces.all.attributes);
+	assert("B"       in namespaces.all.attributes);
+	assert("foobar" !in namespaces.all.attributes);
 	assert("A"       in namespaces.namespaces["small"].attributes);
 	assert("B"       in namespaces.namespaces["small"].attributes);
 	assert("foobar" !in namespaces.namespaces["small"].attributes);
@@ -1166,8 +1178,10 @@ unittest
 	assert("B"       in namespaces.namespaces["big"].attributes);
 	assert("foobar" !in namespaces.namespaces["big"].attributes);
 	assert("foobar" !in namespaces.tags);
+	assert("foobar" !in namespaces.all.tags);
 	assert("foobar" !in namespaces.namespaces["small"].tags);
 	assert("A"      !in namespaces.tags);
+	assert("A"      !in namespaces.all.tags);
 	assert("A"      !in namespaces.namespaces["small"].tags);
 	testRandomAccessRange(namespaces.namespaces["small"].attributes["A"], [
 		Attribute("small", "A", loc, Value(1)),
@@ -1177,6 +1191,15 @@ unittest
 	]);
 	testRandomAccessRange(namespaces.namespaces["big"].attributes["A"], [
 		Attribute("big", "A", loc, Value(3)),
+	]);
+	testRandomAccessRange(namespaces.all.attributes["A"], [
+		Attribute("small", "A", loc, Value(1)),
+		Attribute("med",   "A", loc, Value(2)),
+		Attribute("big",   "A", loc, Value(3)),
+	]);
+	testRandomAccessRange(namespaces.all.attributes["B"], [
+		Attribute("small", "B", loc, Value(10)),
+		Attribute("big",   "B", loc, Value(30)),
 	]);
 
 	testRandomAccessRange(chiyo.attributes, [
