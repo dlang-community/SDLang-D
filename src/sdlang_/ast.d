@@ -84,7 +84,8 @@ class Tag
 
 	this(
 		Tag parent, string namespace, string name,
-		Value[] values=null, Attribute[] attributes=null, Tag[] children=null)
+		Value[] values=null, Attribute[] attributes=null, Tag[] children=null
+	)
 	{
 		this.parent    = parent;
 		this.namespace = namespace;
@@ -234,7 +235,6 @@ class Tag
 		@property size_t length()
 		{
 			return _empty? 0 : (backIndex+1) - frontIndex;
-			//return mixin("tag."~memberIndicies~"[namespace].length");
 		}
 		
 		@property typeof(this) save()
@@ -333,7 +333,6 @@ class Tag
 		@property size_t length()
 		{
 			return _empty? 0 : (backIndex+1) - frontIndex;
-			//return tag.allNamespaces.length;
 		}
 		
 		@property NamespaceRange save()
@@ -395,21 +394,53 @@ class Tag
 		return allTags == t.allTags;
 	}
 	
+	/// Treats 'this' as the root tag.
+	string toSDLDocument()()
+	{
+		Appender!string sink;
+		toSDLDocument(sink);
+		return sink.data;
+	}
+	
+	///ditto
+	void toSDLDocument(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
+		if(isOutputRange!(Sink,char))
+	{
+		if(values.length > 0)
+			throw new SDLangException("Root tags cannot have any values, only child tags.");
+
+		if(allAttributes.length > 0)
+			throw new SDLangException("Root tags cannot have any attributes, only child tags.");
+
+		if(namespace != "")
+			throw new SDLangException("Root tags cannot have a namespace.");
+		
+		foreach(tagsByNamespace; _tags)
+		foreach(tagsByName; tagsByNamespace)
+		foreach(tag; tagsByName)
+			tag.toSDLString(sink, indent, indentLevel);
+	}
+	
+	/// Output this entire tag in SDL format. Does *not* treat 'this' as
+	/// a root tag. If you intend this to be the root of a standard SDL
+	/// document, use 'toSDLDocument' instead.
 	string toSDLString()()
 	{
 		Appender!string sink;
 		toSDLString(sink);
 		return sink.data;
 	}
-
-	void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0) if(isOutputRange!(Sink,char))
+	
+	///ditto
+	private void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
+		if(isOutputRange!(Sink,char))
 	{
 		if(name == "" && values.length == 0)
 			throw new SDLangException("Anonymous tags must have at least one value.");
 		
 		if(name == "" && namespace != "")
 			throw new SDLangException("Anonymous tags cannot have a namespace.");
-		
+	
 		// Indent
 		foreach(i; 0..indentLevel)
 			sink.put(indent);
