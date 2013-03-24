@@ -325,6 +325,26 @@ class Tag
 				TagRange(tag, namespace)
 			);
 		}
+		
+		NamespaceAccess opIndex(string namespace)
+		{
+			if(empty)
+				throw new RangeError("Range is empty");
+			
+			if(namespace !in this)
+				throw new RangeError(`No such namespace: "`~namespace~`"`);
+			
+			return NamespaceAccess(
+				namespace,
+				AttributeRange(tag, namespace),
+				TagRange(tag, namespace)
+			);
+		}
+		
+		bool opBinaryRight(string op)(string namespace) if(op=="in")
+		{
+			return tag.allNamespaces.canFind(namespace);
+		}
 	}
 	static assert(isRandomAccessRange!NamespaceRange);
 	@property NamespaceRange namespaces()
@@ -801,6 +821,11 @@ unittest
 	testRandomAccessRange(root.namespaces, [NSA(""), NSA("stuff")], &namespaceEquals);
 	testRandomAccessRange(root.namespaces[0].tags, [blue3, blue5, nothing, namespaces, people]);
 	testRandomAccessRange(root.namespaces[1].tags, [orange, square, triangle]);
+	assert(""        in root.namespaces);
+	assert("stuff"   in root.namespaces);
+	assert("foobar" !in root.namespaces);
+	testRandomAccessRange(root.namespaces[     ""].tags, [blue3, blue5, nothing, namespaces, people]);
+	testRandomAccessRange(root.namespaces["stuff"].tags, [orange, square, triangle]);
 
 	testRandomAccessRange(blue3.attributes, [ Attribute("", "isThree", loc, Value(true)) ]);
 	testRandomAccessRange(blue3.tags,       cast(Tag[])[]);
@@ -871,4 +896,11 @@ unittest
 	testRandomAccessRange(people.namespaces[1].attributes, [Attribute("", "b", loc, Value(2))]);
 	testRandomAccessRange(people.namespaces[0].tags,       [sana, hayama]);
 	testRandomAccessRange(people.namespaces[1].tags,       [chiyo, yukari, tomo]);
+	assert("visitor" in people.namespaces);
+	assert(""        in people.namespaces);
+	assert("foobar" !in people.namespaces);
+	testRandomAccessRange(people.namespaces["visitor"].attributes, [Attribute("visitor", "a", loc, Value(1))]);
+	testRandomAccessRange(people.namespaces[       ""].attributes, [Attribute("", "b", loc, Value(2))]);
+	testRandomAccessRange(people.namespaces["visitor"].tags,       [sana, hayama]);
+	testRandomAccessRange(people.namespaces[       ""].tags,       [chiyo, yukari, tomo]);
 }
