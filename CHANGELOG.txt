@@ -1,6 +1,6 @@
 v0.8.3 - TBD
 =====================
-- Added a clean, easy to use, range-based interface to Tag.
+- Breaking change: Added a clean, easy to use, range-based interface to Tag.
 - Added 'Tag.add(...)' for adding values, attributes and children to a tag.
 - Added 'Tag.toSDLDocument()' to properly treat 'this' as the root tag.
 - Non-sink overloads of 'Tag.toSDLDocument' and 'Tag.toSDLString' now support
