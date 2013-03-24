@@ -11,7 +11,10 @@ import std.string;
 
 version(SDLang_Unittest)
 version(unittest)
+{
 	import std.stdio;
+	import std.exception;
+}
 
 import sdlang_.exception;
 import sdlang_.token;
@@ -78,6 +81,7 @@ struct Attribute
 	}
 }
 
+//TODO: Add opSlice to ranges
 class Tag
 {
 	static immutable defaultName = "content";
@@ -311,21 +315,20 @@ class Tag
 		}
 	}
 
-	//TODO? Create "maybe.*" versions of accessors which,
-	//      upon invalid opIndex(string), return empty range
-	//      instead of throwing.
 	struct MemberRange(T, string allMembers, string memberIndicies, string membersGrouped)
 	{
 		private Tag tag;
 		private string namespace; // "*" indicates "all namespaces" (ok since it's not a valid namespace name)
+		private bool isMaybe;
 		private size_t updateId;  // Tag's updateId when this range was created.
 		private size_t initialEndIndex;
 
-		this(Tag tag, string namespace)
+		this(Tag tag, string namespace, bool isMaybe)
 		{
-			this.tag = tag;
+			this.tag       = tag;
 			this.namespace = namespace;
-			this.updateId = tag.updateId;
+			this.updateId  = tag.updateId;
+			this.isMaybe   = isMaybe;
 			frontIndex = 0;
 
 			if(namespace == "*")
@@ -385,7 +388,7 @@ class Tag
 		
 		@property typeof(this) save()
 		{
-			auto r = typeof(this)(this.tag, this.namespace);
+			auto r = typeof(this)(this.tag, this.namespace, this.isMaybe);
 			r.frontIndex      = this.frontIndex;
 			r.endIndex        = this.endIndex;
 			r.initialEndIndex = this.initialEndIndex;
@@ -417,10 +420,10 @@ class Tag
 				);
 			}
 			
-			if(empty)
+			if(!isMaybe && empty)
 				throw new RangeError("Range is empty");
 			
-			if(name !in this)
+			if(!isMaybe && name !in this)
 				throw new RangeError(`No such `~T.stringof~` named: "`~namespace~`"`);
 
 			return ThisNamedMemberRange(tag, namespace, name, updateId);
@@ -438,11 +441,13 @@ class Tag
 	struct NamespaceRange
 	{
 		private Tag tag;
+		private bool isMaybe;
 		private size_t updateId;  // Tag's updateId when this range was created.
 
-		this(Tag tag)
+		this(Tag tag, bool isMaybe)
 		{
-			this.tag = tag;
+			this.tag      = tag;
+			this.isMaybe  = isMaybe;
 			this.updateId = tag.updateId;
 			frontIndex = 0;
 			endIndex = tag.allNamespaces.length;
@@ -495,7 +500,7 @@ class Tag
 		
 		@property NamespaceRange save()
 		{
-			auto r = NamespaceRange(this.tag);
+			auto r = NamespaceRange(this.tag, this.isMaybe);
 			r.frontIndex = this.frontIndex;
 			r.endIndex   = this.endIndex;
 			r.updateId   = this.updateId;
@@ -510,23 +515,23 @@ class Tag
 			auto namespace = tag.allNamespaces[frontIndex+index];
 			return NamespaceAccess(
 				namespace,
-				AttributeRange(tag, namespace),
-				TagRange(tag, namespace)
+				AttributeRange(tag, namespace, isMaybe),
+				TagRange(tag, namespace, isMaybe)
 			);
 		}
 		
 		NamespaceAccess opIndex(string namespace)
 		{
-			if(empty)
+			if(!isMaybe && empty)
 				throw new RangeError("Range is empty");
 			
-			if(namespace !in this)
+			if(!isMaybe && namespace !in this)
 				throw new RangeError(`No such namespace: "`~namespace~`"`);
 			
 			return NamespaceAccess(
 				namespace,
-				AttributeRange(tag, namespace),
-				TagRange(tag, namespace)
+				AttributeRange(tag, namespace, isMaybe),
+				TagRange(tag, namespace, isMaybe)
 			);
 		}
 		
@@ -552,19 +557,19 @@ class Tag
 	/// Access all attributes that don't have a namespace
 	@property AttributeRange attributes()
 	{
-		return AttributeRange(this, "");
+		return AttributeRange(this, "", false);
 	}
 
 	/// Access all direct-child tags that don't have a namespace
 	@property TagRange tags()
 	{
-		return TagRange(this, "");
+		return TagRange(this, "", false);
 	}
 	
 	/// Access all namespaces in this tag, and the attributes/tags within them.
 	@property NamespaceRange namespaces()
 	{
-		return NamespaceRange(this);
+		return NamespaceRange(this, false);
 	}
 
 	/// Access all attributes and tags regardless of namespace.
@@ -573,9 +578,51 @@ class Tag
 		// "*" isn't a valid namespace name, so we can use it to indicate "all namespaces"
 		return NamespaceAccess(
 			"*",
-			AttributeRange(this, "*"),
-			TagRange(this, "*")
+			AttributeRange(this, "*", false),
+			TagRange(this, "*", false)
 		);
+	}
+
+	struct MaybeAccess
+	{
+		Tag tag;
+
+		/// Access all attributes that don't have a namespace
+		@property AttributeRange attributes()
+		{
+			return AttributeRange(tag, "", true);
+		}
+
+		/// Access all direct-child tags that don't have a namespace
+		@property TagRange tags()
+		{
+			return TagRange(tag, "", true);
+		}
+		
+		/// Access all namespaces in this tag, and the attributes/tags within them.
+		@property NamespaceRange namespaces()
+		{
+			return NamespaceRange(tag, true);
+		}
+
+		/// Access all attributes and tags regardless of namespace.
+		@property NamespaceAccess all()
+		{
+			// "*" isn't a valid namespace name, so we can use it to indicate "all namespaces"
+			return NamespaceAccess(
+				"*",
+				AttributeRange(tag, "*", true),
+				TagRange(tag, "*", true)
+			);
+		}
+	}
+	
+	/// Access 'attributes', 'tags', 'namespaces' and 'all' like normal,
+	/// except that looking up a non-existant name/namespace with
+	/// opIndex(string) results in an empty array instead of a thrown RangeError.
+	@property MaybeAccess maybe()
+	{
+		return MaybeAccess(this);
 	}
 	
 	override bool opEquals(Object o)
@@ -1080,6 +1127,26 @@ unittest
 	testRandomAccessRange(root.all.tags["nothing"],                [nothing]);
 	testRandomAccessRange(root.all.tags["blue"],                   [blue3, blue5]);
 	testRandomAccessRange(root.all.tags["orange"],                 [orange]);
+
+	assertThrown!RangeError(root.tags["foobar"]);
+	assertThrown!RangeError(root.all.tags["foobar"]);
+	assertThrown!RangeError(root.namespaces["foobar"].tags["foobar"]);
+	assertThrown!RangeError(root.attributes["foobar"]);
+	assertThrown!RangeError(root.all.attributes["foobar"]);
+	assertThrown!RangeError(root.namespaces["foobar"].attributes["foobar"]);
+
+	testRandomAccessRange(root.maybe.tags["nothing"],                    [nothing]);
+	testRandomAccessRange(root.maybe.tags["blue"],                       [blue3, blue5]);
+	testRandomAccessRange(root.maybe.namespaces["stuff"].tags["orange"], [orange]);
+	testRandomAccessRange(root.maybe.all.tags["nothing"],                [nothing]);
+	testRandomAccessRange(root.maybe.all.tags["blue"],                   [blue3, blue5]);
+	testRandomAccessRange(root.maybe.all.tags["orange"],                 [orange]);
+	testRandomAccessRange(root.maybe.tags["foobar"],                      cast(Tag[])[]);
+	testRandomAccessRange(root.maybe.all.tags["foobar"],                  cast(Tag[])[]);
+	testRandomAccessRange(root.maybe.namespaces["foobar"].tags["foobar"], cast(Tag[])[]);
+	testRandomAccessRange(root.maybe.attributes["foobar"],                      cast(Attribute[])[]);
+	testRandomAccessRange(root.maybe.all.attributes["foobar"],                  cast(Attribute[])[]);
+	testRandomAccessRange(root.maybe.namespaces["foobar"].attributes["foobar"], cast(Attribute[])[]);
 	
 
 	testRandomAccessRange(blue3.attributes,     [ Attribute("isThree", Value(true)) ]);
