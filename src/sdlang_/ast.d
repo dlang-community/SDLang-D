@@ -178,27 +178,14 @@ class Tag
 			frontIndex = 0;
 
 			if(namespace in mixin("tag."~memberIndicies))
-			{
-				auto numInNamespace = mixin("tag."~memberIndicies~"[namespace].length");
-				if(numInNamespace == 0)
-				{
-					backIndex = 0;
-					_empty = true;
-				}
-				
-				backIndex = numInNamespace-1;
-			}
+				endIndex = mixin("tag."~memberIndicies~"[namespace].length");
 			else
-			{
-				backIndex = 0;
-				_empty = true;
-			}
+				endIndex = 0;
 		}
 		
-		private bool _empty;
 		@property bool empty()
 		{
-			return _empty;
+			return frontIndex == endIndex;
 		}
 		
 		private size_t frontIndex;
@@ -208,47 +195,42 @@ class Tag
 		}
 		void popFront()
 		{
-			assert(!_empty);
-			
-			if(frontIndex == backIndex)
-				_empty = true;
-			else
-				frontIndex++;
+			if(empty)
+				throw new RangeError("Range is empty");
+
+			frontIndex++;
 		}
 
-		private size_t backIndex;
+		private size_t endIndex; // One past the last element
 		@property ref T back()
 		{
 			return this[$-1];
 		}
 		void popBack()
 		{
-			assert(!_empty);
-			
-			if(frontIndex == backIndex)
-				_empty = true;
-			else
-				backIndex--;
+			if(empty)
+				throw new RangeError("Range is empty");
+
+			endIndex--;
 		}
 		
 		alias length opDollar;
 		@property size_t length()
 		{
-			return _empty? 0 : (backIndex+1) - frontIndex;
+			return endIndex - frontIndex;
 		}
 		
 		@property typeof(this) save()
 		{
 			auto r = typeof(this)(this.tag, this.namespace);
-			r._empty     = this._empty;
 			r.frontIndex = this.frontIndex;
-			r.backIndex  = this.backIndex;
+			r.endIndex   = this.endIndex;
 			return r;
 		}
 		
 		ref T opIndex(size_t index)
 		{
-			if(_empty)
+			if(empty)
 				throw new RangeError("Range is empty");
 
 			return mixin("tag."~allMembers~"[ tag."~memberIndicies~"[namespace][frontIndex+index] ]");
@@ -283,20 +265,12 @@ class Tag
 		{
 			this.tag = tag;
 			frontIndex = 0;
-
-			if(tag.allNamespaces.length > 0)
-				backIndex = tag.allNamespaces.length-1;
-			else
-			{
-				backIndex = 0;
-				_empty = true;
-			}
+			endIndex = tag.allNamespaces.length;
 		}
 		
-		private bool _empty;
 		@property bool empty()
 		{
-			return _empty;
+			return frontIndex == endIndex;
 		}
 		
 		private size_t frontIndex;
@@ -306,47 +280,42 @@ class Tag
 		}
 		void popFront()
 		{
-			assert(!_empty);
+			if(empty)
+				throw new RangeError("Range is empty");
 			
-			if(frontIndex == backIndex)
-				_empty = true;
-			else
-				frontIndex++;
+			frontIndex++;
 		}
 
-		private size_t backIndex;
+		private size_t endIndex; // One past the last element
 		@property NamespaceAccess back()
 		{
 			return this[$-1];
 		}
 		void popBack()
 		{
-			assert(!_empty);
+			if(empty)
+				throw new RangeError("Range is empty");
 			
-			if(frontIndex == backIndex)
-				_empty = true;
-			else
-				backIndex--;
+			endIndex--;
 		}
 		
 		alias length opDollar;
 		@property size_t length()
 		{
-			return _empty? 0 : (backIndex+1) - frontIndex;
+			return endIndex - frontIndex;
 		}
 		
 		@property NamespaceRange save()
 		{
 			auto r = NamespaceRange(this.tag);
-			r._empty     = this._empty;
 			r.frontIndex = this.frontIndex;
-			r.backIndex  = this.backIndex;
+			r.endIndex   = this.endIndex;
 			return r;
 		}
 		
 		NamespaceAccess opIndex(size_t index)
 		{
-			if(_empty)
+			if(empty)
 				throw new RangeError("Range is empty");
 
 			auto namespace = tag.allNamespaces[frontIndex+index];
@@ -585,7 +554,7 @@ unittest
 		auto r2 = range.save;
 		foreach(i; 0..expected.length)
 		{
-			//writeln("Forward iteration: ", i); stdout.flush();
+			//trace("Forward iteration: ", i);
 			
 			// Test length/empty
 			assert(range.length == expected.length - i);
@@ -624,7 +593,7 @@ unittest
 		r2    = original.save;
 		foreach(i; iota(0, expected.length).retro())
 		{
-			//writeln("Backwards iteration: ", i); stdout.flush();
+			//trace("Backwards iteration: ", i);
 
 			// Test length/empty
 			assert(range.length == i+1);
@@ -663,7 +632,7 @@ unittest
 		r2    = original.save;
 		foreach(i; 0..expected.length)
 		{
-			//writeln("Random access: ", i); stdout.flush();
+			//trace("Random access: ", i);
 
 			// Test length/empty
 			assert(range.length == expected.length);
