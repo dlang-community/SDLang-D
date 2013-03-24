@@ -394,7 +394,9 @@ class Tag
 		return allTags == t.allTags;
 	}
 	
-	/// Treats 'this' as the root tag.
+	/// Treats 'this' as the root tag. Note that root tags cannot have
+	/// values or attributes, and cannot be part of a namespace.
+	/// If this isn't a valid root tag, 'SDLangException' will be thrown.
 	string toSDLDocument()()
 	{
 		Appender!string sink;
