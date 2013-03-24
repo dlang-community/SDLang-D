@@ -397,10 +397,10 @@ class Tag
 	/// Treats 'this' as the root tag. Note that root tags cannot have
 	/// values or attributes, and cannot be part of a namespace.
 	/// If this isn't a valid root tag, 'SDLangException' will be thrown.
-	string toSDLDocument()()
+	string toSDLDocument()(string indent="\t", int indentLevel=0)
 	{
 		Appender!string sink;
-		toSDLDocument(sink);
+		toSDLDocument(sink, indent, indentLevel);
 		return sink.data;
 	}
 	
@@ -426,10 +426,10 @@ class Tag
 	/// Output this entire tag in SDL format. Does *not* treat 'this' as
 	/// a root tag. If you intend this to be the root of a standard SDL
 	/// document, use 'toSDLDocument' instead.
-	string toSDLString()()
+	string toSDLString()(string indent="\t", int indentLevel=0)
 	{
 		Appender!string sink;
-		toSDLString(sink);
+		toSDLString(sink, indent, indentLevel);
 		return sink.data;
 	}
 	
