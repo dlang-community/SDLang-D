@@ -108,7 +108,7 @@ private struct Parser
 			error("Expected tag name or value, not " ~ token.symbol.name);
 
 		tag.location = token.location;
-		parent.tags[tag.namespace][tag.name] ~= tag;
+		parent.add(tag);
 
 		parseValues(tag);
 		parseAttributes(tag);
@@ -183,7 +183,7 @@ private struct Parser
 		{
 			auto value = token.value;
 			trace("In tag '", parent.fullName, "', found value: ", value);
-			parent.values ~= value;
+			parent.add(value);
 			
 			lexer.popFront();
 		}
@@ -233,7 +233,7 @@ private struct Parser
 		
 		attr.value = token.value;
 		
-		parent.attributes[attr.namespace][attr.name] ~= attr;
+		parent.add(attr);
 		trace("In tag '", parent.fullName, "', found attribute '", attr.fullName, "'");
 		
 		lexer.popFront();
