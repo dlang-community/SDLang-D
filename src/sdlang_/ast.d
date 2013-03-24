@@ -225,7 +225,7 @@ class Tag
 		return this;
 	}
 	
-	struct MembersByName(T, string membersGrouped)
+	struct NamedMemberRange(T, string membersGrouped)
 	{
 		private Tag tag;
 		private string namespace; // "*" indicates "all namespaces" (ok since it's not a valid namespace name)
@@ -404,8 +404,8 @@ class Tag
 				return mixin("tag."~allMembers~"[ tag."~memberIndicies~"[namespace][frontIndex+index] ]");
 		}
 		
-		alias MembersByName!(T,membersGrouped) ThisMembersByName;
-		ThisMembersByName opIndex(string name)
+		alias NamedMemberRange!(T,membersGrouped) ThisNamedMemberRange;
+		ThisNamedMemberRange opIndex(string name)
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
 			{
@@ -423,7 +423,7 @@ class Tag
 			if(name !in this)
 				throw new RangeError(`No such `~T.stringof~` named: "`~namespace~`"`);
 
-			return ThisMembersByName(tag, namespace, name, updateId);
+			return ThisNamedMemberRange(tag, namespace, name, updateId);
 		}
 
 		bool opBinaryRight(string op)(string name) if(op=="in")
@@ -433,29 +433,6 @@ class Tag
 				name in mixin("tag."~membersGrouped~"[namespace]") && 
 				mixin("tag."~membersGrouped~"[namespace][name].length") > 0;
 		}
-	}
-	alias MemberRange!(Attribute, "allAttributes", "attributeIndicies", "_attributes") AttributeRange;
-	alias MemberRange!(Tag,       "allTags",       "tagIndicies",       "_tags"      ) TagRange;
-	static assert(isRandomAccessRange!AttributeRange);
-	static assert(isRandomAccessRange!TagRange);
-
-	/// Access all attributes that don't have a namespace
-	@property AttributeRange attributes()
-	{
-		return AttributeRange(this, "");
-	}
-
-	/// Access all direct-child tags that don't have a namespace
-	@property TagRange tags()
-	{
-		return TagRange(this, "");
-	}
-	
-	struct NamespaceAccess
-	{
-		string name;
-		AttributeRange attributes;
-		TagRange tags;
 	}
 
 	struct NamespaceRange
@@ -558,8 +535,32 @@ class Tag
 			return tag.allNamespaces.canFind(namespace);
 		}
 	}
+
+	struct NamespaceAccess
+	{
+		string name;
+		AttributeRange attributes;
+		TagRange tags;
+	}
+
+	alias MemberRange!(Attribute, "allAttributes", "attributeIndicies", "_attributes") AttributeRange;
+	alias MemberRange!(Tag,       "allTags",       "tagIndicies",       "_tags"      ) TagRange;
+	static assert(isRandomAccessRange!AttributeRange);
+	static assert(isRandomAccessRange!TagRange);
 	static assert(isRandomAccessRange!NamespaceRange);
 
+	/// Access all attributes that don't have a namespace
+	@property AttributeRange attributes()
+	{
+		return AttributeRange(this, "");
+	}
+
+	/// Access all direct-child tags that don't have a namespace
+	@property TagRange tags()
+	{
+		return TagRange(this, "");
+	}
+	
 	/// Access all namespaces in this tag, and the attributes/tags within them.
 	@property NamespaceRange namespaces()
 	{
