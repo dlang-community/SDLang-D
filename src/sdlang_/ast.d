@@ -81,7 +81,6 @@ struct Attribute
 	}
 }
 
-//TODO: How to handle "str in range" when range is a slice or has done a popFront/popBack?
 class Tag
 {
 	static immutable defaultName = "content";
@@ -473,6 +472,16 @@ class Tag
 
 		bool opBinaryRight(string op)(string name) if(op=="in")
 		{
+			if(frontIndex != 0 || endIndex != initialEndIndex)
+			{
+				throw new SDLangException(
+					"Cannot lookup tags/attributes by name on a subset of a range, "~
+					"only across the entire tag. "~
+					"Please make sure you haven't called popFront or popBack on this "~
+					"range and that you aren't using a slice of the range."
+				);
+			}
+			
 			return
 				namespace in mixin("tag."~membersGrouped) &&
 				name in mixin("tag."~membersGrouped~"[namespace]") && 
@@ -600,7 +609,7 @@ class Tag
 		
 		bool opBinaryRight(string op)(string namespace) if(op=="in")
 		{
-			return tag.allNamespaces.canFind(namespace);
+			return tag.allNamespaces[frontIndex..endIndex].canFind(namespace);
 		}
 	}
 
@@ -1296,6 +1305,10 @@ unittest
 	assert("med"     in namespaces.namespaces);
 	assert("big"     in namespaces.namespaces);
 	assert("foobar" !in namespaces.namespaces);
+	assert("small"  !in namespaces.namespaces[1..2]);
+	assert("med"     in namespaces.namespaces[1..2]);
+	assert("big"    !in namespaces.namespaces[1..2]);
+	assert("foobar" !in namespaces.namespaces[1..2]);
 	testRandomAccessRange(namespaces.namespaces["small"].attributes, [
 		Attribute("small", "A", Value(1)),
 		Attribute("small", "B", Value(10)),
