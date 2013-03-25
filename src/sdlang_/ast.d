@@ -391,6 +391,7 @@ class Tag
 		}
 		
 		_parent.updateId++;
+		_parent = null;
 		return this;
 	}
 	
