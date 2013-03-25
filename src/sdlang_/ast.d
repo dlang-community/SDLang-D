@@ -97,17 +97,12 @@ struct Attribute
 		if(!_parent)
 			return this;
 		
-		void omit(E)(ref E[] arr, ptrdiff_t index)
-		{
-			arr = arr[0..index] ~ arr[index+1..$];
-		}
-
 		void removeFromGroupedLookup(string ns)
 		{
 			// Remove from _attributes[ns]
 			auto sameNameAttrs = _parent._attributes[ns][_name];
 			auto targetIndex = sameNameAttrs.countUntil(this);
-			omit(_parent._attributes[ns][_name], targetIndex);
+			_parent._attributes[ns][_name].removeIndex(targetIndex);
 		}
 		
 		// Remove from _attributes
@@ -116,12 +111,12 @@ struct Attribute
 
 		// Remove from allAttributes
 		auto allAttrsIndex = _parent.allAttributes.countUntil(this);
-		omit(_parent.allAttributes, allAttrsIndex);
+		_parent.allAttributes.removeIndex(allAttrsIndex);
 
 		// Remove from attributeIndicies
 		auto sameNamespaceAttrs = _parent.attributeIndicies[_namespace];
 		auto attrIndiciesIndex = sameNamespaceAttrs.countUntil(allAttrsIndex);
-		omit(_parent.attributeIndicies[_namespace], attrIndiciesIndex);
+		_parent.attributeIndicies[_namespace].removeIndex(attrIndiciesIndex);
 		
 		// Fixup other indicies
 		foreach(ns, ref nsAttrIndicies; _parent.attributeIndicies)
@@ -335,17 +330,12 @@ class Tag
 		if(!_parent)
 			return this;
 		
-		void omit(E)(ref E[] arr, ptrdiff_t index)
-		{
-			arr = arr[0..index] ~ arr[index+1..$];
-		}
-		
 		void removeFromGroupedLookup(string ns)
 		{
 			// Remove from _parent._tags[ns]
 			auto sameNameTags = _parent._tags[ns][_name];
 			auto targetIndex = sameNameTags.countUntil(this);
-			omit(_parent._tags[ns][_name], targetIndex);
+			_parent._tags[ns][_name].removeIndex(targetIndex);
 		}
 		
 		// Remove from _parent._tags
@@ -354,12 +344,12 @@ class Tag
 
 		// Remove from _parent.allTags
 		auto allTagsIndex = _parent.allTags.countUntil(this);
-		omit(_parent.allTags, allTagsIndex);
+		_parent.allTags.removeIndex(allTagsIndex);
 
 		// Remove from _parent.tagIndicies
 		auto sameNamespaceTags = _parent.tagIndicies[_namespace];
 		auto tagIndiciesIndex = sameNamespaceTags.countUntil(allTagsIndex);
-		omit(_parent.tagIndicies[_namespace], tagIndiciesIndex);
+		_parent.tagIndicies[_namespace].removeIndex(tagIndiciesIndex);
 		
 		// Fixup other indicies
 		foreach(ns, ref nsTagIndicies; _parent.tagIndicies)

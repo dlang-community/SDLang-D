@@ -48,6 +48,11 @@ struct Location
 	}
 }
 
+void removeIndex(E)(ref E[] arr, ptrdiff_t index)
+{
+	arr = arr[0..index] ~ arr[index+1..$];
+}
+
 void trace(string file=__FILE__, size_t line=__LINE__, TArgs...)(TArgs args)
 {
 	version(SDLang_Trace)
