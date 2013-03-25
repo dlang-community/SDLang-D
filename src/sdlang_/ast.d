@@ -283,10 +283,18 @@ class Tag
 		return _namespace==""? _name : text(_namespace, ":", _name);
 	}
 
-	this(Tag parent)
+	this(Tag parent = null)
 	{
 		if(parent)
 			parent.add(this);
+	}
+
+	this(
+		string namespace, string name,
+		Value[] values=null, Attribute[] attributes=null, Tag[] children=null
+	)
+	{
+		this(null, namespace, name, values, attributes, children);
 	}
 
 	this(
