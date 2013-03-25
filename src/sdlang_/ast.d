@@ -964,9 +964,7 @@ class Tag
 		if(_namespace != "")
 			throw new SDLangValidationException("Root tags cannot have a namespace.");
 		
-		foreach(tagsByNamespace; _tags)
-		foreach(tagsByName; tagsByNamespace)
-		foreach(tag; tagsByName)
+		foreach(tag; allTags)
 			tag.toSDLString(sink, indent, indentLevel);
 	}
 	
@@ -1013,9 +1011,7 @@ class Tag
 		}
 		
 		// Attributes
-		foreach(attrsByNamespace; _attributes)
-		foreach(attrsByName; attrsByNamespace)
-		foreach(attr; attrsByName)
+		foreach(attr; allAttributes)
 		{
 			sink.put(' ');
 			attr.toSDLString(sink);
@@ -1023,9 +1019,7 @@ class Tag
 		
 		// Child tags
 		bool foundChild=false;
-		foreach(tagsByNamespace; _tags)
-		foreach(tagsByName; tagsByNamespace)
-		foreach(tag; tagsByName)
+		foreach(tag; allTags)
 		{
 			if(!foundChild)
 			{
@@ -1067,6 +1061,7 @@ class Tag
 
 		// Attributes
 		foreach(attrNamespace; _attributes.keys.sort)
+		if(attrNamespace != "*")
 		foreach(attrName; _attributes[attrNamespace].keys.sort)
 		foreach(attr; _attributes[attrNamespace][attrName])
 		{
@@ -1083,6 +1078,7 @@ class Tag
 		
 		// Children
 		foreach(tagNamespace; _tags.keys.sort)
+		if(tagNamespace != "*")
 		foreach(tagName; _tags[tagNamespace].keys.sort)
 		foreach(tag; _tags[tagNamespace][tagName])
 			buf.put( tag.toDebugString().replace("\n", "\n    ") );

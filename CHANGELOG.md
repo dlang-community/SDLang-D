@@ -6,6 +6,7 @@ v0.8.3 - TBD
 - **New:** Added ```Tag.add(...)``` for adding values, attributes and children to a tag.
 - **New:** Added ```Tag.toSDLDocument()``` to properly treat ```this``` as the root tag.
 - **New:** Non-sink overloads of ```Tag.toSDLDocument``` and ```Tag.toSDLString``` now support the optional ```indent``` and ```indentLevel``` params.
+- **Fixed:** Functions that convert tags to strings now output the attributes/children in their original order.
 
 v0.8.2 - 2013/03/05
 =====================
