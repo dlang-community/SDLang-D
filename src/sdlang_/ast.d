@@ -285,8 +285,8 @@ class Tag
 
 	this(Tag parent)
 	{
-		//TODO: 'this' tag needs to be *properly* added to parent.
-		this._parent = parent;
+		if(parent)
+			parent.add(this);
 	}
 
 	this(
@@ -294,10 +294,11 @@ class Tag
 		Value[] values=null, Attribute[] attributes=null, Tag[] children=null
 	)
 	{
-		//TODO: 'this' tag needs to be *properly* added to parent.
-		this._parent    = parent;
 		this._namespace = namespace;
 		this._name      = name;
+
+		if(parent)
+			parent.add(this);
 		
 		this.values = values;
 		this.add(attributes);
