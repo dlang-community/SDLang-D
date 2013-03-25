@@ -39,17 +39,25 @@ struct Attribute
 	{
 		return _namespace;
 	}
-	// This shouldn't be public until it's adjusted to properly update the parent.
-	private @property void namespace(string value)
+	/// Not particularly efficient, but it works.
+	@property void namespace(string value)
 	{
-		if(_parent)
+		if(_parent && _namespace != value)
 		{
-			//TODO: Adjust parent's 'tagIndicies' and '_tags'
-			_parent.removeNamespaceIfEmpty(_namespace);
-			_parent.updateId++;
-		}
+			// Remove
+			auto saveParent = _parent;
+			if(_parent)
+				this.remove();
 
-		_namespace = value;
+			// Change namespace
+			_namespace = value;
+
+			// Re-add
+			if(saveParent)
+				saveParent.add(this);
+		}
+		else
+			_namespace = value;
 	}
 	
 	private string _name;
@@ -207,17 +215,25 @@ class Tag
 	{
 		return _namespace;
 	}
-	// This shouldn't be public until it's adjusted to properly update the parent.
-	private @property void namespace(string value)
+	/// Not particularly efficient, but it works.
+	@property void namespace(string value)
 	{
-		if(_parent)
+		if(_parent && _namespace != value)
 		{
-			//TODO: Adjust parent's 'tagIndicies' and '_tags'
-			_parent.removeNamespaceIfEmpty(_namespace);
-			_parent.updateId++;
-		}
+			// Remove
+			auto saveParent = _parent;
+			if(_parent)
+				this.remove();
 
-		_namespace = value;
+			// Change namespace
+			_namespace = value;
+
+			// Re-add
+			if(saveParent)
+				saveParent.add(this);
+		}
+		else
+			_namespace = value;
 	}
 	
 	private string _name;
@@ -316,6 +332,8 @@ class Tag
 	///ditto
 	Tag add(Attribute attr)
 	{
+		//TODO: Properly handle case where 'attr' already has a parent.
+		
 		if(!allNamespaces.canFind(attr._namespace))
 			allNamespaces ~= attr._namespace;
 
@@ -342,6 +360,8 @@ class Tag
 	///ditto
 	Tag add(Tag tag)
 	{
+		//TODO: Properly handle case where 'tag' already has a parent.
+
 		if(!allNamespaces.canFind(tag._namespace))
 			allNamespaces ~= tag._namespace;
 		
@@ -366,7 +386,7 @@ class Tag
 	}
 	
 	/// Removes 'this' from its parent, if any. Returns 'this' for convenience.
-	// Inefficient ATM, but it works.
+	/// Inefficient ATM, but it works.
 	Tag remove()
 	{
 		if(!_parent)
@@ -811,7 +831,7 @@ class Tag
 			);
 		}
 		
-		// Inefficient when range is a slice or has used popFront/popBack, but it works.
+		/// Inefficient when range is a slice or has used popFront/popBack, but it works.
 		bool opBinaryRight(string op)(string namespace) if(op=="in")
 		{
 			if(frontIndex == 0 && endIndex == tag.allNamespaces.length)
@@ -1338,6 +1358,10 @@ unittest
 		null, "visitor", "sana_",
 		null, null, null
 	);
+	auto sanaVisitor_ = new Tag(
+		null, "visitor_", "sana_",
+		null, null, null
+	);
 	auto tomo = new Tag(
 		null, "", "tomo",
 		null, null, null
@@ -1684,8 +1708,26 @@ unittest
 	testRandomAccessRange(people.namespaces[       ""].tags, [yukari]);
 	testRandomAccessRange(people.all.tags, [yukari, sana_]);
 	
+	people.attributes["b_"][0].namespace = "_";
+	people.namespaces["visitor"].attributes["a_"][0].namespace = "visitor_";
+	assert("_"         in people.namespaces);
+	assert("visitor_"  in people.namespaces);
+	assert(""          in people.namespaces);
+	assert("visitor"   in people.namespaces);
+	people.namespaces["visitor"].tags["sana_"][0].namespace = "visitor_";
+	assert("_"         in people.namespaces);
+	assert("visitor_"  in people.namespaces);
+	assert(""          in people.namespaces);
+	assert("visitor"  !in people.namespaces);
+
+	assert(people.namespaces["_"       ].attributes["b_"][0] == Attribute("_", "b_", Value(2)));
+	assert(people.namespaces["visitor_"].attributes["a_"][0] == Attribute("visitor_", "a_", Value(1)));
+	assert(people.namespaces["visitor_"].tags["sana_"][0]    == sanaVisitor_);
+	
 	people.tags["yukari"][0].remove();
-	people.namespaces["visitor"].tags["sana_"][0].remove();
+	people.namespaces["visitor_"].tags["sana_"][0].remove();
+	people.namespaces["visitor_"].attributes["a_"][0].namespace = "visitor";
+	people.namespaces["_"].attributes["b_"][0].namespace = "";
 	testRandomAccessRange(people.tags,               cast(Tag[])[]);
 	testRandomAccessRange(people.namespaces,         [NSA("visitor"), NSA("")], &namespaceEquals);
 	testRandomAccessRange(people.namespaces[0].tags, cast(Tag[])[]);
