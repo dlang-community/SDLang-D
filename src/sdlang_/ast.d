@@ -20,6 +20,8 @@ import sdlang_.exception;
 import sdlang_.token;
 import sdlang_.util;
 
+//TODO: This needs to know it's parent tag so it can update the tag upon name/namespace changes.
+//      Also, when that's done, move "remove attribute from tag" from 'Tag.remove(Attribute)' into here.
 struct Attribute
 {
 	string   namespace;
@@ -710,10 +712,18 @@ class Tag
 			);
 		}
 		
-		// Inefficient ATM, but it works.
+		// Inefficient when range is a slice or has used popFront/popBack, but it works.
 		bool opBinaryRight(string op)(string namespace) if(op=="in")
 		{
-			return tag.allNamespaces[frontIndex..endIndex].canFind(namespace);
+			if(frontIndex == 0 && endIndex == tag.allNamespaces.length)
+			{
+				return
+					namespace in tag.attributeIndicies ||
+					namespace in tag.tagIndicies;
+			}
+			else
+				// Slower fallback method
+				return tag.allNamespaces[frontIndex..endIndex].canFind(namespace);
 		}
 	}
 
@@ -1559,8 +1569,11 @@ unittest
 	people.remove(Attribute("visitor", "a", Value(1)));
 	testRandomAccessRange(people.attributes,               [Attribute("b", Value(2))]);
 	testRandomAccessRange(people.namespaces,               [NSA("")], &namespaceEquals);
+trace();
 	testRandomAccessRange(people.namespaces[0].attributes, [Attribute("b", Value(2))]);
+trace("people.allNamespaces: ", people.allNamespaces);
 	assert("visitor" !in people.namespaces);
+trace();
 	assert(""         in people.namespaces);
 	assert("foobar"  !in people.namespaces);
 	testRandomAccessRange(people.namespaces[""].attributes, [Attribute("b", Value(2))]);
