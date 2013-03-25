@@ -94,17 +94,17 @@ struct Attribute
 	// Inefficient ATM, but it works.
 	Attribute remove()
 	{
+		void omit(E)(ref E[] arr, ptrdiff_t index)
+		{
+			arr = arr[0..index] ~ arr[index+1..$];
+		}
+
 		void removeFromGroupedLookup(string ns)
 		{
 			// Remove from _attributes[ns]
 			auto sameNameAttrs = _parent._attributes[ns][_name];
-			auto foundRange = sameNameAttrs.find(this);
-
-			if(foundRange.length == 0)
-				throw new SDLangException("Cannot remove Attribute: Not found.");
-			
-			auto targetIndex = sameNameAttrs.length - foundRange.length;
-			_parent._attributes[ns][_name] = sameNameAttrs[0..targetIndex] ~ sameNameAttrs[targetIndex+1..$];
+			auto targetIndex = sameNameAttrs.countUntil(this);
+			omit(_parent._attributes[ns][_name], targetIndex);
 		}
 		
 		// Remove from _attributes
@@ -112,13 +112,13 @@ struct Attribute
 		removeFromGroupedLookup("*");
 
 		// Remove from allAttributes
-		auto allAttrsIndex = _parent.allAttributes.length - _parent.allAttributes.find(this).length;
-		_parent.allAttributes = _parent.allAttributes[0..allAttrsIndex] ~ _parent.allAttributes[allAttrsIndex+1..$];
+		auto allAttrsIndex = _parent.allAttributes.countUntil(this);
+		omit(_parent.allAttributes, allAttrsIndex);
 
 		// Remove from attributeIndicies
 		auto sameNamespaceAttrs = _parent.attributeIndicies[_namespace];
-		auto attrIndiciesIndex = sameNamespaceAttrs.length - sameNamespaceAttrs.find(allAttrsIndex).length;
-		_parent.attributeIndicies[_namespace] = sameNamespaceAttrs[0..attrIndiciesIndex] ~ sameNamespaceAttrs[attrIndiciesIndex+1..$];
+		auto attrIndiciesIndex = sameNamespaceAttrs.countUntil(allAttrsIndex);
+		omit(_parent.attributeIndicies[_namespace], attrIndiciesIndex);
 		
 		// Fixup other indicies
 		foreach(ns, ref nsAttrIndicies; _parent.attributeIndicies)
@@ -332,12 +332,17 @@ class Tag
 		if(!_parent)
 			return this;
 		
+		void omit(E)(ref E[] arr, ptrdiff_t index)
+		{
+			arr = arr[0..index] ~ arr[index+1..$];
+		}
+		
 		void removeFromGroupedLookup(string ns)
 		{
 			// Remove from _parent._tags[ns]
 			auto sameNameTags = _parent._tags[ns][_name];
-			auto targetIndex = sameNameTags.length - sameNameTags.find(this).length;
-			_parent._tags[ns][_name] = sameNameTags[0..targetIndex] ~ sameNameTags[targetIndex+1..$];
+			auto targetIndex = sameNameTags.countUntil(this);
+			omit(_parent._tags[ns][_name], targetIndex);
 		}
 		
 		// Remove from _parent._tags
@@ -345,13 +350,13 @@ class Tag
 		removeFromGroupedLookup("*");
 
 		// Remove from _parent.allTags
-		auto allTagsIndex = _parent.allTags.length - _parent.allTags.find(this).length;
-		_parent.allTags = _parent.allTags[0..allTagsIndex] ~ _parent.allTags[allTagsIndex+1..$];
+		auto allTagsIndex = _parent.allTags.countUntil(this);
+		omit(_parent.allTags, allTagsIndex);
 
 		// Remove from _parent.tagIndicies
 		auto sameNamespaceTags = _parent.tagIndicies[_namespace];
-		auto tagIndiciesIndex = sameNamespaceTags.length - sameNamespaceTags.find(allTagsIndex).length;
-		_parent.tagIndicies[_namespace] = sameNamespaceTags[0..tagIndiciesIndex] ~ sameNamespaceTags[tagIndiciesIndex+1..$];
+		auto tagIndiciesIndex = sameNamespaceTags.countUntil(allTagsIndex);
+		omit(_parent.tagIndicies[_namespace], tagIndiciesIndex);
 		
 		// Fixup other indicies
 		foreach(ns, ref nsTagIndicies; _parent.tagIndicies)
