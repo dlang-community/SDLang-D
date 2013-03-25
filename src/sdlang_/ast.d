@@ -278,6 +278,59 @@ class Tag
 		return this;
 	}
 	
+	/// Removes an attribute from this tag. Returns the attribute for convenience.
+	/// Throws SDLangException if attribute not found.
+	// Inefficient ATM, but it works.
+	Attribute remove(Attribute attr)
+	{
+		Attribute origAttr;
+		void removeFromGroupedLookup(string ns)
+		{
+			// Remove from _attributes[ns]
+			auto sameNameAttrs = _attributes[ns][attr.name];
+			auto foundRange = sameNameAttrs.find(attr);
+
+			if(foundRange.length == 0)
+				throw new SDLangException("Cannot remove Attribute: Not found.");
+			
+			auto targetIndex = sameNameAttrs.length - foundRange.length;
+			origAttr = sameNameAttrs[targetIndex];
+			_attributes[ns][attr.name] = sameNameAttrs[0..targetIndex] ~ sameNameAttrs[targetIndex+1..$];
+		}
+		
+		// Remove from _attributes
+		removeFromGroupedLookup(attr.namespace);
+		removeFromGroupedLookup("*");
+
+		// Remove from allAttributes
+		auto allAttrsIndex = allAttributes.length - allAttributes.find(attr).length;
+		allAttributes = allAttributes[0..allAttrsIndex] ~ allAttributes[allAttrsIndex+1..$];
+
+		// Remove from attributeIndicies
+		auto sameNamespaceAttrs = attributeIndicies[attr.namespace];
+		auto attrIndiciesIndex = sameNamespaceAttrs.length - sameNamespaceAttrs.find(allAttrsIndex).length;
+		attributeIndicies[attr.namespace] = sameNamespaceAttrs[0..attrIndiciesIndex] ~ sameNamespaceAttrs[attrIndiciesIndex+1..$];
+		
+		// Fixup other indicies
+		foreach(ns, ref nsAttrIndicies; attributeIndicies)
+		foreach(k, ref v; nsAttrIndicies)
+		if(v > allAttrsIndex)
+			v--;
+		
+		// If namespace is now empty, remove from allNamespaces
+		if(
+			tagIndicies[attr.namespace].length == 0 &&
+			attributeIndicies[attr.namespace].length == 0
+		)
+		{
+			auto allNamespacesIndex = allNamespaces.length - allNamespaces.find(attr.namespace).length;
+			allNamespaces = allNamespaces[0..allNamespacesIndex] ~ allNamespaces[allNamespacesIndex+1..$];
+		}
+		
+		updateId++;
+		return origAttr;
+	}
+	
 	struct NamedMemberRange(T, string membersGrouped)
 	{
 		private Tag tag;
@@ -1500,4 +1553,26 @@ unittest
 	testRandomAccessRange(people.namespaces["visitor"].tags, cast(Tag[])[]);
 	testRandomAccessRange(people.namespaces[       ""].tags, cast(Tag[])[]);
 	testRandomAccessRange(people.all.tags, cast(Tag[])[]);
+	
+	assertThrown!SDLangException( people.remove(Attribute("visitor", "a", Value(2))) );
+	assertThrown!SDLangException( people.remove(Attribute("b", Value(1))) );
+	people.remove(Attribute("visitor", "a", Value(1)));
+	testRandomAccessRange(people.attributes,               [Attribute("b", Value(2))]);
+	testRandomAccessRange(people.namespaces,               [NSA("")], &namespaceEquals);
+	testRandomAccessRange(people.namespaces[0].attributes, [Attribute("b", Value(2))]);
+	assert("visitor" !in people.namespaces);
+	assert(""         in people.namespaces);
+	assert("foobar"  !in people.namespaces);
+	testRandomAccessRange(people.namespaces[""].attributes, [Attribute("b", Value(2))]);
+	testRandomAccessRange(people.all.attributes, [
+		Attribute("b", Value(2)),
+	]);
+	
+	people.remove(Attribute("b", Value(2)));
+	testRandomAccessRange(people.attributes, cast(Attribute[])[]);
+	testRandomAccessRange(people.namespaces, cast(NSA[])[], &namespaceEquals);
+	assert("visitor" !in people.namespaces);
+	assert(""        !in people.namespaces);
+	assert("foobar"  !in people.namespaces);
+	testRandomAccessRange(people.all.attributes, cast(Attribute[])[]);
 }
