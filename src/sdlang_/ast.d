@@ -285,6 +285,7 @@ class Tag
 
 	this(Tag parent)
 	{
+		//TODO: 'this' tag needs to be *properly* added to parent.
 		this._parent = parent;
 	}
 
@@ -293,6 +294,7 @@ class Tag
 		Value[] values=null, Attribute[] attributes=null, Tag[] children=null
 	)
 	{
+		//TODO: 'this' tag needs to be *properly* added to parent.
 		this._parent    = parent;
 		this._namespace = namespace;
 		this._name      = name;
@@ -312,7 +314,10 @@ class Tag
 	private Attribute[][string][string] _attributes; // attributes[namespace or "*"][name][i]
 	private Tag[][string][string]       _tags;       // tags[namespace or "*"][name][i]
 	
-	/// Returns 'this' for chaining
+	/// Adds a Value, Attribute, Tag (or array of such) as a member/child of this Tag.
+	/// Returns 'this' for chaining.
+	/// Throws 'SDLangValidationException' if trying to add an Attribute or Tag
+	/// that already has a parent.
 	Tag add(Value val)
 	{
 		values ~= val;
@@ -332,7 +337,13 @@ class Tag
 	///ditto
 	Tag add(Attribute attr)
 	{
-		//TODO: Properly handle case where 'attr' already has a parent.
+		if(attr._parent)
+		{
+			throw new SDLangValidationException(
+				"Attribute is already attached to a parent tag. "~
+				"Use Attribute.remove() before adding it to another tag."
+			);
+		}
 		
 		if(!allNamespaces.canFind(attr._namespace))
 			allNamespaces ~= attr._namespace;
@@ -360,7 +371,13 @@ class Tag
 	///ditto
 	Tag add(Tag tag)
 	{
-		//TODO: Properly handle case where 'tag' already has a parent.
+		if(tag._parent)
+		{
+			throw new SDLangValidationException(
+				"Tag is already attached to a parent tag. "~
+				"Use Tag.remove() before adding it to another tag."
+			);
+		}
 
 		if(!allNamespaces.canFind(tag._namespace))
 			allNamespaces ~= tag._namespace;

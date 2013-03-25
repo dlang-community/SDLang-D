@@ -93,13 +93,13 @@ private struct Parser
 		if(token.matches!"Ident"())
 		{
 			auto id = parseIDFull();
-			tag = new Tag(parent, id.namespace, id.name);
+			tag = new Tag(null, id.namespace, id.name);
 
 			//trace("Found tag named: ", tag.fullName);
 		}
 		else if(token.matches!"Value"())
 		{
-			tag = new Tag(parent);
+			tag = new Tag(null);
 			parseValue(tag);
 
 			//trace("Found anonymous tag.");
