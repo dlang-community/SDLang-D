@@ -20,12 +20,9 @@ import sdlang_.exception;
 import sdlang_.token;
 import sdlang_.util;
 
-//TODO: This needs to know it's parent tag so it can update the tag upon name/namespace changes.
-//      Also, when that's done, move "remove attribute from tag" from 'Tag.remove(Attribute)' into here.
+//TODO: Move "remove attribute from tag" from 'Tag.remove(Attribute)' into here.
 struct Attribute
 {
-	string   namespace;
-	string   name;
 	Value    value;
 	Location location;
 	
@@ -38,25 +35,59 @@ struct Attribute
 		return _parent;
 	}
 
+	private string _namespace;
+	@property string namespace()
+	{
+		return _namespace;
+	}
+	// This shouldn't be public until it's adjusted to properly update the parent.
+	private @property void namespace(string value)
+	{
+		_namespace = value;
+
+		if(_parent)
+		{
+			_parent.updateId++;
+			//TODO: Adjust parent's 'tagIndicies' and '_tags'
+		}
+	}
+	
+	/// Not including namespace. Use 'fullName' if you want the namespace included.
+	private string _name;
+	@property string name()
+	{
+		return _name;
+	}
+	// This shouldn't be public until it's adjusted to properly update the parent.
+	private @property void name(string value)
+	{
+		_name = value;
+		if(_parent)
+		{
+			_parent.updateId++;
+			//TODO: Adjust parent's '_tags'
+		}
+	}
+
 	this(string namespace, string name, Value value, Location location = Location(0, 0, 0))
 	{
-		this.namespace = namespace;
-		this.name      = name;
-		this.location  = location;
-		this.value     = value;
+		this._namespace = namespace;
+		this._name      = name;
+		this.location   = location;
+		this.value      = value;
 	}
 	
 	this(string name, Value value, Location location = Location(0, 0, 0))
 	{
-		this.namespace = "";
-		this.name      = name;
-		this.location  = location;
-		this.value     = value;
+		this._namespace = "";
+		this._name      = name;
+		this.location   = location;
+		this.value      = value;
 	}
 	
 	@property string fullName()
 	{
-		return namespace==""? name : text(namespace, ":", name);
+		return _namespace==""? _name : text(_namespace, ":", _name);
 	}
 	
 	bool opEquals(Attribute a)
@@ -66,9 +97,9 @@ struct Attribute
 	bool opEquals(ref Attribute a)
 	{
 		return
-			namespace == a.namespace &&
-			name      == a.name      &&
-			value     == a.value;
+			_namespace == a._namespace &&
+			_name      == a._name      &&
+			value      == a.value;
 	}
 	
 	string toSDLString()()
@@ -80,13 +111,13 @@ struct Attribute
 
 	void toSDLString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char))
 	{
-		if(namespace != "")
+		if(_namespace != "")
 		{
-			sink.put(namespace);
+			sink.put(_namespace);
 			sink.put(':');
 		}
 
-		sink.put(name);
+		sink.put(_name);
 		sink.put('=');
 		value.toSDLString(sink);
 	}
@@ -202,15 +233,15 @@ class Tag
 	///ditto
 	Tag add(Attribute attr)
 	{
-		if(!allNamespaces.canFind(attr.namespace))
-			allNamespaces ~= attr.namespace;
+		if(!allNamespaces.canFind(attr._namespace))
+			allNamespaces ~= attr._namespace;
 
 		attr._parent = this;
 		
 		allAttributes ~= attr;
-		attributeIndicies[attr.namespace] ~= allAttributes.length-1;
-		_attributes[attr.namespace][attr.name] ~= attr;
-		_attributes["*"]           [attr.name] ~= attr;
+		attributeIndicies[attr._namespace] ~= allAttributes.length-1;
+		_attributes[attr._namespace][attr._name] ~= attr;
+		_attributes["*"]            [attr._name] ~= attr;
 
 		updateId++;
 		return this;
@@ -315,7 +346,7 @@ class Tag
 		void removeFromGroupedLookup(string ns)
 		{
 			// Remove from _attributes[ns]
-			auto sameNameAttrs = _attributes[ns][attr.name];
+			auto sameNameAttrs = _attributes[ns][attr._name];
 			auto foundRange = sameNameAttrs.find(attr);
 
 			if(foundRange.length == 0)
@@ -323,11 +354,11 @@ class Tag
 			
 			auto targetIndex = sameNameAttrs.length - foundRange.length;
 			origAttr = sameNameAttrs[targetIndex];
-			_attributes[ns][attr.name] = sameNameAttrs[0..targetIndex] ~ sameNameAttrs[targetIndex+1..$];
+			_attributes[ns][attr._name] = sameNameAttrs[0..targetIndex] ~ sameNameAttrs[targetIndex+1..$];
 		}
 		
 		// Remove from _attributes
-		removeFromGroupedLookup(attr.namespace);
+		removeFromGroupedLookup(attr._namespace);
 		removeFromGroupedLookup("*");
 
 		// Remove from allAttributes
@@ -335,9 +366,9 @@ class Tag
 		allAttributes = allAttributes[0..allAttrsIndex] ~ allAttributes[allAttrsIndex+1..$];
 
 		// Remove from attributeIndicies
-		auto sameNamespaceAttrs = attributeIndicies[attr.namespace];
+		auto sameNamespaceAttrs = attributeIndicies[attr._namespace];
 		auto attrIndiciesIndex = sameNamespaceAttrs.length - sameNamespaceAttrs.find(allAttrsIndex).length;
-		attributeIndicies[attr.namespace] = sameNamespaceAttrs[0..attrIndiciesIndex] ~ sameNamespaceAttrs[attrIndiciesIndex+1..$];
+		attributeIndicies[attr._namespace] = sameNamespaceAttrs[0..attrIndiciesIndex] ~ sameNamespaceAttrs[attrIndiciesIndex+1..$];
 		
 		// Fixup other indicies
 		foreach(ns, ref nsAttrIndicies; attributeIndicies)
@@ -346,19 +377,19 @@ class Tag
 			v--;
 		
 		// If namespace is has no attributes, remove it from attributeIndicies/_attributes
-		if(attributeIndicies[attr.namespace].length == 0)
+		if(attributeIndicies[attr._namespace].length == 0)
 		{
-			attributeIndicies.remove(attr.namespace);
-			_attributes.remove(attr.namespace);
+			attributeIndicies.remove(attr._namespace);
+			_attributes.remove(attr._namespace);
 		}
 
 		// If namespace is now empty, remove from allNamespaces
 		if(
-			attr.namespace !in tagIndicies &&
-			attr.namespace !in attributeIndicies
+			attr._namespace !in tagIndicies &&
+			attr._namespace !in attributeIndicies
 		)
 		{
-			auto allNamespacesIndex = allNamespaces.length - allNamespaces.find(attr.namespace).length;
+			auto allNamespacesIndex = allNamespaces.length - allNamespaces.find(attr._namespace).length;
 			allNamespaces = allNamespaces[0..allNamespacesIndex] ~ allNamespaces[allNamespacesIndex+1..$];
 		}
 		
@@ -1005,12 +1036,12 @@ class Tag
 		foreach(attr; _attributes[attrNamespace][attrName])
 		{
 			string namespaceStr;
-			if(attr.namespace != "")
-				namespaceStr = "["~attr.namespace~"]";
+			if(attr._namespace != "")
+				namespaceStr = "["~attr._namespace~"]";
 			
 			buf.put(
 				"    %s%s(%s): %s\n".format(
-					namespaceStr, attr.name, .toString(attr.value.type), attr.value
+					namespaceStr, attr._name, .toString(attr.value.type), attr.value
 				)
 			);
 		}

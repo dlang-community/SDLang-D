@@ -217,10 +217,6 @@ private struct Parser
 			error("Expected attribute name, not "~token.symbol.name);
 		
 		auto id = parseIDFull();
-		Attribute attr;
-		attr.namespace = id.namespace;
-		attr.name      = id.name;
-		attr.location  = token.location;
 		
 		token = lexer.front;
 		if(!token.matches!"="())
@@ -231,8 +227,7 @@ private struct Parser
 		if(!token.matches!"Value"())
 			error("Expected attribute value, not "~token.symbol.name);
 		
-		attr.value = token.value;
-		
+		auto attr = Attribute(id.namespace, id.name, token.value, token.location);
 		parent.add(attr);
 		//trace("In tag '", parent.fullName, "', found attribute '", attr.fullName, "'");
 		
