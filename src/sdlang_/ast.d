@@ -87,9 +87,14 @@ class Tag
 {
 	static immutable defaultName = "content";
 
-	Tag      parent;
 	Location location;
 	Value[]  values;
+
+	private Tag _parent;
+	@property Tag parent()
+	{
+		return _parent;
+	}
 
 	private string _namespace;
 	@property string namespace()
@@ -101,9 +106,9 @@ class Tag
 	{
 		_namespace = value;
 
-		if(parent)
+		if(_parent)
 		{
-			parent.updateId++;
+			_parent.updateId++;
 			//TODO: Adjust parent's 'tagIndicies' and '_tags'
 		}
 	}
@@ -118,9 +123,9 @@ class Tag
 	private @property void name(string value)
 	{
 		_name = value;
-		if(parent)
+		if(_parent)
 		{
-			parent.updateId++;
+			_parent.updateId++;
 			//TODO: Adjust parent's '_tags'
 		}
 	}
@@ -138,7 +143,7 @@ class Tag
 
 	this(Tag parent)
 	{
-		this.parent = parent;
+		this._parent = parent;
 	}
 
 	this(
@@ -146,7 +151,7 @@ class Tag
 		Value[] values=null, Attribute[] attributes=null, Tag[] children=null
 	)
 	{
-		this.parent     = parent;
+		this._parent    = parent;
 		this._namespace = namespace;
 		this._name      = name;
 		
@@ -217,7 +222,7 @@ class Tag
 		_tags[tag._namespace][tag._name] ~= tag;
 		_tags["*"]           [tag._name] ~= tag;
 		
-		tag.parent = this;
+		tag._parent = this;
 		
 		updateId++;
 		return this;
@@ -236,54 +241,54 @@ class Tag
 	// Inefficient ATM, but it works.
 	Tag remove()
 	{
-		if(!parent)
+		if(!_parent)
 			return this;
 		
 		void removeFromGroupedLookup(string ns)
 		{
-			// Remove from parent._tags[ns]
-			auto sameNameTags = parent._tags[ns][_name];
+			// Remove from _parent._tags[ns]
+			auto sameNameTags = _parent._tags[ns][_name];
 			auto targetIndex = sameNameTags.length - sameNameTags.find(this).length;
-			parent._tags[ns][_name] = sameNameTags[0..targetIndex] ~ sameNameTags[targetIndex+1..$];
+			_parent._tags[ns][_name] = sameNameTags[0..targetIndex] ~ sameNameTags[targetIndex+1..$];
 		}
 		
-		// Remove from parent._tags
+		// Remove from _parent._tags
 		removeFromGroupedLookup(_namespace);
 		removeFromGroupedLookup("*");
 
-		// Remove from parent.allTags
-		auto allTagsIndex = parent.allTags.length - parent.allTags.find(this).length;
-		parent.allTags = parent.allTags[0..allTagsIndex] ~ parent.allTags[allTagsIndex+1..$];
+		// Remove from _parent.allTags
+		auto allTagsIndex = _parent.allTags.length - _parent.allTags.find(this).length;
+		_parent.allTags = _parent.allTags[0..allTagsIndex] ~ _parent.allTags[allTagsIndex+1..$];
 
-		// Remove from parent.tagIndicies
-		auto sameNamespaceTags = parent.tagIndicies[_namespace];
+		// Remove from _parent.tagIndicies
+		auto sameNamespaceTags = _parent.tagIndicies[_namespace];
 		auto tagIndiciesIndex = sameNamespaceTags.length - sameNamespaceTags.find(allTagsIndex).length;
-		parent.tagIndicies[_namespace] = sameNamespaceTags[0..tagIndiciesIndex] ~ sameNamespaceTags[tagIndiciesIndex+1..$];
+		_parent.tagIndicies[_namespace] = sameNamespaceTags[0..tagIndiciesIndex] ~ sameNamespaceTags[tagIndiciesIndex+1..$];
 		
 		// Fixup other indicies
-		foreach(ns, ref nsTagIndicies; parent.tagIndicies)
+		foreach(ns, ref nsTagIndicies; _parent.tagIndicies)
 		foreach(k, ref v; nsTagIndicies)
 		if(v > allTagsIndex)
 			v--;
 		
-		// If namespace has no tags, remove it from parent.tagIndicies/parent._tags
-		if(parent.tagIndicies[_namespace].length == 0)
+		// If namespace has no tags, remove it from _parent.tagIndicies/_parent._tags
+		if(_parent.tagIndicies[_namespace].length == 0)
 		{
-			parent.tagIndicies.remove(_namespace);
-			parent._tags.remove(_namespace);
+			_parent.tagIndicies.remove(_namespace);
+			_parent._tags.remove(_namespace);
 		}
 		
 		// If namespace is now empty, remove it from allNamespaces
 		if(
-			_namespace !in parent.tagIndicies &&
-			_namespace !in parent.attributeIndicies
+			_namespace !in _parent.tagIndicies &&
+			_namespace !in _parent.attributeIndicies
 		)
 		{
-			auto allNamespacesIndex = parent.allNamespaces.length - parent.allNamespaces.find(_namespace).length;
-			parent.allNamespaces = parent.allNamespaces[0..allNamespacesIndex] ~ parent.allNamespaces[allNamespacesIndex+1..$];
+			auto allNamespacesIndex = _parent.allNamespaces.length - _parent.allNamespaces.find(_namespace).length;
+			_parent.allNamespaces = _parent.allNamespaces[0..allNamespacesIndex] ~ _parent.allNamespaces[allNamespacesIndex+1..$];
 		}
 		
-		parent.updateId++;
+		_parent.updateId++;
 		return this;
 	}
 	
