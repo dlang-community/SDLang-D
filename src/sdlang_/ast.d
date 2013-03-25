@@ -52,21 +52,44 @@ struct Attribute
 		_namespace = value;
 	}
 	
-	/// Not including namespace. Use 'fullName' if you want the namespace included.
 	private string _name;
+	/// Not including namespace. Use 'fullName' if you want the namespace included.
 	@property string name()
 	{
 		return _name;
 	}
-	// This shouldn't be public until it's adjusted to properly update the parent.
-	private @property void name(string value)
+	/// Not the most efficient, but it works.
+	@property void name(string value)
 	{
-		_name = value;
-		if(_parent)
+		if(_parent && _name != value)
 		{
-			//TODO: Adjust parent's '_tags'
 			_parent.updateId++;
+			
+			void removeFromGroupedLookup(string ns)
+			{
+				// Remove from _parent._attributes[ns]
+				auto sameNameAttrs = _parent._attributes[ns][_name];
+				auto targetIndex = sameNameAttrs.countUntil(this);
+				_parent._attributes[ns][_name].removeIndex(targetIndex);
+			}
+			
+			// Remove from _parent._tags
+			removeFromGroupedLookup(_namespace);
+			removeFromGroupedLookup("*");
+			
+			// Update _parent.allAttributes, since Attributes is a value type
+			auto targetIndex = _parent.allAttributes.countUntil(this);
+			_parent.allAttributes[targetIndex]._name = value;
+
+			// Change name
+			_name = value;
+			
+			// Add to new locations in _parent._attributes
+			_parent._attributes[_namespace][_name] ~= this;
+			_parent._attributes["*"][_name] ~= this;
 		}
+		else
+			_name = value;
 	}
 
 	this(string namespace, string name, Value value, Location location = Location(0, 0, 0))
@@ -91,7 +114,7 @@ struct Attribute
 	}
 	
 	/// Removes 'this' from its parent, if any. Returns 'this' for convenience.
-	// Inefficient ATM, but it works.
+	/// Inefficient ATM, but it works.
 	Attribute remove()
 	{
 		if(!_parent)
@@ -197,21 +220,40 @@ class Tag
 		_namespace = value;
 	}
 	
-	/// Not including namespace. Use 'fullName' if you want the namespace included.
 	private string _name;
+	/// Not including namespace. Use 'fullName' if you want the namespace included.
 	@property string name()
 	{
 		return _name;
 	}
-	// This shouldn't be public until it's adjusted to properly update the parent.
-	private @property void name(string value)
+	/// Not the most efficient, but it works.
+	@property void name(string value)
 	{
-		_name = value;
-		if(_parent)
+		if(_parent && _name != value)
 		{
-			//TODO: Adjust parent's '_tags'
 			_parent.updateId++;
+			
+			void removeFromGroupedLookup(string ns)
+			{
+				// Remove from _parent._tags[ns]
+				auto sameNameTags = _parent._tags[ns][_name];
+				auto targetIndex = sameNameTags.countUntil(this);
+				_parent._tags[ns][_name].removeIndex(targetIndex);
+			}
+			
+			// Remove from _parent._tags
+			removeFromGroupedLookup(_namespace);
+			removeFromGroupedLookup("*");
+			
+			// Change name
+			_name = value;
+			
+			// Add to new locations in _parent._tags
+			_parent._tags[_namespace][_name] ~= this;
+			_parent._tags["*"][_name] ~= this;
 		}
+		else
+			_name = value;
 	}
 	
 	// Tracks dirtiness. This is incremented every time a change is made which
@@ -627,7 +669,7 @@ class Tag
 				throw new RangeError("Range is empty");
 			
 			if(!isMaybe && name !in this)
-				throw new RangeError(`No such `~T.stringof~` named: "`~namespace~`"`);
+				throw new RangeError(`No such `~T.stringof~` named: "`~name~`"`);
 
 			return ThisNamedMemberRange(tag, namespace, name, updateId);
 		}
@@ -1279,12 +1321,25 @@ unittest
 		],
 		null
 	);
+	auto chiyo_ = new Tag(
+		null, "", "chiyo_",
+		[ Value("Small"), Value("Flies?") ],
+		[
+			Attribute("nemesis", Value("Car")),
+			Attribute("score", Value(100)),
+		],
+		null
+	);
 	auto yukari = new Tag(
 		null, "", "yukari",
 		null, null, null
 	);
 	auto sana = new Tag(
 		null, "visitor", "sana",
+		null, null, null
+	);
+	auto sana_ = new Tag(
+		null, "visitor", "sana_",
 		null, null, null
 	);
 	auto tomo = new Tag(
@@ -1594,22 +1649,47 @@ unittest
 	]);
 	testRandomAccessRange(people.all.tags, [chiyo, yukari, sana, tomo, hayama]);
 	
+	people.attributes["b"][0].name = "b_";
+	people.namespaces["visitor"].attributes["a"][0].name = "a_";
+	people.tags["chiyo"][0].name = "chiyo_";
+	people.namespaces["visitor"].tags["sana"][0].name = "sana_";
+
+	assert("b_"     in people.attributes);
+	assert("a_"     in people.namespaces["visitor"].attributes);
+	assert("chiyo_" in people.tags);
+	assert("sana_"  in people.namespaces["visitor"].tags);
+
+	assert(people.attributes["b_"][0]                       == Attribute("b_", Value(2)));
+	assert(people.namespaces["visitor"].attributes["a_"][0] == Attribute("visitor", "a_", Value(1)));
+	assert(people.tags["chiyo_"][0]                         == chiyo_);
+	assert(people.namespaces["visitor"].tags["sana_"][0]    == sana_);
+
+	assert("b"     !in people.attributes);
+	assert("a"     !in people.namespaces["visitor"].attributes);
+	assert("chiyo" !in people.tags);
+	assert("sana"  !in people.namespaces["visitor"].tags);
+
+	assert(people.maybe.attributes["b"].length                       == 0);
+	assert(people.maybe.namespaces["visitor"].attributes["a"].length == 0);
+	assert(people.maybe.tags["chiyo"].length                         == 0);
+	assert(people.maybe.namespaces["visitor"].tags["sana"].length    == 0);
+
 	people.tags["tomo"][0].remove();
 	people.namespaces["visitor"].tags["hayama"][0].remove();
-	people.tags["chiyo"][0].remove();
+	people.tags["chiyo_"][0].remove();
 	testRandomAccessRange(people.tags,               [yukari]);
 	testRandomAccessRange(people.namespaces,         [NSA("visitor"), NSA("")], &namespaceEquals);
-	testRandomAccessRange(people.namespaces[0].tags, [sana]);
+	testRandomAccessRange(people.namespaces[0].tags, [sana_]);
 	testRandomAccessRange(people.namespaces[1].tags, [yukari]);
 	assert("visitor" in people.namespaces);
 	assert(""        in people.namespaces);
 	assert("foobar" !in people.namespaces);
-	testRandomAccessRange(people.namespaces["visitor"].tags, [sana]);
+	testRandomAccessRange(people.namespaces["visitor"].tags, [sana_]);
 	testRandomAccessRange(people.namespaces[       ""].tags, [yukari]);
-	testRandomAccessRange(people.all.tags, [yukari, sana]);
+	testRandomAccessRange(people.all.tags, [yukari, sana_]);
 	
 	people.tags["yukari"][0].remove();
-	people.namespaces["visitor"].tags["sana"][0].remove();
+	people.namespaces["visitor"].tags["sana_"][0].remove();
 	testRandomAccessRange(people.tags,               cast(Tag[])[]);
 	testRandomAccessRange(people.namespaces,         [NSA("visitor"), NSA("")], &namespaceEquals);
 	testRandomAccessRange(people.namespaces[0].tags, cast(Tag[])[]);
@@ -1621,19 +1701,19 @@ unittest
 	testRandomAccessRange(people.namespaces[       ""].tags, cast(Tag[])[]);
 	testRandomAccessRange(people.all.tags, cast(Tag[])[]);
 	
-	people.namespaces["visitor"].attributes["a"][0].remove();
-	testRandomAccessRange(people.attributes,               [Attribute("b", Value(2))]);
+	people.namespaces["visitor"].attributes["a_"][0].remove();
+	testRandomAccessRange(people.attributes,               [Attribute("b_", Value(2))]);
 	testRandomAccessRange(people.namespaces,               [NSA("")], &namespaceEquals);
-	testRandomAccessRange(people.namespaces[0].attributes, [Attribute("b", Value(2))]);
+	testRandomAccessRange(people.namespaces[0].attributes, [Attribute("b_", Value(2))]);
 	assert("visitor" !in people.namespaces);
 	assert(""         in people.namespaces);
 	assert("foobar"  !in people.namespaces);
-	testRandomAccessRange(people.namespaces[""].attributes, [Attribute("b", Value(2))]);
+	testRandomAccessRange(people.namespaces[""].attributes, [Attribute("b_", Value(2))]);
 	testRandomAccessRange(people.all.attributes, [
-		Attribute("b", Value(2)),
+		Attribute("b_", Value(2)),
 	]);
 	
-	people.attributes["b"][0].remove();
+	people.attributes["b_"][0].remove();
 	testRandomAccessRange(people.attributes, cast(Attribute[])[]);
 	testRandomAccessRange(people.namespaces, cast(NSA[])[], &namespaceEquals);
 	assert("visitor" !in people.namespaces);
