@@ -3,6 +3,8 @@ v0.8.3 - TBD
 - Breaking change: Tag's interface has been completely overhauled to provide
   a clean, safe and easy-to-use range-based system.
 - Breaking change: Improved Attribute constructor, for convenience.
+- Breaking change: Split SDLangException into an Exception hierarchy. The
+  'location' and 'hasLocation' members have been moved into SDLangParseException.
 - Added 'Tag.add(...)' for adding values, attributes and children to a tag.
 - Added 'Tag.toSDLDocument()' to properly treat 'this' as the root tag.
 - Non-sink overloads of 'Tag.toSDLDocument' and 'Tag.toSDLString' now support

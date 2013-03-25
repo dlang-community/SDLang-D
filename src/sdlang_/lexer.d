@@ -172,7 +172,7 @@ class Lexer
 
 	private void error(Location loc, string msg)
 	{
-		throw new SDLangException(loc, "Error: "~msg);
+		throw new SDLangParseException(loc, "Error: "~msg);
 	}
 
 	private Token makeToken(string symbolName)()
@@ -1445,13 +1445,13 @@ unittest
 		Token[] actual;
 		try
 			actual = lexSource(source, "filename");
-		catch(SDLangException e)
+		catch(SDLangParseException e)
 		{
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
 			stderr.writeln("    Expected:");
 			stderr.writeln("        ", expected);
-			stderr.writeln("    Actual: SDLangException thrown:");
+			stderr.writeln("    Actual: SDLangParseException thrown:");
 			stderr.writeln("        ", e.msg);
 			return;
 		}
@@ -1490,14 +1490,14 @@ unittest
 		Token[] actual;
 		try
 			actual = lexSource(source, "filename");
-		catch(SDLangException e)
+		catch(SDLangParseException e)
 			hadException = true;
 
 		if(!hadException)
 		{
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
-			stderr.writeln("    Expected SDLangException");
+			stderr.writeln("    Expected SDLangParseException");
 			stderr.writeln("    Actual:");
 			stderr.writeln("        ", actual);
 		}

@@ -32,7 +32,7 @@ import sdlang_.util;
 
 // Expose main public API
 public import sdlang_.ast       : Attribute, Tag;
-public import sdlang_.exception : SDLangException;
+public import sdlang_.exception : SDLangParseException;
 public import sdlang_.parser    : parseFile, parseSource;
 public import sdlang_.token     : Value, Token, DateTimeFrac, DateTimeFracUnknownZone;
 public import sdlang_.util      : sdlangVersion, Location;
@@ -65,7 +65,7 @@ version(SDLang_TestApp)
 			else
 				doToSDL(filename);
 		}
-		catch(SDLangException e)
+		catch(SDLangParseException e)
 		{
 			stderr.writeln(e.msg);
 			return 1;

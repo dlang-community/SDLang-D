@@ -44,7 +44,7 @@ private struct Parser
 
 	private void error(Location loc, string msg)
 	{
-		throw new SDLangException(loc, "Error: "~msg);
+		throw new SDLangParseException(loc, "Error: "~msg);
 	}
 
 	/// <Root> ::= <Tags>  (Lookaheads: Anything)

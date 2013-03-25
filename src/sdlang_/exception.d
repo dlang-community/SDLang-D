@@ -8,7 +8,12 @@ import std.string;
 
 import sdlang_.util;
 
-class SDLangException : Exception
+abstract class SDLangException : Exception
+{
+	this(string msg) { super(msg); }
+}
+
+class SDLangParseException : SDLangException
 {
 	Location location;
 	bool hasLocation;
@@ -24,4 +29,14 @@ class SDLangException : Exception
 		hasLocation = true;
 		super("%s: %s".format(location.toString(), msg));
 	}
+}
+
+class SDLangValidationException : SDLangException
+{
+	this(string msg) { super(msg); }
+}
+
+class SDLangRangeException : SDLangException
+{
+	this(string msg) { super(msg); }
 }

@@ -477,7 +477,7 @@ class Tag
 		void popFront()
 		{
 			if(empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 
 			frontIndex++;
 		}
@@ -490,7 +490,7 @@ class Tag
 		void popBack()
 		{
 			if(empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 
 			endIndex--;
 		}
@@ -525,7 +525,7 @@ class Tag
 				r.endIndex > this.endIndex ||
 				r.frontIndex > r.endIndex
 			)
-				throw new RangeError("Slice out of range");
+				throw new SDLangRangeException("Slice out of range");
 			
 			return r;
 		}
@@ -533,7 +533,7 @@ class Tag
 		ref T opIndex(size_t index)
 		{
 			if(empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 
 			return mixin("tag."~membersGrouped~"[namespace][name][frontIndex+index]");
 		}
@@ -586,7 +586,7 @@ class Tag
 		void popFront()
 		{
 			if(empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 
 			frontIndex++;
 		}
@@ -599,7 +599,7 @@ class Tag
 		void popBack()
 		{
 			if(empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 
 			endIndex--;
 		}
@@ -636,7 +636,7 @@ class Tag
 				r.endIndex > this.endIndex ||
 				r.frontIndex > r.endIndex
 			)
-				throw new RangeError("Slice out of range");
+				throw new SDLangRangeException("Slice out of range");
 			
 			return r;
 		}
@@ -644,7 +644,7 @@ class Tag
 		ref T opIndex(size_t index)
 		{
 			if(empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 
 			if(namespace == "*")
 				return mixin("tag."~allMembers~"[ frontIndex+index ]");
@@ -657,7 +657,7 @@ class Tag
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
 			{
-				throw new SDLangException(
+				throw new SDLangRangeException(
 					"Cannot lookup tags/attributes by name on a subset of a range, "~
 					"only across the entire tag. "~
 					"Please make sure you haven't called popFront or popBack on this "~
@@ -666,10 +666,10 @@ class Tag
 			}
 			
 			if(!isMaybe && empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 			
 			if(!isMaybe && name !in this)
-				throw new RangeError(`No such `~T.stringof~` named: "`~name~`"`);
+				throw new SDLangRangeException(`No such `~T.stringof~` named: "`~name~`"`);
 
 			return ThisNamedMemberRange(tag, namespace, name, updateId);
 		}
@@ -678,7 +678,7 @@ class Tag
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
 			{
-				throw new SDLangException(
+				throw new SDLangRangeException(
 					"Cannot lookup tags/attributes by name on a subset of a range, "~
 					"only across the entire tag. "~
 					"Please make sure you haven't called popFront or popBack on this "~
@@ -729,7 +729,7 @@ class Tag
 		void popFront()
 		{
 			if(empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 			
 			frontIndex++;
 		}
@@ -742,7 +742,7 @@ class Tag
 		void popBack()
 		{
 			if(empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 			
 			endIndex--;
 		}
@@ -778,7 +778,7 @@ class Tag
 				r.endIndex > this.endIndex ||
 				r.frontIndex > r.endIndex
 			)
-				throw new RangeError("Slice out of range");
+				throw new SDLangRangeException("Slice out of range");
 			
 			return r;
 		}
@@ -786,7 +786,7 @@ class Tag
 		NamespaceAccess opIndex(size_t index)
 		{
 			if(empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 
 			auto namespace = tag.allNamespaces[frontIndex+index];
 			return NamespaceAccess(
@@ -799,10 +799,10 @@ class Tag
 		NamespaceAccess opIndex(string namespace)
 		{
 			if(!isMaybe && empty)
-				throw new RangeError("Range is empty");
+				throw new SDLangRangeException("Range is empty");
 			
 			if(!isMaybe && namespace !in this)
-				throw new RangeError(`No such namespace: "`~namespace~`"`);
+				throw new SDLangRangeException(`No such namespace: "`~namespace~`"`);
 			
 			return NamespaceAccess(
 				namespace,
@@ -904,7 +904,7 @@ class Tag
 	
 	/// Access 'attributes', 'tags', 'namespaces' and 'all' like normal,
 	/// except that looking up a non-existant name/namespace with
-	/// opIndex(string) results in an empty array instead of a thrown RangeError.
+	/// opIndex(string) results in an empty array instead of a thrown SDLangRangeException.
 	@property MaybeAccess maybe()
 	{
 		return MaybeAccess(this);
@@ -943,7 +943,7 @@ class Tag
 	
 	/// Treats 'this' as the root tag. Note that root tags cannot have
 	/// values or attributes, and cannot be part of a namespace.
-	/// If this isn't a valid root tag, 'SDLangException' will be thrown.
+	/// If this isn't a valid root tag, 'SDLangValidationException' will be thrown.
 	string toSDLDocument()(string indent="\t", int indentLevel=0)
 	{
 		Appender!string sink;
@@ -956,13 +956,13 @@ class Tag
 		if(isOutputRange!(Sink,char))
 	{
 		if(values.length > 0)
-			throw new SDLangException("Root tags cannot have any values, only child tags.");
+			throw new SDLangValidationException("Root tags cannot have any values, only child tags.");
 
 		if(allAttributes.length > 0)
-			throw new SDLangException("Root tags cannot have any attributes, only child tags.");
+			throw new SDLangValidationException("Root tags cannot have any attributes, only child tags.");
 
 		if(_namespace != "")
-			throw new SDLangException("Root tags cannot have a namespace.");
+			throw new SDLangValidationException("Root tags cannot have a namespace.");
 		
 		foreach(tagsByNamespace; _tags)
 		foreach(tagsByName; tagsByNamespace)
@@ -985,10 +985,10 @@ class Tag
 		if(isOutputRange!(Sink,char))
 	{
 		if(_name == "" && values.length == 0)
-			throw new SDLangException("Anonymous tags must have at least one value.");
+			throw new SDLangValidationException("Anonymous tags must have at least one value.");
 		
 		if(_name == "" && _namespace != "")
-			throw new SDLangException("Anonymous tags cannot have a namespace.");
+			throw new SDLangValidationException("Anonymous tags cannot have a namespace.");
 	
 		// Indent
 		foreach(i; 0..indentLevel)
@@ -1428,12 +1428,12 @@ unittest
 	testRandomAccessRange(root.all.tags["blue"],                   [blue3, blue5]);
 	testRandomAccessRange(root.all.tags["orange"],                 [orange]);
 
-	assertThrown!RangeError(root.tags["foobar"]);
-	assertThrown!RangeError(root.all.tags["foobar"]);
-	assertThrown!RangeError(root.namespaces["foobar"].tags["foobar"]);
-	assertThrown!RangeError(root.attributes["foobar"]);
-	assertThrown!RangeError(root.all.attributes["foobar"]);
-	assertThrown!RangeError(root.namespaces["foobar"].attributes["foobar"]);
+	assertThrown!SDLangRangeException(root.tags["foobar"]);
+	assertThrown!SDLangRangeException(root.all.tags["foobar"]);
+	assertThrown!SDLangRangeException(root.namespaces["foobar"].tags["foobar"]);
+	assertThrown!SDLangRangeException(root.attributes["foobar"]);
+	assertThrown!SDLangRangeException(root.all.attributes["foobar"]);
+	assertThrown!SDLangRangeException(root.namespaces["foobar"].attributes["foobar"]);
 
 	testRandomAccessRange(root.maybe.tags["nothing"],                    [nothing]);
 	testRandomAccessRange(root.maybe.tags["blue"],                       [blue3, blue5]);
