@@ -150,7 +150,7 @@ See [API Reference](http://semitwist.com/sdlang-d-api)
 
 ## Changelog
 
-See [Changelog](https://raw.github.com/Abscissa/SDLang-D/master/CHANGELOG.md)
+See [Changelog](https://github.com/Abscissa/SDLang-D/blob/master/CHANGELOG.md)
 
 ## Differences from original Java implementation
 
