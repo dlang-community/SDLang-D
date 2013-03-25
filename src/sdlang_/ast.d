@@ -160,8 +160,8 @@ class Tag
 	private size_t[][string] attributeIndicies; // allAttributes[ attributes[namespace][i] ]
 	private size_t[][string] tagIndicies;       // allTags[ tags[namespace][i] ]
 
-	private Attribute[][string][string] _attributes; // attributes[namespace][name][i]
-	private Tag[][string][string]       _tags;       // tags[namespace][name][i]
+	private Attribute[][string][string] _attributes; // attributes[namespace or "*"][name][i]
+	private Tag[][string][string]       _tags;       // tags[namespace or "*"][name][i]
 	
 	/// Returns 'this' for chaining
 	Tag add(Value val)
@@ -215,6 +215,8 @@ class Tag
 		_tags[tag._namespace][tag._name] ~= tag;
 		_tags["*"]           [tag._name] ~= tag;
 		
+		tag.parent = this;
+		
 		updateId++;
 		return this;
 	}
@@ -225,6 +227,54 @@ class Tag
 		foreach(tag; tags)
 			add(tag);
 
+		return this;
+	}
+	
+	/// Removes 'this' from its parent (if any). Returns 'this' for convenience.
+	// Inefficient ATM, but it works.
+	Tag remove()
+	{
+		if(!parent)
+			return this;
+		
+		void removeFromGroupedLookup(string ns)
+		{
+			// Remove from parent._tags[ns]
+			auto sameNameTags = parent._tags[ns][_name];
+			auto targetIndex = sameNameTags.length - sameNameTags.find(this).length;
+			parent._tags[ns][_name] = sameNameTags[0..targetIndex] ~ sameNameTags[targetIndex+1..$];
+		}
+		
+		// Remove from parent._tags
+		removeFromGroupedLookup(_namespace);
+		removeFromGroupedLookup("*");
+
+		// Remove from parent.allTags
+		auto allTagsIndex = parent.allTags.length - parent.allTags.find(this).length;
+		parent.allTags = parent.allTags[0..allTagsIndex] ~ parent.allTags[allTagsIndex+1..$];
+
+		// Remove from parent.tagIndicies
+		auto sameNamespaceTags = parent.tagIndicies[_namespace];
+		auto tagIndiciesIndex = sameNamespaceTags.length - sameNamespaceTags.find(allTagsIndex).length;
+		parent.tagIndicies[_namespace] = sameNamespaceTags[0..tagIndiciesIndex] ~ sameNamespaceTags[tagIndiciesIndex+1..$];
+		
+		// Fixup other indicies
+		foreach(ns, ref nsTagIndicies; parent.tagIndicies)
+		foreach(k, ref v; nsTagIndicies)
+		if(v > allTagsIndex)
+			v--;
+		
+		// If namespace is now empty, remove from allNamespaces
+		if(
+			parent.tagIndicies[_namespace].length == 0 &&
+			parent.attributeIndicies[_namespace].length == 0
+		)
+		{
+			auto allNamespacesIndex = parent.allNamespaces.length - parent.allNamespaces.find(_namespace).length;
+			parent.allNamespaces = parent.allNamespaces[0..allNamespacesIndex] ~ parent.allNamespaces[allNamespacesIndex+1..$];
+		}
+		
+		parent.updateId++;
 		return this;
 	}
 	
@@ -607,6 +657,7 @@ class Tag
 			);
 		}
 		
+		// Inefficient ATM, but it works.
 		bool opBinaryRight(string op)(string namespace) if(op=="in")
 		{
 			return tag.allNamespaces[frontIndex..endIndex].canFind(namespace);
@@ -1422,4 +1473,31 @@ unittest
 		Attribute("b", Value(2)),
 	]);
 	testRandomAccessRange(people.all.tags, [chiyo, yukari, sana, tomo, hayama]);
+	
+	people.tags["tomo"][0].remove();
+	people.namespaces["visitor"].tags["hayama"][0].remove();
+	people.tags["chiyo"][0].remove();
+	testRandomAccessRange(people.tags,               [yukari]);
+	testRandomAccessRange(people.namespaces,         [NSA("visitor"), NSA("")], &namespaceEquals);
+	testRandomAccessRange(people.namespaces[0].tags, [sana]);
+	testRandomAccessRange(people.namespaces[1].tags, [yukari]);
+	assert("visitor" in people.namespaces);
+	assert(""        in people.namespaces);
+	assert("foobar" !in people.namespaces);
+	testRandomAccessRange(people.namespaces["visitor"].tags, [sana]);
+	testRandomAccessRange(people.namespaces[       ""].tags, [yukari]);
+	testRandomAccessRange(people.all.tags, [yukari, sana]);
+	
+	people.tags["yukari"][0].remove();
+	people.namespaces["visitor"].tags["sana"][0].remove();
+	testRandomAccessRange(people.tags,               cast(Tag[])[]);
+	testRandomAccessRange(people.namespaces,         [NSA("visitor"), NSA("")], &namespaceEquals);
+	testRandomAccessRange(people.namespaces[0].tags, cast(Tag[])[]);
+	testRandomAccessRange(people.namespaces[1].tags, cast(Tag[])[]);
+	assert("visitor" in people.namespaces);
+	assert(""        in people.namespaces);
+	assert("foobar" !in people.namespaces);
+	testRandomAccessRange(people.namespaces["visitor"].tags, cast(Tag[])[]);
+	testRandomAccessRange(people.namespaces[       ""].tags, cast(Tag[])[]);
+	testRandomAccessRange(people.all.tags, cast(Tag[])[]);
 }
