@@ -29,6 +29,15 @@ struct Attribute
 	Value    value;
 	Location location;
 	
+	private Tag _parent;
+	/// Get parent tag. To set a parent, attach this Attribute to its intended
+	/// parent tag by calling 'Tag.add(...)', or by passing it to
+	/// the parent tag's constructor.
+	@property Tag parent()
+	{
+		return _parent;
+	}
+
 	this(string namespace, string name, Value value, Location location = Location(0, 0, 0))
 	{
 		this.namespace = namespace;
@@ -91,6 +100,9 @@ class Tag
 	Value[]  values;
 
 	private Tag _parent;
+	/// Get parent tag. To set a parent, attach this Tag to its intended
+	/// parent tag by calling 'Tag.add(...)', or by passing it to
+	/// the parent tag's constructor.
 	@property Tag parent()
 	{
 		return _parent;
@@ -192,6 +204,8 @@ class Tag
 	{
 		if(!allNamespaces.canFind(attr.namespace))
 			allNamespaces ~= attr.namespace;
+
+		attr._parent = this;
 		
 		allAttributes ~= attr;
 		attributeIndicies[attr.namespace] ~= allAttributes.length-1;
@@ -217,12 +231,12 @@ class Tag
 		if(!allNamespaces.canFind(tag._namespace))
 			allNamespaces ~= tag._namespace;
 		
+		tag._parent = this;
+
 		allTags ~= tag;
 		tagIndicies[tag._namespace] ~= allTags.length-1;
 		_tags[tag._namespace][tag._name] ~= tag;
 		_tags["*"]           [tag._name] ~= tag;
-		
-		tag._parent = this;
 		
 		updateId++;
 		return this;
