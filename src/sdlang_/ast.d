@@ -20,7 +20,6 @@ import sdlang_.exception;
 import sdlang_.token;
 import sdlang_.util;
 
-//TODO: Move "remove attribute from tag" from 'Tag.remove(Attribute)' into here.
 struct Attribute
 {
 	Value    value;
@@ -90,6 +89,64 @@ struct Attribute
 		return _namespace==""? _name : text(_namespace, ":", _name);
 	}
 	
+	/// Removes 'this' from its parent, if any. Returns 'this' for convenience.
+	// Inefficient ATM, but it works.
+	Attribute remove()
+	{
+		void removeFromGroupedLookup(string ns)
+		{
+			// Remove from _attributes[ns]
+			auto sameNameAttrs = _parent._attributes[ns][_name];
+			auto foundRange = sameNameAttrs.find(this);
+
+			if(foundRange.length == 0)
+				throw new SDLangException("Cannot remove Attribute: Not found.");
+			
+			auto targetIndex = sameNameAttrs.length - foundRange.length;
+			_parent._attributes[ns][_name] = sameNameAttrs[0..targetIndex] ~ sameNameAttrs[targetIndex+1..$];
+		}
+		
+		// Remove from _attributes
+		removeFromGroupedLookup(_namespace);
+		removeFromGroupedLookup("*");
+
+		// Remove from allAttributes
+		auto allAttrsIndex = _parent.allAttributes.length - _parent.allAttributes.find(this).length;
+		_parent.allAttributes = _parent.allAttributes[0..allAttrsIndex] ~ _parent.allAttributes[allAttrsIndex+1..$];
+
+		// Remove from attributeIndicies
+		auto sameNamespaceAttrs = _parent.attributeIndicies[_namespace];
+		auto attrIndiciesIndex = sameNamespaceAttrs.length - sameNamespaceAttrs.find(allAttrsIndex).length;
+		_parent.attributeIndicies[_namespace] = sameNamespaceAttrs[0..attrIndiciesIndex] ~ sameNamespaceAttrs[attrIndiciesIndex+1..$];
+		
+		// Fixup other indicies
+		foreach(ns, ref nsAttrIndicies; _parent.attributeIndicies)
+		foreach(k, ref v; nsAttrIndicies)
+		if(v > allAttrsIndex)
+			v--;
+		
+		// If namespace has no attributes, remove it from _parent.attributeIndicies/_parent._attributes
+		if(_parent.attributeIndicies[_namespace].length == 0)
+		{
+			_parent.attributeIndicies.remove(_namespace);
+			_parent._attributes.remove(_namespace);
+		}
+
+		// If namespace is now empty, remove from allNamespaces
+		if(
+			_namespace !in _parent.tagIndicies &&
+			_namespace !in _parent.attributeIndicies
+		)
+		{
+			auto allNamespacesIndex = _parent.allNamespaces.length - _parent.allNamespaces.find(_namespace).length;
+			_parent.allNamespaces = _parent.allNamespaces[0..allNamespacesIndex] ~ _parent.allNamespaces[allNamespacesIndex+1..$];
+		}
+		
+		_parent.updateId++;
+		_parent = null;
+		return this;
+	}
+
 	bool opEquals(Attribute a)
 	{
 		return opEquals(a);
@@ -282,7 +339,7 @@ class Tag
 		return this;
 	}
 	
-	/// Removes 'this' from its parent (if any). Returns 'this' for convenience.
+	/// Removes 'this' from its parent, if any. Returns 'this' for convenience.
 	// Inefficient ATM, but it works.
 	Tag remove()
 	{
@@ -335,66 +392,6 @@ class Tag
 		
 		_parent.updateId++;
 		return this;
-	}
-	
-	/// Removes an attribute from this tag. Returns the attribute for convenience.
-	/// Throws SDLangException if attribute not found.
-	// Inefficient ATM, but it works.
-	Attribute remove(Attribute attr)
-	{
-		Attribute origAttr;
-		void removeFromGroupedLookup(string ns)
-		{
-			// Remove from _attributes[ns]
-			auto sameNameAttrs = _attributes[ns][attr._name];
-			auto foundRange = sameNameAttrs.find(attr);
-
-			if(foundRange.length == 0)
-				throw new SDLangException("Cannot remove Attribute: Not found.");
-			
-			auto targetIndex = sameNameAttrs.length - foundRange.length;
-			origAttr = sameNameAttrs[targetIndex];
-			_attributes[ns][attr._name] = sameNameAttrs[0..targetIndex] ~ sameNameAttrs[targetIndex+1..$];
-		}
-		
-		// Remove from _attributes
-		removeFromGroupedLookup(attr._namespace);
-		removeFromGroupedLookup("*");
-
-		// Remove from allAttributes
-		auto allAttrsIndex = allAttributes.length - allAttributes.find(attr).length;
-		allAttributes = allAttributes[0..allAttrsIndex] ~ allAttributes[allAttrsIndex+1..$];
-
-		// Remove from attributeIndicies
-		auto sameNamespaceAttrs = attributeIndicies[attr._namespace];
-		auto attrIndiciesIndex = sameNamespaceAttrs.length - sameNamespaceAttrs.find(allAttrsIndex).length;
-		attributeIndicies[attr._namespace] = sameNamespaceAttrs[0..attrIndiciesIndex] ~ sameNamespaceAttrs[attrIndiciesIndex+1..$];
-		
-		// Fixup other indicies
-		foreach(ns, ref nsAttrIndicies; attributeIndicies)
-		foreach(k, ref v; nsAttrIndicies)
-		if(v > allAttrsIndex)
-			v--;
-		
-		// If namespace is has no attributes, remove it from attributeIndicies/_attributes
-		if(attributeIndicies[attr._namespace].length == 0)
-		{
-			attributeIndicies.remove(attr._namespace);
-			_attributes.remove(attr._namespace);
-		}
-
-		// If namespace is now empty, remove from allNamespaces
-		if(
-			attr._namespace !in tagIndicies &&
-			attr._namespace !in attributeIndicies
-		)
-		{
-			auto allNamespacesIndex = allNamespaces.length - allNamespaces.find(attr._namespace).length;
-			allNamespaces = allNamespaces[0..allNamespacesIndex] ~ allNamespaces[allNamespacesIndex+1..$];
-		}
-		
-		updateId++;
-		return origAttr;
 	}
 	
 	struct NamedMemberRange(T, string membersGrouped)
@@ -1628,9 +1625,7 @@ unittest
 	testRandomAccessRange(people.namespaces[       ""].tags, cast(Tag[])[]);
 	testRandomAccessRange(people.all.tags, cast(Tag[])[]);
 	
-	assertThrown!SDLangException( people.remove(Attribute("visitor", "a", Value(2))) );
-	assertThrown!SDLangException( people.remove(Attribute("b", Value(1))) );
-	people.remove(Attribute("visitor", "a", Value(1)));
+	people.namespaces["visitor"].attributes["a"][0].remove();
 	testRandomAccessRange(people.attributes,               [Attribute("b", Value(2))]);
 	testRandomAccessRange(people.namespaces,               [NSA("")], &namespaceEquals);
 	testRandomAccessRange(people.namespaces[0].attributes, [Attribute("b", Value(2))]);
@@ -1642,7 +1637,7 @@ unittest
 		Attribute("b", Value(2)),
 	]);
 	
-	people.remove(Attribute("b", Value(2)));
+	people.attributes["b"][0].remove();
 	testRandomAccessRange(people.attributes, cast(Attribute[])[]);
 	testRandomAccessRange(people.namespaces, cast(NSA[])[], &namespaceEquals);
 	assert("visitor" !in people.namespaces);
