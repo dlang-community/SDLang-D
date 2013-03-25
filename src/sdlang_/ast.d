@@ -42,13 +42,14 @@ struct Attribute
 	// This shouldn't be public until it's adjusted to properly update the parent.
 	private @property void namespace(string value)
 	{
-		_namespace = value;
-
 		if(_parent)
 		{
-			_parent.updateId++;
 			//TODO: Adjust parent's 'tagIndicies' and '_tags'
+			_parent.removeNamespaceIfEmpty(_namespace);
+			_parent.updateId++;
 		}
+
+		_namespace = value;
 	}
 	
 	/// Not including namespace. Use 'fullName' if you want the namespace included.
@@ -63,8 +64,8 @@ struct Attribute
 		_name = value;
 		if(_parent)
 		{
-			_parent.updateId++;
 			//TODO: Adjust parent's '_tags'
+			_parent.updateId++;
 		}
 	}
 
@@ -188,13 +189,14 @@ class Tag
 	// This shouldn't be public until it's adjusted to properly update the parent.
 	private @property void namespace(string value)
 	{
-		_namespace = value;
-
 		if(_parent)
 		{
-			_parent.updateId++;
 			//TODO: Adjust parent's 'tagIndicies' and '_tags'
+			_parent.removeNamespaceIfEmpty(_namespace);
+			_parent.updateId++;
 		}
+
+		_namespace = value;
 	}
 	
 	/// Not including namespace. Use 'fullName' if you want the namespace included.
@@ -209,8 +211,8 @@ class Tag
 		_name = value;
 		if(_parent)
 		{
-			_parent.updateId++;
 			//TODO: Adjust parent's '_tags'
+			_parent.updateId++;
 		}
 	}
 	
