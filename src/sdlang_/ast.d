@@ -94,6 +94,9 @@ struct Attribute
 	// Inefficient ATM, but it works.
 	Attribute remove()
 	{
+		if(!_parent)
+			return this;
+		
 		void omit(E)(ref E[] arr, ptrdiff_t index)
 		{
 			arr = arr[0..index] ~ arr[index+1..$];
