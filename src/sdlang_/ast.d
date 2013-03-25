@@ -266,10 +266,17 @@ class Tag
 		if(v > allTagsIndex)
 			v--;
 		
-		// If namespace is now empty, remove from allNamespaces
+		// If namespace has no tags, remove it from parent.tagIndicies/parent._tags
+		if(parent.tagIndicies[_namespace].length == 0)
+		{
+			parent.tagIndicies.remove(_namespace);
+			parent._tags.remove(_namespace);
+		}
+		
+		// If namespace is now empty, remove it from allNamespaces
 		if(
-			parent.tagIndicies[_namespace].length == 0 &&
-			parent.attributeIndicies[_namespace].length == 0
+			_namespace !in parent.tagIndicies &&
+			_namespace !in parent.attributeIndicies
 		)
 		{
 			auto allNamespacesIndex = parent.allNamespaces.length - parent.allNamespaces.find(_namespace).length;
@@ -319,10 +326,17 @@ class Tag
 		if(v > allAttrsIndex)
 			v--;
 		
+		// If namespace is has no attributes, remove it from attributeIndicies/_attributes
+		if(attributeIndicies[attr.namespace].length == 0)
+		{
+			attributeIndicies.remove(attr.namespace);
+			_attributes.remove(attr.namespace);
+		}
+
 		// If namespace is now empty, remove from allNamespaces
 		if(
-			tagIndicies[attr.namespace].length == 0 &&
-			attributeIndicies[attr.namespace].length == 0
+			attr.namespace !in tagIndicies &&
+			attr.namespace !in attributeIndicies
 		)
 		{
 			auto allNamespacesIndex = allNamespaces.length - allNamespaces.find(attr.namespace).length;
@@ -1569,11 +1583,8 @@ unittest
 	people.remove(Attribute("visitor", "a", Value(1)));
 	testRandomAccessRange(people.attributes,               [Attribute("b", Value(2))]);
 	testRandomAccessRange(people.namespaces,               [NSA("")], &namespaceEquals);
-trace();
 	testRandomAccessRange(people.namespaces[0].attributes, [Attribute("b", Value(2))]);
-trace("people.allNamespaces: ", people.allNamespaces);
 	assert("visitor" !in people.namespaces);
-trace();
 	assert(""         in people.namespaces);
 	assert("foobar"  !in people.namespaces);
 	testRandomAccessRange(people.namespaces[""].attributes, [Attribute("b", Value(2))]);
