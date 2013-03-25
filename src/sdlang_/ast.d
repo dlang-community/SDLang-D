@@ -125,23 +125,7 @@ struct Attribute
 		if(v > allAttrsIndex)
 			v--;
 		
-		// If namespace has no attributes, remove it from _parent.attributeIndicies/_parent._attributes
-		if(_parent.attributeIndicies[_namespace].length == 0)
-		{
-			_parent.attributeIndicies.remove(_namespace);
-			_parent._attributes.remove(_namespace);
-		}
-
-		// If namespace is now empty, remove from allNamespaces
-		if(
-			_namespace !in _parent.tagIndicies &&
-			_namespace !in _parent.attributeIndicies
-		)
-		{
-			auto allNamespacesIndex = _parent.allNamespaces.length - _parent.allNamespaces.find(_namespace).length;
-			_parent.allNamespaces = _parent.allNamespaces[0..allNamespacesIndex] ~ _parent.allNamespaces[allNamespacesIndex+1..$];
-		}
-		
+		_parent.removeNamespaceIfEmpty(_namespace);
 		_parent.updateId++;
 		_parent = null;
 		return this;
@@ -373,26 +357,37 @@ class Tag
 		if(v > allTagsIndex)
 			v--;
 		
-		// If namespace has no tags, remove it from _parent.tagIndicies/_parent._tags
-		if(_parent.tagIndicies[_namespace].length == 0)
+		_parent.removeNamespaceIfEmpty(_namespace);
+		_parent.updateId++;
+		_parent = null;
+		return this;
+	}
+	
+	private void removeNamespaceIfEmpty(string namespace)
+	{
+		// If namespace has no attributes, remove it from attributeIndicies/_attributes
+		if(namespace in attributeIndicies && attributeIndicies[namespace].length == 0)
 		{
-			_parent.tagIndicies.remove(_namespace);
-			_parent._tags.remove(_namespace);
+			attributeIndicies.remove(namespace);
+			_attributes.remove(namespace);
+		}
+
+		// If namespace has no tags, remove it from tagIndicies/_tags
+		if(namespace in tagIndicies && tagIndicies[namespace].length == 0)
+		{
+			tagIndicies.remove(namespace);
+			_tags.remove(namespace);
 		}
 		
 		// If namespace is now empty, remove it from allNamespaces
 		if(
-			_namespace !in _parent.tagIndicies &&
-			_namespace !in _parent.attributeIndicies
+			namespace !in tagIndicies &&
+			namespace !in attributeIndicies
 		)
 		{
-			auto allNamespacesIndex = _parent.allNamespaces.length - _parent.allNamespaces.find(_namespace).length;
-			_parent.allNamespaces = _parent.allNamespaces[0..allNamespacesIndex] ~ _parent.allNamespaces[allNamespacesIndex+1..$];
+			auto allNamespacesIndex = allNamespaces.length - allNamespaces.find(namespace).length;
+			allNamespaces = allNamespaces[0..allNamespacesIndex] ~ allNamespaces[allNamespacesIndex+1..$];
 		}
-		
-		_parent.updateId++;
-		_parent = null;
-		return this;
 	}
 	
 	struct NamedMemberRange(T, string membersGrouped)
