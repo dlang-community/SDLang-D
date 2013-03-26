@@ -12,14 +12,16 @@ import sdlang_.symbol;
 import sdlang_.token;
 import sdlang_.util;
 
-/// Returns root tag
+/// Returns root tag.
 Tag parseFile(string filename)
 {
 	auto source = cast(string)read(filename);
 	return parseSource(source, filename);
 }
 
-/// Returns root tag
+/// Returns root tag. The optional 'filename' parameter can be included
+/// so that the SDL document's filename (if any) can be displayed with
+/// any syntax error messages.
 Tag parseSource(string source, string filename=null)
 {
 	auto lexer = new Lexer(source, filename);

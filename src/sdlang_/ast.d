@@ -1025,7 +1025,7 @@ class Tag
 	}
 	
 	///ditto
-	private void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
+	void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
 		if(isOutputRange!(Sink,char))
 	{
 		if(_name == "" && values.length == 0)
