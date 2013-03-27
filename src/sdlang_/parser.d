@@ -227,7 +227,7 @@ private struct Parser
 		if(!token.matches!"Value"())
 			error("Expected attribute value, not "~token.symbol.name);
 		
-		auto attr = Attribute(id.namespace, id.name, token.value, token.location);
+		auto attr = new Attribute(id.namespace, id.name, token.value, token.location);
 		parent.add(attr);
 		//trace("In tag '", parent.fullName, "', found attribute '", attr.fullName, "'");
 		
