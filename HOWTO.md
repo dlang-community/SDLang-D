@@ -10,7 +10,7 @@ Obtain SDLang-D:
 ```console
 > git clone https://github.com/Abscissa/SDLang-D.git
 > cd SDLang-D
-> git checkout v0.8.2
+> git checkout v0.8.3
 ```
 
 Or if you're using [DUB](https://github.com/rejectedsoftware/dub), all you have to do is include the following in your project's ```package.json``` file:
@@ -18,7 +18,7 @@ Or if you're using [DUB](https://github.com/rejectedsoftware/dub), all you have 
 {
 	...
 	"dependencies": {
-		"sdlang-d": "==0.8.2"
+		"sdlang-d": "==0.8.3"
 	}
 }
 ```

@@ -64,7 +64,7 @@ All you have to do to use SDLang-D in your DUB-based project is include the foll
 {
 	...
 	"dependencies": {
-		"sdlang-d": "==0.8.2"
+		"sdlang-d": "==0.8.3"
 	}
 }
 ```
