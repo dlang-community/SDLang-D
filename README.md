@@ -45,7 +45,7 @@ Also:
 * The line-continuation operator is ```\``` (backslash). This can be used to split a tag across multiple lines.
 * Line comments start with either ```#```, ```//``` or ```--```.
 * Block comments start with ```/*``` and end with ```*/```.
-* All the data types and syntax details are [descibed here](http://sdl.ikayzo.org/display/SDL/Language+Guide).
+* All the data types and syntax details are [described here](http://sdl.ikayzo.org/display/SDL/Language+Guide).
 
 Differences from original Java implementation
 ---------------------------------------------

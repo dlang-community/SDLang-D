@@ -34,7 +34,7 @@ To use SDL, first import the module ```sdlang```:
 import sdlang;
 ```
 
-If you're not using DUB, then you must also include the path the SDLand's sources when you compile:
+If you're not using DUB, then you must also include the path the SDLang-D sources when you compile:
 
 ```
 rdmd --build-only -I{path to sdlang}/src {other flags} yourProgram.d
@@ -144,8 +144,6 @@ Attribute.fullName   // string: Read-only, returns "namespace:name" if there's a
 Attribute.location   // Location: filename, line, column and index in original SDL file
 Attribute.value      // Value
 Attribute.parent     // Tag: Read-only
-Attribute.toSDLString() // Returns string
-Attribute.toSDLString() // Returns string
 
 // Constructors:
 Tag.this(Tag parent = null)
