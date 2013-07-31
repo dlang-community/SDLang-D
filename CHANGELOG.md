@@ -1,3 +1,7 @@
+v0.8.4 - TBD
+=====================
+- **Fixed:** Works with DMD v2.063.2.
+
 v0.8.3 - 2013/03/26
 =====================
 - **Breaking change:** ```Tag```'s interface has been completely overhauled to provide a clean, safe and easy-to-use range-based system.

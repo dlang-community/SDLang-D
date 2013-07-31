@@ -476,12 +476,12 @@ unittest
 	assert(Value(DateTimeFracUnknownZone(DateTime(2004,10,31, 14,30,15), FracSec.from!"msecs"(123), "Foo/Bar")).toSDLString() == "2004/10/31 14:30:15.123-Foo/Bar");
 
 	// SysTime
-	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new SimpleTimeZone( hours(0)             ))).toSDLString() == "2004/10/31 14:30:15-GMT+00:00");
-	assert(Value(SysTime(DateTime(2004,10,31,  1, 2, 3), new SimpleTimeZone( hours(0)             ))).toSDLString() == "2004/10/31 01:02:03-GMT+00:00");
-	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new SimpleTimeZone( hours(2)+minutes(10) ))).toSDLString() == "2004/10/31 14:30:15-GMT+02:10");
-	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new SimpleTimeZone(-hours(5)-minutes(30) ))).toSDLString() == "2004/10/31 14:30:15-GMT-05:30");
-	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new SimpleTimeZone( hours(2)+minutes( 3) ))).toSDLString() == "2004/10/31 14:30:15-GMT+02:03");
-	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(0) ))).toSDLString() == "2004/10/31 14:30:15.123-GMT+00:00");
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new immutable SimpleTimeZone( hours(0)             ))).toSDLString() == "2004/10/31 14:30:15-GMT+00:00");
+	assert(Value(SysTime(DateTime(2004,10,31,  1, 2, 3), new immutable SimpleTimeZone( hours(0)             ))).toSDLString() == "2004/10/31 01:02:03-GMT+00:00");
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new immutable SimpleTimeZone( hours(2)+minutes(10) ))).toSDLString() == "2004/10/31 14:30:15-GMT+02:10");
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new immutable SimpleTimeZone(-hours(5)-minutes(30) ))).toSDLString() == "2004/10/31 14:30:15-GMT-05:30");
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), new immutable SimpleTimeZone( hours(2)+minutes( 3) ))).toSDLString() == "2004/10/31 14:30:15-GMT+02:03");
+	assert(Value(SysTime(DateTime(2004,10,31, 14,30,15), FracSec.from!"msecs"(123), new immutable SimpleTimeZone( hours(0) ))).toSDLString() == "2004/10/31 14:30:15.123-GMT+00:00");
 
 	// Duration
 	assert( "12:14:42"         == Value( days( 0)+hours(12)+minutes(14)+seconds(42)+msecs(  0)).toSDLString());

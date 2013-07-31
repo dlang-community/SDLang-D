@@ -1233,8 +1233,7 @@ class Lexer
 				}
 				else
 				{
-					auto timezone = new immutable 
-SimpleTimeZone(offset.get());
+					auto timezone = new immutable SimpleTimeZone(offset.get());
 					mixin(accept!("Value", "SysTime(dateTimeFrac.dateTime, dateTimeFrac.fracSec, timezone)"));
 				}
 			}
@@ -1796,30 +1795,30 @@ unittest
 	]);
 
 	// DateTime, with known timezone
-	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53-GMT+02:10",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53-GMT-05:30",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53:34-GMT+00:00",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53:34-GMT+02:10",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53:34-GMT-05:30",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT+00:00", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT+02:10", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT-05:30", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53.123-GMT+00:00",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53.123-GMT+02:10",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53.123-GMT-05:30",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53-GMT+02:10",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53-GMT-05:30",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53:34-GMT+00:00",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53:34-GMT+02:10",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53:34-GMT-05:30",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53:34.123-GMT+00:00", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53:34.123-GMT+02:10", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53:34.123-GMT-05:30", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), FracSec.from!"msecs"(123), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53.123-GMT+00:00",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53.123-GMT+02:10",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53.123-GMT-05:30",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), FracSec.from!"msecs"(123), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
 
-	testLex( "2013/2/22 -34:65-GMT-05:30",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(34) - minutes(65) - seconds( 0), new SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 -34:65-GMT-05:30",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(34) - minutes(65) - seconds( 0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
 
 	// DateTime, with Java SDL's occasionally weird interpretation of some
 	// "not quite ISO" variations of the "GMT with offset" timezone strings.
 	Token testTokenSimpleTimeZone(Duration d)
 	{
 		auto dateTime = DateTime(2013, 2, 22, 7, 53, 0);
-		auto tz = new SimpleTimeZone(d);
+		auto tz = new immutable SimpleTimeZone(d);
 		return Token( symbol!"Value", loc, Value(SysTime(dateTime,tz)) );
 	}
 	Token testTokenUnknownTimeZone(string tzName)
