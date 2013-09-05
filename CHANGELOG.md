@@ -1,6 +1,7 @@
-v0.8.4 - TBD
+v0.8.4 - 2013/09/05
 =====================
 - **Fixed:** Works with DMD v2.063.2.
+- **Fixed:** Updated to work with latest DUB (@s-ludwig).
 
 v0.8.3 - 2013/03/26
 =====================
