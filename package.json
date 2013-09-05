@@ -11,17 +11,24 @@
 
 	"dflags-dmd": ["-wi"],
 
-	"configurations": {
-		"default": "sdlang",
-
-		"sdlang": {
+	"configurations": [
+		{
+			"name": "test",
+			"targetType": "executable",
 			"versions": ["SDLang_TestApp"],
 			"dflags-dmd": ["-ofbin/sdlang"]
 		},
 
-		"unittest": {
+		{
+			"name": "library",
+			"targetType": "library"
+		},
+
+		{
+			"name": "unittest",
+			"targetType": "executable",
 			"versions": ["SDLang_Unittest", "SDLang_Trace"],
 			"dflags-dmd": ["-ofbin/sdlang-unittest", "-debug", "-gc", "-unittest"]
 		}
-	}
+	]
 }
