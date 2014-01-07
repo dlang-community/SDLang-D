@@ -9,8 +9,8 @@
 	"sourcePaths": ["src"],
 	"importPaths": ["src"],
 
-	"dflags-dmd": ["-wi"],
-
+	"buildRequirements": ["allowWarnings"],
+	
 	"configurations": [
 		{
 			"name": "test",
