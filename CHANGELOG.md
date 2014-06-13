@@ -1,3 +1,7 @@
+TBD - TBD
+=====================
+- **Fixed:** Work around a DMD 2.064/2.065 segfault bug in a unittest.
+
 v0.8.4 - 2013/09/05
 =====================
 - **Fixed:** Works with DMD v2.063.2.

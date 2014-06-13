@@ -10,7 +10,7 @@ Obtain SDLang-D:
 ```console
 > git clone https://github.com/Abscissa/SDLang-D.git
 > cd SDLang-D
-> git checkout v0.8.3
+> git checkout v0.8.4
 ```
 
 Or if you're using [DUB](https://github.com/rejectedsoftware/dub), all you have to do is include the following in your project's ```package.json``` file:
@@ -18,12 +18,12 @@ Or if you're using [DUB](https://github.com/rejectedsoftware/dub), all you have 
 {
 	...
 	"dependencies": {
-		"sdlang-d": "==0.8.3"
+		"sdlang-d": "==0.8.4"
 	}
 }
 ```
 
-Note that due to a compiler bug, using ```-inline``` will cause compilation to fail. So don't use ```-inline``` with SDLang-D for now.
+Note that ```-inline``` currently causes some problems. On DMD 2.063.2 and below, it causes compilation to fail, liekly due to [DMD #5776](https://issues.dlang.org/show_bug.cgi?id=5776) and/or [DMD #11377](https://issues.dlang.org/show_bug.cgi?id=11377). On DMD 2.064 and up, it causes a segfault when parsing a Base64 value (currently being investigated).
 
 Importing
 ---------
