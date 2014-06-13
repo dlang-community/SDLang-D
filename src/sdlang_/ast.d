@@ -1470,10 +1470,26 @@ unittest
 
 	assertThrown!SDLangRangeException(root.tags["foobar"]);
 	assertThrown!SDLangRangeException(root.all.tags["foobar"]);
-	assertThrown!SDLangRangeException(root.namespaces["foobar"].tags["foobar"]);
 	assertThrown!SDLangRangeException(root.attributes["foobar"]);
 	assertThrown!SDLangRangeException(root.all.attributes["foobar"]);
-	assertThrown!SDLangRangeException(root.namespaces["foobar"].attributes["foobar"]);
+	
+	// DMD Issue #12585 causes a segfault in these two tests when using 2.064 or 2.065,
+	// so work around it.
+	//assertThrown!SDLangRangeException(root.namespaces["foobar"].tags["foobar"]);
+	//assertThrown!SDLangRangeException(root.namespaces["foobar"].attributes["foobar"]);
+	bool didCatch = false;
+	try
+		auto x = root.namespaces["foobar"].tags["foobar"];
+	catch(SDLangRangeException e)
+		didCatch = true;
+	assert(didCatch);
+	
+	didCatch = false;
+	try
+		auto x = root.namespaces["foobar"].attributes["foobar"];
+	catch(SDLangRangeException e)
+		didCatch = true;
+	assert(didCatch);
 
 	testRandomAccessRange(root.maybe.tags["nothing"],                    [nothing]);
 	testRandomAccessRange(root.maybe.tags["blue"],                       [blue3, blue5]);
