@@ -16,7 +16,8 @@
 			"name": "test",
 			"targetType": "executable",
 			"versions": ["SDLang_TestApp"],
-			"dflags-dmd": ["-ofbin/sdlang"]
+			"targetPath": "bin/",
+			"targetName": "sdlang"
 		},
 
 		{
@@ -27,8 +28,14 @@
 		{
 			"name": "unittest",
 			"targetType": "executable",
+			"targetPath": "bin/",
+			"targetName": "sdlang-unittest",
+
 			"versions": ["SDLang_Unittest", "SDLang_Trace"],
-			"dflags-dmd": ["-ofbin/sdlang-unittest", "-debug", "-gc", "-unittest"]
+			"buildOptions": [
+				"unittests", "debugMode", "debugInfo"
+			],
+			"dflags-dmd": ["-gc"]
 		}
 	]
 }
