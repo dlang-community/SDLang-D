@@ -1,7 +1,7 @@
 ﻿// SDLang-D
 // Written in the D programming language.
 
-module sdlang_.token;
+module sdlang.token;
 
 import std.array;
 import std.base64;
@@ -12,8 +12,8 @@ import std.string;
 import std.typetuple;
 import std.variant;
 
-import sdlang_.symbol;
-import sdlang_.util;
+import sdlang.symbol;
+import sdlang.util;
 
 /// DateTime doesn't support milliseconds, but SDL's "Date Time" type does.
 /// So this is needed for any SDL "Date Time" that doesn't include a time zone.
@@ -324,7 +324,7 @@ void toSDLString(Sink)(ubyte[] value, ref Sink sink) if(isOutputRange!(Sink,char
 /// constructed since the AST is directly built during parsing.
 struct Token
 {
-	Symbol symbol = sdlang_.symbol.symbol!"Error"; /// The "type" of this token
+	Symbol symbol = sdlang.symbol.symbol!"Error"; /// The "type" of this token
 	Location location;
 	Value value; /// Only valid when 'symbol' is symbol!"Value", otherwise null
 	string data; /// Original text from source
@@ -368,7 +368,7 @@ struct Token
 	}
 }
 
-version(SDLang_Unittest)
+version(sdlangUnittest)
 unittest
 {
 	import std.stdio;
@@ -402,7 +402,7 @@ unittest
 	assert(Token(symbol!"Value",loc,Value(cast(float)1.2)) != Token(symbol!"Value",loc, Value(cast(double)1.2)));
 }
 
-version(SDLang_Unittest)
+version(sdlangUnittest)
 unittest
 {
 	import std.stdio;

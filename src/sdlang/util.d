@@ -1,14 +1,14 @@
 // SDLang-D
 // Written in the D programming language.
 
-module sdlang_.util;
+module sdlang.util;
 
 import std.algorithm;
 import std.datetime;
 import std.stdio;
 import std.string;
 
-import sdlang_.token;
+import sdlang.token;
 
 enum sdlangVersion = "0.8.4";
 
@@ -55,7 +55,7 @@ void removeIndex(E)(ref E[] arr, ptrdiff_t index)
 
 void trace(string file=__FILE__, size_t line=__LINE__, TArgs...)(TArgs args)
 {
-	version(SDLang_Trace)
+	version(sdlangTrace)
 	{
 		writeln(file, "(", line, "): ", args);
 		stdout.flush();

@@ -1,2 +1,2 @@
 #!/bin/sh
-rdmd --build-only -wi -version=SDLang_TestApp -Isrc -ofbin/sdlang "$@" src/sdlang.d
+rdmd --build-only -wi -version=sdlangTestApp -Isrc -ofbin/sdlang "$@" src/sdlang/package.d

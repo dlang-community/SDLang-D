@@ -1,7 +1,7 @@
 // SDLang-D
 // Written in the D programming language.
 
-module sdlang_.ast;
+module sdlang.ast;
 
 import std.algorithm;
 import std.array;
@@ -9,16 +9,16 @@ import std.conv;
 import std.range;
 import std.string;
 
-version(SDLang_Unittest)
+version(sdlangUnittest)
 version(unittest)
 {
 	import std.stdio;
 	import std.exception;
 }
 
-import sdlang_.exception;
-import sdlang_.token;
-import sdlang_.util;
+import sdlang.exception;
+import sdlang.token;
+import sdlang.util;
 
 class Attribute
 {
@@ -1127,10 +1127,10 @@ class Tag
 	}
 }
 
-version(SDLang_Unittest)
+version(sdlangUnittest)
 unittest
 {
-	import sdlang_.parser;
+	import sdlang.parser;
 	writeln("Unittesting sdlang ast...");
 	stdout.flush();
 	

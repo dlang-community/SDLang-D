@@ -2,7 +2,7 @@
 // Written in the D programming language.
 
 /++
-SDLang-D v0.8.3: Library for parsing SDL (Simple Declarative Language).
+SDLang-D: Library for parsing SDL (Simple Declarative Language).
 
 Import this module to use SDLang-D as a library.
 
@@ -22,25 +22,25 @@ import std.datetime;
 import std.file;
 import std.stdio;
 
-import sdlang_.ast;
-import sdlang_.exception;
-import sdlang_.lexer;
-import sdlang_.parser;
-import sdlang_.symbol;
-import sdlang_.token;
-import sdlang_.util;
+import sdlang.ast;
+import sdlang.exception;
+import sdlang.lexer;
+import sdlang.parser;
+import sdlang.symbol;
+import sdlang.token;
+import sdlang.util;
 
 // Expose main public API
-public import sdlang_.ast       : Attribute, Tag;
-public import sdlang_.exception;
-public import sdlang_.parser    : parseFile, parseSource;
-public import sdlang_.token     : Value, Token, DateTimeFrac, DateTimeFracUnknownZone;
-public import sdlang_.util      : sdlangVersion, Location;
+public import sdlang.ast       : Attribute, Tag;
+public import sdlang.exception;
+public import sdlang.parser    : parseFile, parseSource;
+public import sdlang.token     : Value, Token, DateTimeFrac, DateTimeFracUnknownZone;
+public import sdlang.util      : sdlangVersion, Location;
 
-version(SDLang_Unittest)
+version(sdlangUnittest)
 	void main() {}
 
-version(SDLang_TestApp)
+version(sdlangTestApp)
 {
 	int main(string[] args)
 	{

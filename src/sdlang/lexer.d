@@ -1,7 +1,7 @@
 ﻿// SDLang-D
 // Written in the D programming language.
 
-module sdlang_.lexer;
+module sdlang.lexer;
 
 import std.algorithm;
 import std.array;
@@ -17,12 +17,12 @@ import std.uni;
 import std.utf;
 import std.variant;
 
-import sdlang_.exception;
-import sdlang_.symbol;
-import sdlang_.token;
-import sdlang_.util;
+import sdlang.exception;
+import sdlang.symbol;
+import sdlang.token;
+import sdlang.util;
 
-alias sdlang_.util.startsWith startsWith;
+alias sdlang.util.startsWith startsWith;
 
 Token[] lexFile(string filename)
 {
@@ -1427,7 +1427,7 @@ class Lexer
 	}
 }
 
-version(SDLang_Unittest)
+version(sdlangUnittest)
 unittest
 {
 	import std.stdio;
