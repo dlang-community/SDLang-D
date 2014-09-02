@@ -69,7 +69,7 @@ private struct Parser
 
 	/// <Tags> ::= <Tag> <Tags>  (Lookaheads: Ident Value)
 	///        |   EOL   <Tags>  (Lookaheads: EOL)
-	///        |   {empty}       (Lookaheads: Anything else)
+	///        |   {empty}       (Lookaheads: Anything else, except '{')
 	void parseTags(ref Tag parent)
 	{
 		//trace("Enter ", __FUNCTION__);
@@ -88,9 +88,13 @@ private struct Parser
 				lexer.popFront();
 				continue;
 			}
+			else if(token.matches!"{"())
+			{
+				error("Anonymous tags must have at least one value. They cannot just have children and attributes only.");
+			}
 			else
 			{
-				//trace(__FUNCTION__, ": <Tags> ::= {empty}  (Lookaheads: Anything else)");
+				//trace(__FUNCTION__, ": <Tags> ::= {empty}  (Lookaheads: Anything else, except '{')");
 				break;
 			}
 		}
@@ -126,7 +130,7 @@ private struct Parser
 		tag.location = token.location;
 
 		if(lexer.front.matches!"="())
-			error("Anonymous tags must have at least one value. They cannot have just attributes and children only.");
+			error("Anonymous tags must have at least one value. They cannot just have attributes and children only.");
 
 		parseValues(tag);
 		parseAttributes(tag);
