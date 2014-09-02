@@ -4,6 +4,7 @@ TBD - TBD
 - **Fixed:** Work around a DMD 2.064/2.065 segfault bug in a unittest.
 - **Fixed:** [#8](https://github.com/Abscissa/SDLang-D/issues/8): Consecutive escape sequences not getting correctly decoded.
 - **Fixed:** [#11](https://github.com/Abscissa/SDLang-D/issues/11): Newline immediately after // is ignored.
+- **Fixed:** [#12](https://github.com/Abscissa/SDLang-D/issues/12): Incorrectly accepts "anon tag without a value" when the tag has children.
 - **Improved:** Better error message for anonymous tags with no values.
 
 v0.8.4 - 2013/09/05
