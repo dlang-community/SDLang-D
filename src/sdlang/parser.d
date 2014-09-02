@@ -49,15 +49,21 @@ private struct Parser
 		throw new SDLangParseException(loc, "Error: "~msg);
 	}
 
-	/// <Root> ::= <Tags>  (Lookaheads: Anything)
+	/// <Root> ::= <Tags> EOF  (Lookaheads: Anything)
 	Tag parseRoot()
 	{
 		//trace("Starting parse of file: ", lexer.filename);
+		//trace(__FUNCTION__, ": <Root> ::= <Tags> EOF  (Lookaheads: Anything)");
 
 		auto root = new Tag(null, null, "root");
 		root.location = Location(lexer.filename, 0, 0, 0);
 
 		parseTags(root);
+		
+		auto token = lexer.front;
+		if(!token.matches!"EOF"())
+			error("Expected end-of-file, not " ~ token.symbol.name);
+		
 		return root;
 	}
 
@@ -66,21 +72,27 @@ private struct Parser
 	///        |   {empty}       (Lookaheads: Anything else)
 	void parseTags(ref Tag parent)
 	{
+		//trace("Enter ", __FUNCTION__);
 		while(true)
 		{
 			auto token = lexer.front;
 			if(token.matches!"Ident"() || token.matches!"Value"())
 			{
+				//trace(__FUNCTION__, ": <Tags> ::= <Tag> <Tags>  (Lookaheads: Ident Value)");
 				parseTag(parent);
 				continue;
 			}
 			else if(token.matches!"EOL"())
 			{
+				//trace(__FUNCTION__, ": <Tags> ::= EOL <Tags>  (Lookaheads: EOL)");
 				lexer.popFront();
 				continue;
 			}
 			else
+			{
+				//trace(__FUNCTION__, ": <Tags> ::= {empty}  (Lookaheads: Anything else)");
 				break;
+			}
 		}
 	}
 
@@ -94,6 +106,7 @@ private struct Parser
 		
 		if(token.matches!"Ident"())
 		{
+			//trace(__FUNCTION__, ": <Tag> ::= <IDFull> <Values> <Attributes> <OptChild> <TagTerminator>  (Lookaheads: Ident)");
 			auto id = parseIDFull();
 			tag = new Tag(parent, id.namespace, id.name);
 
@@ -101,6 +114,7 @@ private struct Parser
 		}
 		else if(token.matches!"Value"())
 		{
+			//trace(__FUNCTION__, ": <Tag> ::= <Value>  <Values> <Attributes> <OptChild> <TagTerminator>  (Lookaheads: Value)");
 			tag = new Tag(parent);
 			parseValue(tag);
 
@@ -122,6 +136,7 @@ private struct Parser
 		auto token = lexer.front;
 		if(token.matches!"Ident"())
 		{
+			//trace(__FUNCTION__, ": <IDFull> ::= Ident <IDSuffix>  (Lookaheads: Ident)");
 			lexer.popFront();
 			return parseIDSuffix(token.data);
 		}
@@ -140,6 +155,7 @@ private struct Parser
 		auto token = lexer.front;
 		if(token.matches!":"())
 		{
+			//trace(__FUNCTION__, ": <IDSuffix> ::= ':' Ident  (Lookaheads: ':')");
 			lexer.popFront();
 			token = lexer.front;
 			if(token.matches!"Ident"())
@@ -154,7 +170,10 @@ private struct Parser
 			}
 		}
 		else
+		{
+			//trace(__FUNCTION__, ": <IDSuffix> ::= {empty}  (Lookaheads: Anything else)");
 			return IDFull("", firstIdent);
+		}
 	}
 
 	/// <Values>
@@ -167,11 +186,15 @@ private struct Parser
 			auto token = lexer.front;
 			if(token.matches!"Value"())
 			{
+				//trace(__FUNCTION__, ": <Values> ::= Value <Values>  (Lookaheads: Value)");
 				parseValue(parent);
 				continue;
 			}
 			else
+			{
+				//trace(__FUNCTION__, ": <Values> ::= {empty}  (Lookaheads: Anything else)");
 				break;
+			}
 		}
 	}
 
@@ -181,6 +204,7 @@ private struct Parser
 		auto token = lexer.front;
 		if(token.matches!"Value"())
 		{
+			//trace(__FUNCTION__, ": (Handle Value terminals that aren't part of an attribute)");
 			auto value = token.value;
 			//trace("In tag '", parent.fullName, "', found value: ", value);
 			parent.add(value);
@@ -201,17 +225,22 @@ private struct Parser
 			auto token = lexer.front;
 			if(token.matches!"Ident"())
 			{
+				//trace(__FUNCTION__, ": <Attributes> ::= <Attribute> <Attributes>  (Lookaheads: Ident)");
 				parseAttribute(parent);
 				continue;
 			}
 			else
+			{
+				//trace(__FUNCTION__, ": <Attributes> ::= {empty}  (Lookaheads: Anything else)");
 				break;
+			}
 		}
 	}
 
 	/// <Attribute> ::= <IDFull> '=' Value  (Lookaheads: Ident)
 	void parseAttribute(ref Tag parent)
 	{
+		//trace(__FUNCTION__, ": <Attribute> ::= <IDFull> '=' Value  (Lookaheads: Ident)");
 		auto token = lexer.front;
 		if(!token.matches!"Ident"())
 			error("Expected attribute name, not "~token.symbol.name);
@@ -242,6 +271,7 @@ private struct Parser
 		auto token = lexer.front;
 		if(token.matches!"{")
 		{
+			//trace(__FUNCTION__, ": <OptChild> ::= '{' EOL <Tags> '}'  (Lookaheads: '{')");
 			lexer.popFront();
 			token = lexer.front;
 			if(!token.matches!"EOL"())
@@ -256,18 +286,27 @@ private struct Parser
 			lexer.popFront();
 		}
 		else
-			{ /+ Do nothing, no error. +/ }
+		{
+			//trace(__FUNCTION__, ": <OptChild> ::= {empty}  (Lookaheads: Anything else)");
+			// Do nothing, no error.
+		}
 	}
 	
 	/// <TagTerminator>
-	///     ::= EOL  (Lookahead: EOL)
-	///     |   EOF  (Lookahead: EOF)
+	///     ::= EOL      (Lookahead: EOL)
+	///     |   {empty}  (Lookahead: EOF)
 	void parseTagTerminator(ref Tag parent)
 	{
 		auto token = lexer.front;
-		if(token.matches!"EOL" || token.matches!"EOF")
+		if(token.matches!"EOL")
 		{
+			//trace(__FUNCTION__, ": <TagTerminator> ::= EOL  (Lookahead: EOL)");
 			lexer.popFront();
+		}
+		else if(token.matches!"EOF")
+		{
+			//trace(__FUNCTION__, ": <TagTerminator> ::= {empty}  (Lookahead: EOF)");
+			// Do nothing
 		}
 		else
 			error("Expected end of tag (newline, semicolon or end-of-file), not " ~ token.symbol.name);
