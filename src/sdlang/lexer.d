@@ -544,12 +544,13 @@ class Lexer
 				if(wasEscSequence)
 				{
 					advanceChar(ErrorOnEOF.Yes);
-					advanceChar(ErrorOnEOF.Yes);
+					spanStart = nextPos;
 				}
 				else
+				{
 					eatWhite(false);
-
-				spanStart = location.index;
+					spanStart = location.index;
+				}
 			}
 
 			else if(isNewline(ch))
@@ -1967,7 +1968,18 @@ unittest
 version(sdlangUnittest)
 unittest
 {
-	writeln("Regression test issue #11 (lexer)...");
+	writeln("lexer: Regression test issue #8...");
+	stdout.flush();
+
+	testLex(`"\n \n"`, [ Token(symbol!"Value",loc,Value("\n \n"),`"\n \n"`) ]);
+	testLex(`"\t\t"`, [ Token(symbol!"Value",loc,Value("\t\t"),`"\t\t"`) ]);
+	testLex(`"\n\n"`, [ Token(symbol!"Value",loc,Value("\n\n"),`"\n\n"`) ]);
+}
+
+version(sdlangUnittest)
+unittest
+{
+	writeln("lexer: Regression test issue #11...");
 	stdout.flush();
 	
 	testLex("//X\na", [ Token(symbol!"Ident",loc,Value(null),"a") ]);

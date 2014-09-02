@@ -1804,7 +1804,7 @@ version(sdlangUnittest)
 unittest
 {
 	import sdlang.parser;
-	writeln("Regression test issue #11 (ast)...");
+	writeln("ast: Regression test issue #11...");
 	stdout.flush();
 	
 	auto root = parseSource(
