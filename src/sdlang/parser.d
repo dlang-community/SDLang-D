@@ -124,6 +124,10 @@ private struct Parser
 			error("Expected tag name or value, not " ~ token.symbol.name);
 
 		tag.location = token.location;
+
+		if(lexer.front.matches!"="())
+			error("Anonymous tags must have at least one value. They cannot have just attributes and children only.");
+
 		parseValues(tag);
 		parseAttributes(tag);
 		parseOptChild(tag);
