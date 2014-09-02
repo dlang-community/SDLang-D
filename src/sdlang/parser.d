@@ -273,3 +273,5 @@ private struct Parser
 			error("Expected end of tag (newline, semicolon or end-of-file), not " ~ token.symbol.name);
 	}
 }
+
+// Parser's tests are part of the AST's tests over in the ast module.

@@ -1128,13 +1128,8 @@ class Tag
 }
 
 version(sdlangUnittest)
-unittest
 {
-	import sdlang.parser;
-	writeln("Unittesting sdlang ast...");
-	stdout.flush();
-	
-	void testRandomAccessRange(R, E)(R range, E[] expected, bool function(E, E) equals=null)
+	private void testRandomAccessRange(R, E)(R range, E[] expected, bool function(E, E) equals=null)
 	{
 		static assert(isRandomAccessRange!R);
 		static assert(is(ElementType!R == E));
@@ -1270,7 +1265,15 @@ unittest
 		assert(!r2.empty);
 		assert(original.length == expected.length);
 	}
+}
 
+version(sdlangUnittest)
+unittest
+{
+	import sdlang.parser;
+	writeln("Unittesting sdlang ast...");
+	stdout.flush();
+	
 	Tag root;
 	root = parseSource("");
 	testRandomAccessRange(root.attributes, cast(          Attribute[])[]);
@@ -1794,4 +1797,36 @@ unittest
 	assert(""        !in people.namespaces);
 	assert("foobar"  !in people.namespaces);
 	testRandomAccessRange(people.all.attributes, cast(Attribute[])[]);
+}
+
+// Regression test, issue #11: https://github.com/Abscissa/SDLang-D/issues/11
+version(sdlangUnittest)
+unittest
+{
+	import sdlang.parser;
+	writeln("Regression test issue #11 (ast)...");
+	stdout.flush();
+	
+	auto root = parseSource(
+`//
+a`);
+
+	assert("a" in root.tags);
+
+	root = parseSource(
+`//
+parent {
+	child
+}
+`);
+
+	auto child = new Tag(
+		null, "", "child",
+		null, null, null
+	);
+	
+	assert("parent" in root.tags);
+	assert("child" !in root.tags);
+	testRandomAccessRange(root.tags["parent"][0].tags, [child]);
+	assert("child" in root.tags["parent"][0].tags);
 }

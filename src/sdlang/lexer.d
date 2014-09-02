@@ -1396,7 +1396,7 @@ class Lexer
 				break;
 			
 			case State.lineComment:
-				if(!hasNextCh || isNewline(nextCh))
+				if(isNewline(ch))
 					state = State.normal;
 				break;
 			
@@ -1428,19 +1428,20 @@ class Lexer
 }
 
 version(sdlangUnittest)
-unittest
 {
 	import std.stdio;
-	writeln("Unittesting sdlang lexer...");
-	stdout.flush();
-	
-	auto loc  = Location("filename", 0, 0, 0);
-	auto loc2 = Location("a", 1, 1, 1);
-	assert([Token(symbol!"EOL",loc)             ] == [Token(symbol!"EOL",loc)              ] );
-	assert([Token(symbol!"EOL",loc,Value(7),"A")] == [Token(symbol!"EOL",loc2,Value(7),"B")] );
 
-	int numErrors = 0;
-	void testLex(string file=__FILE__, size_t line=__LINE__)(string source, Token[] expected)
+	private auto loc  = Location("filename", 0, 0, 0);
+	private auto loc2 = Location("a", 1, 1, 1);
+
+	unittest
+	{
+		assert([Token(symbol!"EOL",loc)             ] == [Token(symbol!"EOL",loc)              ] );
+		assert([Token(symbol!"EOL",loc,Value(7),"A")] == [Token(symbol!"EOL",loc2,Value(7),"B")] );
+	}
+
+	private int numErrors = 0;
+	private void testLex(string file=__FILE__, size_t line=__LINE__)(string source, Token[] expected)
 	{
 		Token[] actual;
 		try
@@ -1484,7 +1485,7 @@ unittest
 		}
 	}
 
-	void testLexThrows(string file=__FILE__, size_t line=__LINE__)(string source)
+	private void testLexThrows(string file=__FILE__, size_t line=__LINE__)(string source)
 	{
 		bool hadException = false;
 		Token[] actual;
@@ -1502,7 +1503,14 @@ unittest
 			stderr.writeln("        ", actual);
 		}
 	}
+}
 
+version(sdlangUnittest)
+unittest
+{
+	writeln("Unittesting sdlang lexer...");
+	stdout.flush();
+	
 	testLex("",        []);
 	testLex(" ",       []);
 	testLex("\\\n",    []);
@@ -1933,11 +1941,9 @@ unittest
 		Token(symbol!":",     loc, Value(        null ), ":"),
 		Token(symbol!"Ident", loc, Value(        null ), "favorite_color"),
 		Token(symbol!"Value", loc, Value(      "blue" ), `"blue"`),
-		Token(symbol!"EOL",   loc, Value(        null ), "\n"),
 
 		Token(symbol!"Ident", loc, Value( null ), "somedate"),
 		Token(symbol!"Value", loc, Value( DateTimeFrac(DateTime(2013, 2, 22, 7, 53, 0)) ), "2013/2/22  07:53"),
-		Token(symbol!"EOL",   loc, Value( null ), "\n"),
 		Token(symbol!"EOL",   loc, Value( null ), "\n"),
 
 		Token(symbol!"Ident", loc, Value(null), "inventory"),
@@ -1956,4 +1962,16 @@ unittest
 	
 	if(numErrors > 0)
 		stderr.writeln(numErrors, " failed test(s)");
+}
+
+version(sdlangUnittest)
+unittest
+{
+	writeln("Regression test issue #11 (lexer)...");
+	stdout.flush();
+	
+	testLex("//X\na", [ Token(symbol!"Ident",loc,Value(null),"a") ]);
+	testLex("//\na",  [ Token(symbol!"Ident",loc,Value(null),"a") ]);
+	testLex("--\na",  [ Token(symbol!"Ident",loc,Value(null),"a") ]);
+	testLex("#\na",   [ Token(symbol!"Ident",loc,Value(null),"a") ]);
 }
