@@ -1,6 +1,7 @@
-TBD - TBD
+v0.9.0 - TBD
 =====================
 - **Breaking change:** Changed package structure to use ```package.d```. Most users will be unaffected, but the internal package names have changed slightly, and users of DMD 2.063.2 and below will need to ```import sdlang.package;``` instead of ```import sdlang;``` until they upgrade their compiler. The built-in command line tool and unittests, however, do now reqire DMD 2.064 or newer because of this change.
+- **New:** Added StAX/Pull-style parser.
 - **Fixed:** Work around a DMD 2.064/2.065 segfault bug in a unittest.
 - **Fixed:** [#8](https://github.com/Abscissa/SDLang-D/issues/8): Consecutive escape sequences not getting correctly decoded.
 - **Fixed:** [#11](https://github.com/Abscissa/SDLang-D/issues/11): Newline immediately after // is ignored.

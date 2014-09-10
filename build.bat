@@ -1,2 +1,2 @@
 @echo off
-rdmd --build-only -wi -version=sdlangTestApp -Isrc -ofbin\sdlang %* src/sdlang/package.d
+rdmd --build-only -wi -version=sdlangTestApp -Isrc  -I..\libInputVisitor -ofbin\sdlang %* src/sdlang/package.d

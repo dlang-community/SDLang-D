@@ -4,13 +4,17 @@
 	"homepage":    "http://github.com/Abscissa/SDLang-D",
 	"authors":     ["Nick Sabalausky"],
 	"license":     "zlib/libpng",
-	"copyright":   "©2012-2013 Nick Sabalausky",
+	"copyright":   "©2012-2014 Nick Sabalausky",
 
 	"sourcePaths": ["src"],
 	"importPaths": ["src"],
 
 	"buildRequirements": ["allowWarnings"],
 	
+	"dependencies": {
+		"libinputvisitor": "~>1.1.0"
+	}
+
 	"configurations": [
 		{
 			"name": "test",
