@@ -4,13 +4,13 @@ How to use SDLang-D (Tutorial / API Overview)
 Installation
 ------------
 
-The only external requirement is [DMD](http://dlang.org) v2.061 or newer.
+The only external requirement is [DMD](http://dlang.org) v2.061 or newer (currently tested up through v2.066.1).
 
 Obtain SDLang-D:
 ```console
 > git clone https://github.com/Abscissa/SDLang-D.git
 > cd SDLang-D
-> git checkout v0.8.4
+> git checkout v0.9.0
 ```
 
 Or if you're using [DUB](https://github.com/rejectedsoftware/dub), all you have to do is include the following in your project's ```package.json``` file:
@@ -18,7 +18,7 @@ Or if you're using [DUB](https://github.com/rejectedsoftware/dub), all you have 
 {
 	...
 	"dependencies": {
-		"sdlang-d": "==0.8.4"
+		"sdlang-d": "==0.9.0"
 	}
 }
 ```
