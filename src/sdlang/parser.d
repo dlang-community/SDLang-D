@@ -40,6 +40,9 @@ parses a string passed in. The optional 'filename' parameter in pullParseSource
 can be included so that the SDL document's filename (if any) can be displayed
 with any syntax error messages.
 
+Warning! The FileStartEvent and FileEndEvent events *might* be removed later.
+See $(WEB https://github.com/Abscissa/SDLang-D/issues/17)
+
 Example:
 ------------------
 parent 12 attr="q" {
