@@ -1,7 +1,7 @@
 v0.9.0 - 2015/03/16
 =====================
 - **Breaking change:** Changed package structure to use ```package.d```. Most users will be unaffected, but the internal package names have changed slightly, and users of DMD 2.063.2 and below will need to ```import sdlang.package;``` instead of ```import sdlang;``` until they upgrade their compiler. The built-in command line tool and unittests, however, do now reqire DMD 2.064 or newer because of this change.
-- **New:** Added StAX/Pull-style parser. (Warning: FileStartEvent and FileEndEvent *might* be removed later: [#17](https://github.com/Abscissa/SDLang-D/issues/17))
+- **New:** Added StAX/Pull-style parser via [pullParseFile](http://semitwist.com/sdlang-d-api/sdlang/parser/pullParseFile.html) and  [pullParseSource](http://semitwist.com/sdlang-d-api/sdlang/parser/pullParseSource.html). (Warning: FileStartEvent and FileEndEvent *might* be removed later: [#17](https://github.com/Abscissa/SDLang-D/issues/17))
 - **Fixed:** Work around a DMD 2.064/2.065 segfault bug in a unittest.
 - **Fixed:** [#5](https://github.com/Abscissa/SDLang-D/issues/5) & [#7](https://github.com/Abscissa/SDLang-D/issues/7): Building with Dub produces package format warnings (@ColdenCullen).
 - **Fixed:** [#8](https://github.com/Abscissa/SDLang-D/issues/8): Consecutive escape sequences not getting correctly decoded.
