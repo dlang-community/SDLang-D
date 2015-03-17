@@ -6,7 +6,7 @@ SDLang-D: Library for parsing SDL (Simple Declarative Language).
 
 Import this module to use SDLang-D as a library.
 
-This should work with DMD 2.061 and up (currently tested up through v2.066.1).
+This should work with DMD 2.061 and up (currently tested up through v2.067.0).
 
 Homepage: http://github.com/Abscissa/SDLang-D
 API:      http://semitwist.com/sdlang-d-api

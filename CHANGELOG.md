@@ -1,4 +1,4 @@
-v0.9.1 - TBD
+v0.9.1 - 2015/03/17
 =====================
 - **Fixed:** [#16](https://github.com/Abscissa/SDLang-D/issues/16): Access Violation when using the pull parser.
 

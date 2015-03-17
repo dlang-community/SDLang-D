@@ -10,7 +10,7 @@ import std.string;
 
 import sdlang.token;
 
-enum sdlangVersion = "0.9.0";
+enum sdlangVersion = "0.9.1";
 
 alias immutable(ubyte)[] ByteString;
 
