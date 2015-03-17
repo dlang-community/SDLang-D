@@ -1,3 +1,7 @@
+v0.9.1 - TBD
+=====================
+- **Fixed:** [#16](https://github.com/Abscissa/SDLang-D/issues/16): Access Violation when using the pull parser.
+
 v0.9.0 - 2015/03/16
 =====================
 - **Breaking change:** Changed package structure to use ```package.d```. Most users will be unaffected, but the internal package names have changed slightly, and users of DMD 2.063.2 and below will need to ```import sdlang.package;``` instead of ```import sdlang;``` until they upgrade their compiler. The built-in command line tool and unittests, however, do now require DMD 2.064 or newer because of this change.

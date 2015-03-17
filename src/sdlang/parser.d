@@ -520,4 +520,19 @@ private struct DOMParser
 	}
 }
 
-// Parser tests are part of the AST's tests over in the ast module.
+// Other parser tests are part of the AST's tests over in the ast module.
+
+// Regression test, issue #16: https://github.com/Abscissa/SDLang-D/issues/16
+version(sdlangUnittest)
+unittest
+{
+	import std.stdio;
+	writeln("parser: Regression test issue #16...");
+	stdout.flush();
+
+	// Shouldn't crash
+	foreach(event; pullParseSource(`tag "data"`))
+	{
+		event.peek!FileStartEvent();
+	}
+}
