@@ -1083,6 +1083,8 @@ class Tag
 	/// Not the most efficient, but it works.
 	string toDebugString()
 	{
+		import std.algorithm : sort;
+
 		Appender!string buf;
 		
 		buf.put("\n");
@@ -1100,9 +1102,9 @@ class Tag
 			buf.put("    (%s): %s\n".format(.toString(val.type), val));
 
 		// Attributes
-		foreach(attrNamespace; _attributes.keys.sort)
+		foreach(attrNamespace; _attributes.keys.sort())
 		if(attrNamespace != "*")
-		foreach(attrName; _attributes[attrNamespace].keys.sort)
+		foreach(attrName; _attributes[attrNamespace].keys.sort())
 		foreach(attr; _attributes[attrNamespace][attrName])
 		{
 			string namespaceStr;
@@ -1117,9 +1119,9 @@ class Tag
 		}
 		
 		// Children
-		foreach(tagNamespace; _tags.keys.sort)
+		foreach(tagNamespace; _tags.keys.sort())
 		if(tagNamespace != "*")
-		foreach(tagName; _tags[tagNamespace].keys.sort)
+		foreach(tagName; _tags[tagNamespace].keys.sort())
 		foreach(tag; _tags[tagNamespace][tagName])
 			buf.put( tag.toDebugString().replace("\n", "\n    ") );
 		
