@@ -36,9 +36,6 @@
 			"targetName": "sdlang-unittest",
 
 			"versions": ["SDLang_Unittest", "SDLang_Trace"],
-			"buildOptions": [
-				"unittests", "debugMode", "debugInfo"
-			],
 			"dflags-dmd": ["-gc"]
 		}
 	]
