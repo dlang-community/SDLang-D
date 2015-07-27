@@ -198,11 +198,16 @@ class Lexer
 		return ch == '\n' || ch == '\r' || ch == lineSep || ch == paraSep;
 	}
 
-	private bool isAtNewline()
+	/// Returns the length of the newline sequence, or zero if the current
+	/// character is not a newline
+	///
+	/// Note that there are only single character sequences and the two
+	/// character sequence `\r\n` as used on Windows.
+	private size_t isAtNewline()
 	{
-		return
-			ch == '\n' || ch == lineSep || ch == paraSep ||
-			(ch == '\r' && lookahead('\n'));
+		if(ch == '\n' || ch == lineSep || ch == paraSep) return 1;
+		else if(ch == '\r') return lookahead('\n') ? 2 : 1;
+		else return 0;
 	}
 
 	/// Is 'ch' a valid base 64 character?
@@ -308,9 +313,10 @@ class Lexer
 	/// Returns false if EOF was reached
 	private void advanceChar(ErrorOnEOF errorOnEOF)
 	{
-		if(isAtNewline())
+		if(auto cnt = isAtNewline())
 		{
-			location.line++;
+			if (cnt == 1)
+				location.line++;
 			location.col = 0;
 		}
 		else
@@ -341,6 +347,13 @@ class Lexer
 		
 		nextCh = source.decode(posAfterLookahead);
 		isEndOfIdentCached = false;
+	}
+
+	/// Advances the specified amount of characters
+	private void advanceChar(size_t count, ErrorOnEOF errorOnEOF)
+	{
+		while(count-- > 0)
+			advanceChar(errorOnEOF);
 	}
 
 	void popFront()
@@ -391,9 +404,15 @@ class Lexer
 			mixin(accept!":");
 		}
 		
-		else if(ch == ';' || isAtNewline())
+		else if(ch == ';')
 		{
 			advanceChar(ErrorOnEOF.No);
+			mixin(accept!"EOL");
+		}
+
+		else if(auto cnt = isAtNewline())
+		{
+			advanceChar(cnt, ErrorOnEOF.No);
 			mixin(accept!"EOL");
 		}
 		
