@@ -35,7 +35,7 @@
 			"targetPath": "bin/",
 			"targetName": "sdlang-unittest",
 
-			"versions": ["SDLang_Unittest", "SDLang_Trace"],
+			"versions": ["sdlangUnittest", "sdlangTrace"],
 			"dflags-dmd": ["-gc"]
 		}
 	]
