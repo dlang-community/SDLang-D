@@ -1992,3 +1992,37 @@ unittest
 	testLex("--\na",  [ Token(symbol!"Ident",loc,Value(null),"a") ]);
 	testLex("#\na",   [ Token(symbol!"Ident",loc,Value(null),"a") ]);
 }
+
+version(sdlangUnittest)
+unittest
+{
+	writeln("lexer: Regression test issue #28...");
+	stdout.flush();
+
+	enum offset = 1; // workaround for an of-by-one error for line numbers
+	testLex("test", [
+		Token(symbol!"Ident", Location("filename", 0, 0, 0), Value(null), "test")
+	], true);
+	testLex("\ntest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\n"),
+		Token(symbol!"Ident", Location("filename", 1, 0, 1), Value(null), "test")
+	], true);
+	testLex("\rtest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r"),
+		Token(symbol!"Ident", Location("filename", 1, 0, 1), Value(null), "test")
+	], true);
+	testLex("\r\ntest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r\n"),
+		Token(symbol!"Ident", Location("filename", 1, 0, 2), Value(null), "test")
+	], true);
+	testLex("\r\n\ntest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r\n"),
+		Token(symbol!"EOL", Location("filename", 1, 0, 2), Value(null), "\n"),
+		Token(symbol!"Ident", Location("filename", 2, 0, 3), Value(null), "test")
+	], true);
+	testLex("\r\r\ntest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r"),
+		Token(symbol!"EOL", Location("filename", 1, 0, 1), Value(null), "\r\n"),
+		Token(symbol!"Ident", Location("filename", 2, 0, 3), Value(null), "test")
+	], true);
+}
