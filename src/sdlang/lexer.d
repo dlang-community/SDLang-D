@@ -1442,7 +1442,7 @@ version(sdlangUnittest)
 	}
 
 	private int numErrors = 0;
-	private void testLex(string file=__FILE__, size_t line=__LINE__)(string source, Token[] expected)
+	private void testLex(string source, Token[] expected, bool test_locations = false, string file=__FILE__, size_t line=__LINE__)
 	{
 		Token[] actual;
 		try
@@ -1457,8 +1457,13 @@ version(sdlangUnittest)
 			stderr.writeln("        ", e.msg);
 			return;
 		}
+
+		bool is_same = actual == expected;
+		if (is_same && test_locations) {
+			is_same = actual.map!(t => t.location).equal(expected.map!(t => t.location));
+		}
 		
-		if(actual != expected)
+		if(!is_same)
 		{
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
