@@ -14,7 +14,7 @@ Lex or Parse an SDL file
 (...output...)
 ```
 
-Or, you can use [DUB](https://github.com/rejectedsoftware/dub):
+Or, you can use [DUB](http://code.dlang.org/getting_started):
 
 ```console
 > dub build
@@ -30,7 +30,7 @@ Unittests
 (...output...)
 ```
 
-Or, you can use [DUB](https://github.com/rejectedsoftware/dub):
+Or, you can use [DUB](http://code.dlang.org/getting_started):
 
 ```console
 > dub build --config=unittest
@@ -49,22 +49,7 @@ on the PATH. Then, run:
 
 Finally, open 'docs/index.html' in your browser.
 
-Programmer's Notepad 2 Project Files
-------------------------------------
-
-Project files for [Programmer's Notepad 2](http://www.pnotepad.org/) are included. Just open ```SDLang-D.ppg```.
-
 DUB Package Files
 -----------------
 
-As of SDLang-D v0.8.2, SDLang-D is a [DUB](https://github.com/rejectedsoftware/dub) package and is available in the [DUB registry](http://registry.vibed.org/). The package name is ```sdlang-d```.
-
-All you have to do to use SDLang-D in your DUB-based project is include the following in your project's ```package.json``` file:
-```json
-{
-	...
-	"dependencies": {
-		"sdlang-d": "==0.9.1"
-	}
-}
-```
+SDLang-D is a [DUB](http://code.dlang.org/getting_started) package and is available in the [DUB registry](http://registry.vibed.org/). The package name is ```sdlang-d```.

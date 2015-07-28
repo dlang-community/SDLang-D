@@ -4,7 +4,7 @@ How to use SDLang-D (Tutorial / API Overview)
 Installation
 ------------
 
-The only external requirement is [DMD](http://dlang.org) v2.061 or newer (currently tested up through v2.066.1).
+The only external requirement is [DMD](http://dlang.org) v2.061 or newer (currently tested up through v2.068.0).
 
 Obtain SDLang-D:
 ```console
@@ -13,7 +13,7 @@ Obtain SDLang-D:
 > git checkout v0.9.1
 ```
 
-Or if you're using [DUB](https://github.com/rejectedsoftware/dub), all you have to do is include the following in your project's ```package.json``` file:
+Or if you're using [DUB](http://code.dlang.org/getting_started), all you have to do is include the following in your project's ```dub.json``` file:
 ```json
 {
 	...
@@ -23,7 +23,7 @@ Or if you're using [DUB](https://github.com/rejectedsoftware/dub), all you have 
 }
 ```
 
-Note that ```-inline``` currently causes some problems. On DMD 2.063.2 and below, it causes compilation to fail, liekly due to [DMD #5776](https://issues.dlang.org/show_bug.cgi?id=5776) and/or [DMD #11377](https://issues.dlang.org/show_bug.cgi?id=11377). On DMD 2.064 and up, it causes a segfault when parsing a Base64 value (currently being investigated).
+Note that ```-inline``` currently causes some problems. On DMD 2.063.2 and below, it causes compilation to fail, likely due to [DMD #5776](https://issues.dlang.org/show_bug.cgi?id=5776) and/or [DMD #11377](https://issues.dlang.org/show_bug.cgi?id=11377). On DMD 2.064 and up, it causes a segfault when parsing a Base64 value (currently being investigated).
 
 Importing
 ---------
