@@ -52,4 +52,4 @@ Finally, open 'docs/index.html' in your browser.
 DUB Package Files
 -----------------
 
-SDLang-D is a [DUB](http://code.dlang.org/getting_started) package and is available in the [DUB registry](http://registry.vibed.org/). The package name is ```sdlang-d```.
+SDLang-D is a [DUB](http://code.dlang.org/getting_started) package and is available in the [DUB package registry](http://code.dlang.org/). The package name is [```sdlang-d```](http://code.dlang.org/packages/sdlang-d).
