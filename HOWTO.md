@@ -24,7 +24,7 @@ import sdlang;
 If you're not using DUB, then you must also include the path the SDLang-D sources when you compile:
 
 ```
-rdmd --build-only -I{path to sdlang}/src {other flags} yourProgram.d
+rdmd --build-only -I{path to sdlang}/src -I{path to libInputVisitor}/src {other flags} yourProgram.d
 ```
 
 Example
