@@ -23,7 +23,7 @@ pets chihuahua="small" dalmation="hyper" mastiff="big"
 
 mixed 34.7f "Tim" somedate=2010/08/14
 
-// Supports child nodes
+// Supports child tags
 folder "myFiles" color="yellow" protection=on {
     folder "my images" {
         file "myHouse.jpg" color=true date=2005/11/05
