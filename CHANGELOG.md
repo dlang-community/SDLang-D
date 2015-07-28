@@ -1,3 +1,12 @@
+v0.9.2 - TBD
+=====================
+- **Change:** Updated ```package.json``` to newer ```dub.json``` name.
+- **Fixed:** [#16](https://github.com/Abscissa/SDLang-D/issues/16): Now fixed for [DUB](http://code.dlang.org/getting_started) users, too: Access Violation when using the pull parser.
+- **Fixed:** [#21](https://github.com/Abscissa/SDLang-D/issues/21): Remove unneeded "buildOptions" from [DUB](http://code.dlang.org/getting_started) package config (fixes a [DUB](http://code.dlang.org/getting_started) warning) (@schuetzm)
+- **Fixed:** [#28](https://github.com/Abscissa/SDLang-D/issues/28)/[#29](https://github.com/Abscissa/SDLang-D/issues/29): Fix line counter for Windows-style line endings. (@s-ludwig)
+- **Fixed:** Fixed running unittests via [DUB](http://code.dlang.org/getting_started) (Part of [#29](https://github.com/Abscissa/SDLang-D/issues/29)) (@s-ludwig)
+- **Improved:** [#22](https://github.com/Abscissa/SDLang-D/issues/22)/[#23](https://github.com/Abscissa/SDLang-D/issues/23): Internal improvements (@schuetzm)
+
 v0.9.1 - 2015/03/17
 =====================
 - **Fixed:** [#16](https://github.com/Abscissa/SDLang-D/issues/16): Access Violation when using the pull parser.
