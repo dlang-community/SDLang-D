@@ -4,16 +4,11 @@ How to use SDLang-D (Tutorial / API Overview)
 Installation
 ------------
 
-The only external requirement is [DMD](http://dlang.org) v2.064 or newer (currently tested up through v2.068.0).
+The list of officially supported D compiler versions is always available in [.travis.yml](https://github.com/Abscissa/SDLang-D/blob/master/.travis.yml).
 
-Obtain SDLang-D:
-```console
-> git clone https://github.com/Abscissa/SDLang-D.git
-> cd SDLang-D
-> git checkout v0.9.1
-```
+The recommended way to use SDLang-D is via [DUB](http://code.dlang.org/getting_started). Just add a dependency to ```sdlang-d``` in your project's ```dub.json``` or ```dub.sdl``` file [as shown here](http://code.dlang.org/packages/sdlang-d). Then simply build your project with DUB as usual.
 
-Better yet, if you're using [DUB](http://code.dlang.org/getting_started), all you have to do is include SDLang-D in your project's ```dub.json``` or ```dub.sdl``` file [as shown here](http://code.dlang.org/packages/sdlang-d).
+Alternatively, you can ```git clone``` both SDLang-D and the latest version of [libInputVisitor](https://github.com/Abscissa/libInputVisitor), and include ```-I{path to SDLang-D}/src -I{path to libInputVisitor}/src``` when running the compiler.
 
 Note that ```-inline``` currently causes some problems. On DMD 2.063.2 and below, it causes compilation to fail, likely due to [DMD #5776](https://issues.dlang.org/show_bug.cgi?id=5776) and/or [DMD #11377](https://issues.dlang.org/show_bug.cgi?id=11377). On DMD 2.064 and up, it causes a segfault when parsing a Base64 value (currently being investigated).
 

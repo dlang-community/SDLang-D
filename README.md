@@ -1,7 +1,7 @@
 SDLang-D [![Build Status](https://travis-ci.org/Abscissa/SDLang-D.svg)](https://travis-ci.org/Abscissa/SDLang-D)
 ========
 
-An [SDL (Simple Declarative Language)](http://sdl.ikayzo.org/display/SDL/Language+Guide) library for [D](http://dlang.org).
+An [SDL (Simple Declarative Language)](http://sdl.ikayzo.org/display/SDL/Language+Guide) library for [D](http://dlang.org). (Officially supported compiler versions are shown in [.travis.yml](https://github.com/Abscissa/SDLang-D/blob/master/.travis.yml).)
 
 SDL is a data language like JSON, XML or YAML, except it's:
 * Less verbose than JSON and XML.
@@ -10,17 +10,18 @@ SDL is a data language like JSON, XML or YAML, except it's:
 
 This is what SDL looks like (some of these examples, and more, are from [the SDL site](http://sdl.ikayzo.org/display/SDL/Language+Guide)):
 ```
+// A couple basic values
 first "Joe"
 last "Coder"
 
+// Supports values, named attributes, and various data types
 numbers 12 53 2 635
 names "Sally" "Frank N. Stein"
 pets chihuahua="small" dalmation="hyper" mastiff="big"
 
 mixed 34.7f "Tim" somedate=2010/08/14
-```
 
-```
+// Supports child nodes
 folder "myFiles" color="yellow" protection=on {
     folder "my images" {
         file "myHouse.jpg" color=true date=2005/11/05

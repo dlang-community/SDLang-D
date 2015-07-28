@@ -1,5 +1,6 @@
 v0.9.2 - TBD
 =====================
+- **New:** Uses [travis-ci.org](https://travis-ci.org) for continuous integration testing.
 - **Change:** Updated ```package.json``` to newer ```dub.json``` name.
 - **Fixed:** [#16](https://github.com/Abscissa/SDLang-D/issues/16): Now fixed for [DUB](http://code.dlang.org/getting_started) users, too: Access Violation when using the pull parser.
 - **Fixed:** [#21](https://github.com/Abscissa/SDLang-D/issues/21): Remove unneeded "buildOptions" from DUB package config (fixes a DUB warning) (@schuetzm)
