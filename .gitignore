@@ -2,3 +2,12 @@
 /obj
 /bin
 *.pnps
+/dub.selections.json
+
+/docs/sdlang
+/docs/docs.json
+/docs/file_hashes.json
+/docs/index.html
+/docs/sdlang.html
+/docs/sitemap.xml
+/docs/symbols.js
