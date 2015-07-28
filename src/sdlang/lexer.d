@@ -198,11 +198,16 @@ class Lexer
 		return ch == '\n' || ch == '\r' || ch == lineSep || ch == paraSep;
 	}
 
-	private bool isAtNewline()
+	/// Returns the length of the newline sequence, or zero if the current
+	/// character is not a newline
+	///
+	/// Note that there are only single character sequences and the two
+	/// character sequence `\r\n` as used on Windows.
+	private size_t isAtNewline()
 	{
-		return
-			ch == '\n' || ch == lineSep || ch == paraSep ||
-			(ch == '\r' && lookahead('\n'));
+		if(ch == '\n' || ch == lineSep || ch == paraSep) return 1;
+		else if(ch == '\r') return lookahead('\n') ? 2 : 1;
+		else return 0;
 	}
 
 	/// Is 'ch' a valid base 64 character?
@@ -308,9 +313,10 @@ class Lexer
 	/// Returns false if EOF was reached
 	private void advanceChar(ErrorOnEOF errorOnEOF)
 	{
-		if(isAtNewline())
+		if(auto cnt = isAtNewline())
 		{
-			location.line++;
+			if (cnt == 1)
+				location.line++;
 			location.col = 0;
 		}
 		else
@@ -341,6 +347,13 @@ class Lexer
 		
 		nextCh = source.decode(posAfterLookahead);
 		isEndOfIdentCached = false;
+	}
+
+	/// Advances the specified amount of characters
+	private void advanceChar(size_t count, ErrorOnEOF errorOnEOF)
+	{
+		while(count-- > 0)
+			advanceChar(errorOnEOF);
 	}
 
 	void popFront()
@@ -391,9 +404,15 @@ class Lexer
 			mixin(accept!":");
 		}
 		
-		else if(ch == ';' || isAtNewline())
+		else if(ch == ';')
 		{
 			advanceChar(ErrorOnEOF.No);
+			mixin(accept!"EOL");
+		}
+
+		else if(auto cnt = isAtNewline())
+		{
+			advanceChar(cnt, ErrorOnEOF.No);
 			mixin(accept!"EOL");
 		}
 		
@@ -1442,7 +1461,7 @@ version(sdlangUnittest)
 	}
 
 	private int numErrors = 0;
-	private void testLex(string file=__FILE__, size_t line=__LINE__)(string source, Token[] expected)
+	private void testLex(string source, Token[] expected, bool test_locations = false, string file=__FILE__, size_t line=__LINE__)
 	{
 		Token[] actual;
 		try
@@ -1457,8 +1476,13 @@ version(sdlangUnittest)
 			stderr.writeln("        ", e.msg);
 			return;
 		}
+
+		bool is_same = actual == expected;
+		if (is_same && test_locations) {
+			is_same = actual.map!(t => t.location).equal(expected.map!(t => t.location));
+		}
 		
-		if(actual != expected)
+		if(!is_same)
 		{
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
@@ -1986,4 +2010,38 @@ unittest
 	testLex("//\na",  [ Token(symbol!"Ident",loc,Value(null),"a") ]);
 	testLex("--\na",  [ Token(symbol!"Ident",loc,Value(null),"a") ]);
 	testLex("#\na",   [ Token(symbol!"Ident",loc,Value(null),"a") ]);
+}
+
+version(sdlangUnittest)
+unittest
+{
+	writeln("lexer: Regression test issue #28...");
+	stdout.flush();
+
+	enum offset = 1; // workaround for an of-by-one error for line numbers
+	testLex("test", [
+		Token(symbol!"Ident", Location("filename", 0, 0, 0), Value(null), "test")
+	], true);
+	testLex("\ntest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\n"),
+		Token(symbol!"Ident", Location("filename", 1, 0, 1), Value(null), "test")
+	], true);
+	testLex("\rtest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r"),
+		Token(symbol!"Ident", Location("filename", 1, 0, 1), Value(null), "test")
+	], true);
+	testLex("\r\ntest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r\n"),
+		Token(symbol!"Ident", Location("filename", 1, 0, 2), Value(null), "test")
+	], true);
+	testLex("\r\n\ntest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r\n"),
+		Token(symbol!"EOL", Location("filename", 1, 0, 2), Value(null), "\n"),
+		Token(symbol!"Ident", Location("filename", 2, 0, 3), Value(null), "test")
+	], true);
+	testLex("\r\r\ntest", [
+		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r"),
+		Token(symbol!"EOL", Location("filename", 1, 0, 1), Value(null), "\r\n"),
+		Token(symbol!"Ident", Location("filename", 2, 0, 3), Value(null), "test")
+	], true);
 }
