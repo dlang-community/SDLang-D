@@ -6,6 +6,7 @@ v0.9.2 - TBD
 - **Fixed:** [#21](https://github.com/Abscissa/SDLang-D/issues/21): Remove unneeded "buildOptions" from DUB package config (fixes a DUB warning) (@schuetzm)
 - **Fixed:** [#28](https://github.com/Abscissa/SDLang-D/issues/28)/[#29](https://github.com/Abscissa/SDLang-D/issues/29): Wrong line count for Windows style line breaks. (@s-ludwig)
 - **Fixed:** Fixed running unittests via DUB. (Part of [#29](https://github.com/Abscissa/SDLang-D/issues/29)) (@s-ludwig)
+- **Fixed:** Trailing line comments incorrectly treated as line continuation instead of newline (Related: [#20](https://github.com/Abscissa/SDLang-D/issues/20), plus [libsdl-d](https://github.com/Dicebot/libsdl-d)'s [e565f30](https://github.com/Dicebot/libsdl-d/commit/e565f302a60585cd25a8443a0439c8aec18f2515) and [c6dc722](https://github.com/Dicebot/libsdl-d/commit/c6dc72284c93a8e42ec0d9db6803e226358d5022)) (@Dicebot)
 - **Improved:** [#22](https://github.com/Abscissa/SDLang-D/issues/22)/[#23](https://github.com/Abscissa/SDLang-D/issues/23): Internal improvements (@schuetzm)
 
 v0.9.1 - 2015/03/17

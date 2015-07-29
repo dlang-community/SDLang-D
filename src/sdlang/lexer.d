@@ -193,7 +193,12 @@ class Lexer
 		return hasNextCh && nextCh == ch;
 	}
 
-	private bool isNewline(dchar ch)
+	private bool lookahead(bool function(dchar) condition)
+	{
+		return hasNextCh && condition(nextCh);
+	}
+
+	private static bool isNewline(dchar ch)
 	{
 		return ch == '\n' || ch == '\r' || ch == lineSep || ch == paraSep;
 	}
@@ -1369,6 +1374,7 @@ class Lexer
 
 					commentStart = location;
 					state = State.lineComment;
+					continue;
 				}
 
 				else if(ch == '/' || ch == '-')
@@ -1381,6 +1387,7 @@ class Lexer
 
 						advanceChar(ErrorOnEOF.No);
 						state = State.lineComment;
+						continue;
 					}
 					else if(ch == '/' && lookahead('*'))
 					{
@@ -1389,6 +1396,7 @@ class Lexer
 
 						advanceChar(ErrorOnEOF.No);
 						state = State.blockComment;
+						continue;
 					}
 					else
 						return; // Done
@@ -1416,7 +1424,7 @@ class Lexer
 				break;
 			
 			case State.lineComment:
-				if(isNewline(ch))
+				if(lookahead(&isNewline))
 					state = State.normal;
 				break;
 			
@@ -1966,9 +1974,11 @@ unittest
 		Token(symbol!":",     loc, Value(        null ), ":"),
 		Token(symbol!"Ident", loc, Value(        null ), "favorite_color"),
 		Token(symbol!"Value", loc, Value(      "blue" ), `"blue"`),
+		Token(symbol!"EOL",   loc, Value(        null ), "\n"),
 
 		Token(symbol!"Ident", loc, Value( null ), "somedate"),
 		Token(symbol!"Value", loc, Value( DateTimeFrac(DateTime(2013, 2, 22, 7, 53, 0)) ), "2013/2/22  07:53"),
+		Token(symbol!"EOL",   loc, Value( null ), "\n"),
 		Token(symbol!"EOL",   loc, Value( null ), "\n"),
 
 		Token(symbol!"Ident", loc, Value(null), "inventory"),
@@ -2006,10 +2016,21 @@ unittest
 	writeln("lexer: Regression test issue #11...");
 	stdout.flush();
 	
-	testLex("//X\na", [ Token(symbol!"Ident",loc,Value(null),"a") ]);
-	testLex("//\na",  [ Token(symbol!"Ident",loc,Value(null),"a") ]);
-	testLex("--\na",  [ Token(symbol!"Ident",loc,Value(null),"a") ]);
-	testLex("#\na",   [ Token(symbol!"Ident",loc,Value(null),"a") ]);
+	void test(string input)
+	{
+		testLex(
+			input,
+			[
+				Token(symbol!"EOL", loc, Value(null), "\n"),
+				Token(symbol!"Ident",loc,Value(null), "a")
+			]
+		);
+	}
+
+	test("//X\na");
+	test("//\na");
+	test("--\na");
+	test("#\na");
 }
 
 version(sdlangUnittest)
