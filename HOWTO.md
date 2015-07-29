@@ -1,6 +1,10 @@
 How to use SDLang-D (Tutorial / API Overview)
 =============================================
 
+SDLang-D offers two ways to work with SDL: DOM style and StAX/Pull style. DOM style is easier and more convenient and can both read and write SDL. StAX/Pull style is faster and more efficient, although it's only used for reading SDL, not writing it.
+
+This document explains how to use SDLang-D in the DOM style. If you're familiar with StAX/Pull style parsing for other languages, such as XML, then SDLang-D's StAX/Pull parser should be fairly straightforward to understand. See [pullParseFile](http://semitwist.com/sdlang-d-api/sdlang/parser/pullParseFile.html) and [pullParseSource](http://semitwist.com/sdlang-d-api/sdlang/parser/pullParseSource.html) in the [API reference](http://semitwist.com/sdlang-d-api/sdlang.html) for details. You can also see SDLang-D's source as a real-world example, as the DOM parser is built directly on top of the StAX/Pull parser (just search ```parser.d``` for ```DOMParser```).
+
 Installation
 ------------
 
