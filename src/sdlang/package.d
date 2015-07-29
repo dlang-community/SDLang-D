@@ -6,9 +6,11 @@ SDLang-D: Library for parsing SDL (Simple Declarative Language).
 
 Import this module to use SDLang-D as a library.
 
-This should work with DMD 2.061 and up (currently tested up through v2.067.0).
+For the list of officially supported compiler versions, see the
+$(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/.travis.yml, .travis.yml)
+file included with your version of SDLang-D.
 
-Homepage: http://github.com/Abscissa/SDLang-D
+Homepage: https://github.com/Abscissa/SDLang-D
 API:      http://semitwist.com/sdlang-d-api
 SDL:      http://sdl.ikayzo.org/display/SDL/Language+Guide
 
