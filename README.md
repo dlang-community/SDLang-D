@@ -62,7 +62,7 @@ Documentation
 -------------
 
 * [How to use SDLang-D's DOM mode (Tutorial / API Overview)](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md)
-* [API Reference](http://semitwist.com/sdlang-d-api/sdlang.html)
+* [API Reference](http://semitwist.com/sdlang-d/sdlang.html)
 * [Changelog](https://github.com/Abscissa/SDLang-D/blob/master/CHANGELOG.md)
 * [Included tools and scripts](https://github.com/Abscissa/SDLang-D/blob/master/TOOLS.md)
 * [License](https://github.com/Abscissa/SDLang-D/blob/master/LICENSE.txt) (zlib/libpng)
