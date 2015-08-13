@@ -2,7 +2,7 @@
 // Written in the D programming language.
 
 /++
-$(H2 SDLang-D v0.9.2)
+$(H2 SDLang-D v0.9.3)
 
 Library for parsing and generating SDL (Simple Declarative Language).
 
