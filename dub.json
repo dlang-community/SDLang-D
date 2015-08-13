@@ -36,7 +36,6 @@
 			"targetName": "sdlang-unittest",
 
 			"versions": ["sdlangUnittest", "sdlangTrace"],
-			"dflags-dmd": ["-gc"]
 		}
 	]
 }

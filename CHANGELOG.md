@@ -1,5 +1,6 @@
 v0.9.3 - 2015-08-13
 =====================
+- **Change:** Don't need "-gc" for unittests, "-g" should do fine.
 - **Fixed:** [#31](https://github.com/Abscissa/SDLang-D/issues/31): Escape sequence results in range violation error.
 
 v0.9.2 - 2015-07-31
