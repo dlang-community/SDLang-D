@@ -315,7 +315,6 @@ class Lexer
 	enum ErrorOnEOF { No, Yes }
 
 	/// Advance one code point.
-	/// Returns false if EOF was reached
 	private void advanceChar(ErrorOnEOF errorOnEOF)
 	{
 		if(auto cnt = isAtNewline())
@@ -543,10 +542,9 @@ class Lexer
 			buf.put( source[spanStart..location.index] );
 		}
 		
+		advanceChar(ErrorOnEOF.Yes);
 		do
 		{
-			advanceChar(ErrorOnEOF.Yes);
-
 			if(ch == '\\')
 			{
 				updateBuf();
@@ -580,6 +578,7 @@ class Lexer
 			else if(isNewline(ch))
 				error("Unescaped newlines are only allowed in raw strings, not regular strings.");
 
+			advanceChar(ErrorOnEOF.Yes);
 		} while(ch != '"');
 		
 		updateBuf();
@@ -1721,9 +1720,10 @@ unittest
 	testLex(`" hello world "`,          [ Token(symbol!"Value",loc,Value(" hello world " )) ]);
 	testLex(`"hello \t world"`,         [ Token(symbol!"Value",loc,Value("hello \t world")) ]);
 	testLex(`"hello \n world"`,         [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
-	testLex("\"hello \\\n world\"",     [ Token(symbol!"Value",loc,Value("hello world" )) ]);
-	testLex("\"hello \\  \n world\"",   [ Token(symbol!"Value",loc,Value("hello world" )) ]);
-	testLex("\"hello \\  \n\n world\"", [ Token(symbol!"Value",loc,Value("hello world" )) ]);
+	testLex("\"hello \\\n world\"",     [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
+	testLex("\"hello \\  \n world\"",   [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
+	testLex("\"hello \\  \n\n world\"", [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
+	testLex(`"\"hello world\""`,        [ Token(symbol!"Value",loc,Value(`"hello world"` )) ]);
 
 	testLexThrows("\"hello \n world\"");
 	testLexThrows(`"foo`);

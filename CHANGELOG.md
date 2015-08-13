@@ -1,3 +1,7 @@
+v0.9.3 - 2015-08-13
+=====================
+- **Fixed:** [#31](https://github.com/Abscissa/SDLang-D/issues/31): Escape sequence results in range violation error.
+
 v0.9.2 - 2015-07-31
 =====================
 - **New:** Uses [travis-ci.org](https://travis-ci.org) for continuous integration testing.

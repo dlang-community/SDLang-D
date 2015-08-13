@@ -536,3 +536,16 @@ unittest
 		event.peek!FileStartEvent();
 	}
 }
+
+// Regression test, issue #31: https://github.com/Abscissa/SDLang-D/issues/31
+// "Escape sequence results in range violation error"
+version(sdlangUnittest)
+unittest
+{
+	import std.stdio;
+	writeln("parser: Regression test issue #31...");
+	stdout.flush();
+
+	// Shouldn't get a Range violation
+	parseSource(`test "\"foo\""`);
+}
