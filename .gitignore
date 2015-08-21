@@ -5,7 +5,7 @@
 /dub.selections.json
 
 /docs/docs.json
-/docs/public/sdlang
+/docs/public/sdlang/
 /docs/public/file_hashes.json
 /docs/public/index.html
 /docs/public/sdlang.html
