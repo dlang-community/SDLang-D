@@ -1,0 +1,34 @@
+Ddoc
+
+Macros:
+	H2 = <h2>$0</h2>
+	BR = <br />
+	DOLLAR = $
+
+	ISSUE    = $(LINK2 https://github.com/Abscissa/SDLang-D/issues/$0, #$0)
+	ENHANCE  = $(LI $(B Enhancement:) $0)
+	CHANGE   = $(LI $(B Change:) $0)
+	FIXED    = $(LI $(B Fixed:) $0)
+	
+	API_BASE = http://semitwist.com/sdlang-d/sdlang/
+	
+
+	
+	STD_EXCEPTION = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_exception.html#$0, $0))
+	STD_FILE      = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_file.html#$0, $0))
+	STD_PATH      = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_path.html#$0, $0))
+	STD_PROCESS   = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_process.html#$0, $0))
+	STD_STDIO     = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_stdio.html#$0, $0))
+
+	FULL_STD_EXCEPTION = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_exception.html#$0, std.exception.$0))
+	FULL_STD_FILE      = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_file.html#$0, std.file.$0))
+	FULL_STD_PATH      = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_path.html#$0, std.path.$0))
+	FULL_STD_PROCESS   = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_process.html#$0, std.process.$0))
+	FULL_STD_STDIO     = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_stdio.html#$0, std.stdio.$0))
+
+	DMD             = $(LINK2 http://dlang.org/, DMD)
+	DDOX            = $(LINK2 https://github.com/rejectedsoftware/ddox, ddox)
+	MODULE_STD_FILE = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_file.html, std.file))
+	MODULE_STD_PATH = $(D_INLINECODE $(LINK2 http://dlang.org/phobos/std_path.html, std.path))
+
+	LICENSE = $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/LICENSE.txt, zlib/libpng)
