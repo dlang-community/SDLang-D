@@ -1,7 +1,7 @@
 /* Pretty printing styles. Used with prettify.js. */
 
 /* SPAN elements with the classes below are added by prettyprint. */
-.pln { color: #eee }  /* plain text */
+.pln { color: #ffffff }  /* plain text */
 pre .pln { color: #ffffff }  /* plain text */
 
 @media screen {
@@ -16,7 +16,7 @@ pre .pln { color: #ffffff }  /* plain text */
   .typ { color: #693 }  /* a type name */
   .lit { color: #875 }  /* a literal value */
   /* punctuation, lisp open bracket, lisp close bracket */
-  .pun, .opn, .clo { color: #333 }
+  .pun, .opn, .clo { color: #ddd }
   .tag { color: #ffaa00 }  /* a markup tag name */
   .atn { color: #9ad452 }  /* a markup attribute name */
   .atv { color: #ffe7b6 }  /* a markup attribute value */
@@ -39,7 +39,7 @@ pre .pln { color: #ffffff }  /* plain text */
 
 /* Put a border around prettyprinted code snippets. */
 pre.prettyprint {
-  padding: 1em 0;
+  padding: 0.4em 0.4em 0.4em 0.4em;
   color: #C0C0C0;
   background-color: #222;
   border: 1px solid black;

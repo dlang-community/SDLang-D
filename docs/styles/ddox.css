@@ -63,12 +63,16 @@ td {
 	vertical-align: top;
 }
 
+li {
+	padding-bottom: 0.33em;
+}
+
 col.caption {
 	width: 150pt;
 }
 
 ul.tree-view a.package {
-	background-image: url(../images/package.png);
+	background-image: url(../images/ddox/package.png);
 	background-repeat: no-repeat;
 	background-position: left center;
 	padding-left: 18px;
@@ -81,9 +85,9 @@ ul.tree-view a.module {
 }
 
 ul.tree-view a.selected {
-	background-color: #f8f8f8;
+	background-color: #383838;
 	margin-left: 13px;
-	border: 1px solid #bbb;
+	border: 1px solid black;
 }
 
 ul.tree-view {
@@ -104,5 +108,49 @@ ul.tree-view li {
 }
 
 code.prettyprint {
-	color: #C0C0C0;
+	color: #ffffff;
 }
+
+a.protected {
+	font-style: italic;
+	background-image: url(../images/ddox/protected.png);
+	background-repeat: no-repeat;
+	padding-left: 16px;
+}
+a.package {
+	font-style: italic;
+	background-image: url(../images/ddox/package.png);
+	background-repeat: no-repeat;
+	padding-left: 16px;
+}
+a.private {
+	font-style: italic;
+	background-image: url(../images/ddox/private.png);
+	background-repeat: no-repeat;
+	padding-left: 16px;
+}
+a.inherited:after { content: url(../images/ddox/inherited.png); padding-left: 2pt; }
+
+#symbolSearchResults {
+	list-style: none;
+	padding: 0;
+	overflow: hidden;
+}
+#symbolSearchResults li {
+	background-repeat: no-repeat;
+	background-position: left center;
+	padding-left: 18px;
+}
+
+#symbolSearchResults .deprecated a { color: gray; }
+#symbolSearchResults .module { background-image: url(../images/ddox/module.png); }
+#symbolSearchResults .functiondeclaration { background-image: url(../images/ddox/function.png); }
+#symbolSearchResults .classdeclaration { background-image: url(../images/ddox/class.png); }
+#symbolSearchResults .interfacedeclaration { background-image: url(../images/ddox/interface.png); }
+#symbolSearchResults .structdeclaration { background-image: url(../images/ddox/struct.png); }
+#symbolSearchResults .variabledeclaration { background-image: url(../images/ddox/variable.png); }
+#symbolSearchResults .property { background-image: url(../images/ddox/property.png); }
+#symbolSearchResults .enumdeclaration { background-image: url(../images/ddox/enum.png); }
+#symbolSearchResults .enummemberdeclaration { background-image: url(../images/ddox/enummember.png); }
+#symbolSearchResults .aliasdeclaration { background-image: url(../images/ddox/alias.png); }
+#symbolSearchResults .templatedeclaration { background-image: url(../images/ddox/template.png); }
