@@ -4,10 +4,10 @@
 *.pnps
 /dub.selections.json
 
-/docs/sdlang
 /docs/docs.json
-/docs/file_hashes.json
-/docs/index.html
-/docs/sdlang.html
-/docs/sitemap.xml
-/docs/symbols.js
+/docs/public/sdlang
+/docs/public/file_hashes.json
+/docs/public/index.html
+/docs/public/sdlang.html
+/docs/public/sitemap.xml
+/docs/public/symbols.js
