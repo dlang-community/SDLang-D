@@ -277,7 +277,7 @@ void toSDLString(Sink)(string value, ref Sink sink) if(isOutputRange!(Sink,char)
 Tag and Attribute Example
 -------------------------
 
-Consider the following SDL adapted from the [SDL Language Guide](http://sdl.ikayzo.org/display/SDL/Language+Guide)
+Consider the following SDL adapted from the [SDL Language Guide](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](https://web.archive.org/web/20150511173850/http://sdl.ikayzo.org/display/SDL/Language+Guide)]
 
 ```
 person "Akiko" "Johnson" dimensions:height=68 {
