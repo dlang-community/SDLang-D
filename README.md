@@ -1,16 +1,16 @@
 SDLang-D [![Build Status](https://travis-ci.org/Abscissa/SDLang-D.svg)](https://travis-ci.org/Abscissa/SDLang-D)
 ========
 
-An [SDL (Simple Declarative Language)](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](https://web.archive.org/web/20150511173850/http://sdl.ikayzo.org/display/SDL/Language+Guide)] library for [D](http://dlang.org).
+An [SDL (Simple Declarative Language)](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)] library for [D](http://dlang.org).
 
 Officially supported compiler versions are shown in [.travis.yml](https://github.com/Abscissa/SDLang-D/blob/master/.travis.yml).
 
 SDL is a data language like JSON, XML or YAML, except it's:
 * Less verbose than JSON and XML.
-* [Type](http://sdl.ikayzo.org/display/SDL/Language+Guide#LanguageGuide-literals)-aware [[mirror](https://web.archive.org/web/20150511173850/http://sdl.ikayzo.org/display/SDL/Language+Guide#LanguageGuide-literals)].
+* [Type](http://sdl.ikayzo.org/display/SDL/Language+Guide#LanguageGuide-literals)-aware [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html#LanguageGuide-literals)].
 * Easier to learn and read than YAML.
 
-This is what SDL looks like (some of these examples, and more, are from [the SDL site](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](https://web.archive.org/web/20150511173850/http://sdl.ikayzo.org/display/SDL/Language+Guide)]):
+This is what SDL looks like (some of these examples, and more, are from [the SDL site](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)]):
 ```
 // A couple basic values
 first "Joe"
@@ -48,7 +48,7 @@ Also:
 * The line-continuation operator is ```\``` (backslash). This can be used to split a tag across multiple lines.
 * Line comments start with either ```#```, ```//``` or ```--```.
 * Block comments start with ```/*``` and end with ```*/```.
-* All the data types and syntax details are [described here](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](https://web.archive.org/web/20150511173850/http://sdl.ikayzo.org/display/SDL/Language+Guide)].
+* All the data types and syntax details are [described here](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)].
 
 Differences from original Java implementation
 ---------------------------------------------
@@ -66,4 +66,4 @@ Documentation
 * [Changelog](https://github.com/Abscissa/SDLang-D/blob/master/CHANGELOG.md)
 * [Included tools and scripts](https://github.com/Abscissa/SDLang-D/blob/master/TOOLS.md)
 * [License](https://github.com/Abscissa/SDLang-D/blob/master/LICENSE.txt) (zlib/libpng)
-* [Official SDL Site](http://sdl.ikayzo.org/display/SDL/Home) [[mirror](https://web.archive.org/web/20150511173850/http://sdl.ikayzo.org/display/SDL/Home)]
+* [Official SDL Site](http://sdl.ikayzo.org/display/SDL/Home) [[mirror](http://semitwist.com/sdl-mirror/Home.html)]
