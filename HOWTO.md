@@ -14,7 +14,7 @@ The recommended way to use SDLang-D is via [DUB](http://code.dlang.org/getting_s
 
 Alternatively, you can ```git clone``` both SDLang-D and the latest version of [libInputVisitor](https://github.com/Abscissa/libInputVisitor), and include ```-I{path to SDLang-D}/src -I{path to libInputVisitor}/src``` when running the compiler.
 
-Note that ```-inline``` currently causes some problems. On DMD 2.063.2 and below, it causes compilation to fail, likely due to [DMD #5776](https://issues.dlang.org/show_bug.cgi?id=5776) and/or [DMD #11377](https://issues.dlang.org/show_bug.cgi?id=11377). On DMD 2.064 and up, it causes a segfault when parsing a Base64 value (currently being investigated).
+Note that ```-inline``` currently causes some problems. On DMD 2.063.2 and below, it caused compilation to fail, likely due to [DMD #5776](https://issues.dlang.org/show_bug.cgi?id=5776) and/or [DMD #11377](https://issues.dlang.org/show_bug.cgi?id=11377). On DMD 2.064 and up, it causes a segfault when parsing a Base64 value (currently being investigated).
 
 Importing
 ---------

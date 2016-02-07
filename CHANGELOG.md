@@ -1,3 +1,7 @@
+TBD - TBD
+=====================
+- **Change:** Dropped support for DMDFE v2.065 and below (due to [#24](https://github.com/Abscissa/SDLang-D/pull/24)).
+
 v0.9.3 - 2015-08-13
 =====================
 - **Change:** Don't need "-gc" for unittests, "-g" should do fine.
