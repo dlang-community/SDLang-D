@@ -14,4 +14,3 @@ matrix:
         - d: ldc-0.15.1
         - d: gdc
         - d: gdc-5.2.0
-        - d: gdc-4.9.0
