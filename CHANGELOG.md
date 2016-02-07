@@ -1,6 +1,7 @@
 TBD - TBD
 =====================
 - **Change:** Dropped support for DMDFE v2.065 and below (due to [#24](https://github.com/Abscissa/SDLang-D/pull/24)).
+- **Fixed:** [#24](https://github.com/Abscissa/SDLang-D/pull/24): Fixed deprecation message: Replace deprecated core.time.Duration.* by split.
 
 v0.9.3 - 2015-08-13
 =====================
