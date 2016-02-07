@@ -1,4 +1,4 @@
-TBD - TBD
+v0.9.4 - 2016-02-07
 =====================
 - **Change:** Dropped support for DMDFE v2.065 and below (due to [#24](https://github.com/Abscissa/SDLang-D/pull/24)). Also dropped support for GDC 4.9 (but GDC 5.2 works).
 - **Fixed:** [#24](https://github.com/Abscissa/SDLang-D/pull/24): Fixed deprecation message: Replace deprecated core.time.Duration.* by split.
