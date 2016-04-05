@@ -1724,6 +1724,7 @@ unittest
 	testLex("\"hello \\  \n world\"",   [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
 	testLex("\"hello \\  \n\n world\"", [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
 	testLex(`"\"hello world\""`,        [ Token(symbol!"Value",loc,Value(`"hello world"` )) ]);
+	testLex(`""`,                       [ Token(symbol!"Value",loc,Value(""              )) ]); // issue #34
 
 	testLexThrows("\"hello \n world\"");
 	testLexThrows(`"foo`);
