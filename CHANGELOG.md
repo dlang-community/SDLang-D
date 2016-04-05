@@ -1,3 +1,8 @@
+v0.9.5 - 2016-04-05
+=====================
+- **Fixed:** [#34](https://github.com/Abscissa/SDLang-D/issues/34)/[#35](https://github.com/Abscissa/SDLang-D/pull/35): Bogus parse error for empty strings at EOL (@s-ludwig)
+- **Fixed:** [#36](https://github.com/Abscissa/SDLang-D/pull/36): Use Duration for fractional seconds to avoid deprecation warnings. (@s-ludwig)
+
 v0.9.4 - 2016-02-07
 =====================
 - **Change:** Dropped support for DMDFE v2.065 and below (due to [#24](https://github.com/Abscissa/SDLang-D/pull/24)). Also dropped support for GDC 4.9 (but GDC 5.2 works).
