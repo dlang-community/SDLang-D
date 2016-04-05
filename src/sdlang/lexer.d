@@ -543,7 +543,7 @@ class Lexer
 		}
 		
 		advanceChar(ErrorOnEOF.Yes);
-		do
+		while(ch != '"')
 		{
 			if(ch == '\\')
 			{
@@ -579,7 +579,7 @@ class Lexer
 				error("Unescaped newlines are only allowed in raw strings, not regular strings.");
 
 			advanceChar(ErrorOnEOF.Yes);
-		} while(ch != '"');
+		}
 		
 		updateBuf();
 		advanceChar(ErrorOnEOF.No); // Skip closing double-quote
