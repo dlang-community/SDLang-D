@@ -543,7 +543,7 @@ class Lexer
 		}
 		
 		advanceChar(ErrorOnEOF.Yes);
-		do
+		while(ch != '"')
 		{
 			if(ch == '\\')
 			{
@@ -579,7 +579,7 @@ class Lexer
 				error("Unescaped newlines are only allowed in raw strings, not regular strings.");
 
 			advanceChar(ErrorOnEOF.Yes);
-		} while(ch != '"');
+		}
 		
 		updateBuf();
 		advanceChar(ErrorOnEOF.No); // Skip closing double-quote
@@ -1724,6 +1724,7 @@ unittest
 	testLex("\"hello \\  \n world\"",   [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
 	testLex("\"hello \\  \n\n world\"", [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
 	testLex(`"\"hello world\""`,        [ Token(symbol!"Value",loc,Value(`"hello world"` )) ]);
+	testLex(`""`,                       [ Token(symbol!"Value",loc,Value(""              )) ]); // issue #34
 
 	testLexThrows("\"hello \n world\"");
 	testLexThrows(`"foo`);
