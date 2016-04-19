@@ -1,4 +1,4 @@
-v0.9.5 - 2016-04-05
+v0.9.5 - 2016-04-19
 =====================
 - **Change:** Dropped support for DMDFE v2.066.1 and below (including LDC 0.15.1, GDC 5.2.0 and below) due to [#36](https://github.com/Abscissa/SDLang-D/pull/36).
 - **Fixed:** [#34](https://github.com/Abscissa/SDLang-D/issues/34)/[#35](https://github.com/Abscissa/SDLang-D/pull/35): Bogus parse error for empty strings at EOL (@s-ludwig)
