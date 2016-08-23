@@ -1,3 +1,7 @@
+v0.9.6 - 2016-08-23
+=====================
+- **Fixed:** [#39](https://github.com/Abscissa/SDLang-D/pull/39): Remove references to deprecated module std.stream (@lesderid)
+
 v0.9.5 - 2016-04-19
 =====================
 - **Change:** Dropped support for DMDFE v2.066.1 and below (including LDC 0.15.1, GDC 5.2.0 and below) due to [#36](https://github.com/Abscissa/SDLang-D/pull/36).
