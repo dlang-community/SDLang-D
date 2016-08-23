@@ -26,14 +26,14 @@ struct Location
 	int line; /// Zero-indexed
 	int col;  /// Zero-indexed, Tab counts as 1
 	size_t index; /// Index into the source
-	
+
 	this(int line, int col, int index)
 	{
 		this.line  = line;
 		this.col   = col;
 		this.index = index;
 	}
-	
+
 	this(string file, int line, int col, int index)
 	{
 		this.file  = file;
@@ -41,7 +41,7 @@ struct Location
 		this.col   = col;
 		this.index = index;
 	}
-	
+
 	string toString()
 	{
 		return "%s(%s:%s)".format(file, line+1, col+1);
@@ -79,6 +79,24 @@ string toString(TypeInfo ti)
 	else if(ti == typeid( Duration     )) return "Duration";
 	else if(ti == typeid( ubyte[]      )) return "ubyte[]";
 	else if(ti == typeid( typeof(null) )) return "null";
-	
+
 	return "{unknown}";
 }
+
+enum BOM {
+	UTF8,           /// UTF-8
+	UTF16LE,        /// UTF-16 (little-endian)
+	UTF16BE,        /// UTF-16 (big-endian)
+	UTF32LE,        /// UTF-32 (little-endian)
+	UTF32BE,        /// UTF-32 (big-endian)
+}
+
+enum NBOM = __traits(allMembers, BOM).length;
+immutable ubyte[][NBOM] ByteOrderMarks =
+[
+	[0xEF, 0xBB, 0xBF],         //UTF8
+	[0xFF, 0xFE],               //UTF16LE
+	[0xFE, 0xFF],               //UTF16BE
+	[0xFF, 0xFE, 0x00, 0x00],   //UTF32LE
+	[0x00, 0x00, 0xFE, 0xFF]    //UTF32BE
+];

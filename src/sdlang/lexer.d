@@ -10,7 +10,6 @@ import std.bigint;
 import std.conv;
 import std.datetime;
 import std.file;
-import std.stream : ByteOrderMarks, BOM;
 import std.traits;
 import std.typecons;
 import std.uni;
