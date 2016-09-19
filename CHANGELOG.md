@@ -1,25 +1,30 @@
+SDLang-D - ChangeLog
+====================
+
+(Dates below are YYYY/MM/DD)
+
 v0.9.6 - 2016-08-23
-=====================
+---------------------
 - **Fixed:** [#39](https://github.com/Abscissa/SDLang-D/pull/39): Remove references to deprecated module std.stream (@lesderid)
 
 v0.9.5 - 2016-04-19
-=====================
+---------------------
 - **Change:** Dropped support for DMDFE v2.066.1 and below (including LDC 0.15.1, GDC 5.2.0 and below) due to [#36](https://github.com/Abscissa/SDLang-D/pull/36).
 - **Fixed:** [#34](https://github.com/Abscissa/SDLang-D/issues/34)/[#35](https://github.com/Abscissa/SDLang-D/pull/35): Bogus parse error for empty strings at EOL (@s-ludwig)
 - **Fixed:** [#36](https://github.com/Abscissa/SDLang-D/pull/36): Use Duration for fractional seconds to avoid deprecation warnings. (@s-ludwig)
 
 v0.9.4 - 2016-02-07
-=====================
+---------------------
 - **Change:** Dropped support for DMDFE v2.065 and below (due to [#24](https://github.com/Abscissa/SDLang-D/pull/24)). Also dropped support for GDC 4.9 (but GDC 5.2 works).
 - **Fixed:** [#24](https://github.com/Abscissa/SDLang-D/pull/24): Fixed deprecation message: Replace deprecated core.time.Duration.* by split.
 
 v0.9.3 - 2015-08-13
-=====================
+---------------------
 - **Change:** Don't need "-gc" for unittests, "-g" should do fine.
 - **Fixed:** [#31](https://github.com/Abscissa/SDLang-D/issues/31): Escape sequence results in range violation error.
 
 v0.9.2 - 2015-07-31
-=====================
+---------------------
 - **New:** Uses [travis-ci.org](https://travis-ci.org) for continuous integration testing.
 - **Change:** Updated ```package.json``` to newer ```dub.json``` name.
 - **Fixed:** [#16](https://github.com/Abscissa/SDLang-D/issues/16): Now fixed for [DUB](http://code.dlang.org/getting_started) users, too: Access Violation when using the pull parser.
@@ -30,11 +35,11 @@ v0.9.2 - 2015-07-31
 - **Improved:** [#22](https://github.com/Abscissa/SDLang-D/issues/22)/[#23](https://github.com/Abscissa/SDLang-D/issues/23): Internal improvements (@schuetzm)
 
 v0.9.1 - 2015/03/17
-=====================
+---------------------
 - **Fixed:** [#16](https://github.com/Abscissa/SDLang-D/issues/16): Access Violation when using the pull parser.
 
 v0.9.0 - 2015/03/16
-=====================
+---------------------
 - **Breaking change:** Changed package structure to use ```package.d```. Most users will be unaffected, but the internal package names have changed slightly, and users of DMD 2.063.2 and below will need to ```import sdlang.package;``` instead of ```import sdlang;``` until they upgrade their compiler. The built-in command line tool and unittests, however, do now require DMD 2.064 or newer because of this change.
 - **New:** Added StAX/Pull-style parser via [pullParseFile](http://semitwist.com/sdlang-d/sdlang/parser/pullParseFile.html) and  [pullParseSource](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html). (Warning: FileStartEvent and FileEndEvent *might* be removed later: [#17](https://github.com/Abscissa/SDLang-D/issues/17))
 - **Fixed:** Work around a DMD 2.064/2.065 segfault bug in a unittest.
@@ -46,12 +51,12 @@ v0.9.0 - 2015/03/16
 - **Improved:** Better error message for anonymous tags with no values.
 
 v0.8.4 - 2013/09/05
-=====================
+---------------------
 - **Fixed:** Works with DMD v2.063.2.
 - **Fixed:** Updated to work with latest DUB (@s-ludwig).
 
 v0.8.3 - 2013/03/26
-=====================
+---------------------
 - **Breaking change:** ```Tag```'s interface has been completely overhauled to provide a clean, safe and easy-to-use range-based system.
 - **Breaking change:** Improved ```Attribute``` constructor, for convenience.
 - **Breaking change:** Split ```SDLangException``` into an exception hierarchy. The ```location``` and ```hasLocation``` members have been moved into ```SDLangParseException```.
@@ -63,7 +68,7 @@ v0.8.3 - 2013/03/26
 - **Improved:** Improved and expanded GitHub-based documentation.
 
 v0.8.2 - 2013/03/05
-=====================
+---------------------
 - Can now output SDL. (Via ```toSDLString()``` funcs.)
 - Properly handle non-Unix newlines.
 - Allow ```\r``` escape sequences.
@@ -73,5 +78,5 @@ v0.8.2 - 2013/03/05
 - Rename ```build-unittests``` -> ```build-unittest``` (for consistency with ```bin/sdlang-unittest```).
 
 v0.8.1 - 2013/02/28
-=====================
+---------------------
 - Initial release
