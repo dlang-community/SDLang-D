@@ -12,7 +12,7 @@
 	"buildRequirements": ["allowWarnings"],
 	
 	"dependencies": {
-		"libinputvisitor": "~>1.2.0"
+		"libinputvisitor": "~>1.2.1"
 	},
 
 	"configurations": [
