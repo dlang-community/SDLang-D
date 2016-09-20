@@ -40,6 +40,8 @@ Tags are of this form:
 [tag name] [values] [attributes] [children]
 ```
 
+Attributes are simply values with names.
+
 Tag and attribute names can optionally include a namespace prefix (ie, ```namespace:name```). All parts are optional, the only exception being that an anonymous (ie, no name) tag must have at least one value.
 
 Also:
@@ -47,14 +49,16 @@ Also:
 * Whitespace and indentation is not significant (other than newlines).
 * The line-continuation operator is ```\``` (backslash). This can be used to split a tag across multiple lines.
 * Line comments start with either ```#```, ```//``` or ```--```.
-* Block comments start with ```/*``` and end with ```*/```.
+* Block comments start with ```/*``` and end with the first occurrence of ```*/``` (ie, they do *not* nest).
+* Values always come before the attributes.
 * All the data types and syntax details are [described here](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)].
+* Note that, unlike C-based languages, opening curly braces must be on the *same* line, not the next line. [Why?](https://github.com/Abscissa/SDLang-D/blob/master/FAQ.md).
 
 Differences from original Java implementation
 ---------------------------------------------
 
-* API is completely redesigned for D.
-* License is zlib/libpng, not LGPL. (No source from the Java or Ruby implementations was used or looked at.)
+* License is zlib/libpng, not LGPL. (No source from the Java or Ruby implementations was used or looked at. The libraries were *used* to test compatibility, but the actual source code was not viewed.)
+* [API](http://semitwist.com/sdlang-d/sdlang.html) is completely redesigned for D.
 * Anonymous tags are named ```""``` (empty string) not ```"content"```.
 * Dates with unknown or invalid time zones use a special type indicating "unknown time zone" (```DateTimeFracUnknownZone```) instead of assuming GMT.
 
