@@ -9,9 +9,11 @@ import std.conv;
 import std.datetime;
 import std.range;
 import std.string;
+import std.traits;
 import std.typetuple;
 import std.variant;
 
+import sdlang.exception;
 import sdlang.symbol;
 import sdlang.util;
 
@@ -125,6 +127,8 @@ string toSDLString(T)(T value) if(
 	return sink.data;
 }
 
+/// Throws SDLangException if value is infinity, -infinity or NaN, because
+/// those are not currently supported by the SDLang spec.
 void toSDLString(Sink)(Value value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
 	foreach(T; ValueTypes)
@@ -137,6 +141,56 @@ void toSDLString(Sink)(Value value, ref Sink sink) if(isOutputRange!(Sink,char))
 	}
 	
 	throw new Exception("Internal SDLang-D error: Unhandled type of Value. Contains: "~value.toString());
+}
+
+version(sdlangUnittest)
+unittest
+{
+	import std.exception;
+	import std.stdio;
+	
+	writeln("Unittesting toSDLString on infinity and NaN...");
+	stdout.flush();
+
+	auto floatInf    = float.infinity;
+	auto floatNegInf = -float.infinity;
+	auto floatNaN    = float.nan;
+
+	auto doubleInf    = double.infinity;
+	auto doubleNegInf = -double.infinity;
+	auto doubleNaN    = double.nan;
+
+	auto realInf    = real.infinity;
+	auto realNegInf = -real.infinity;
+	auto realNaN    = real.nan;
+
+	assertNotThrown( toSDLString(0.0F) );
+	assertNotThrown( toSDLString(0.0)  );
+	assertNotThrown( toSDLString(0.0L) );
+	
+	assertThrown!SDLangValidationException( toSDLString(floatInf) );
+	assertThrown!SDLangValidationException( toSDLString(floatNegInf) );
+	assertThrown!SDLangValidationException( toSDLString(floatNaN) );
+
+	assertThrown!SDLangValidationException( toSDLString(doubleInf) );
+	assertThrown!SDLangValidationException( toSDLString(doubleNegInf) );
+	assertThrown!SDLangValidationException( toSDLString(doubleNaN) );
+
+	assertThrown!SDLangValidationException( toSDLString(realInf) );
+	assertThrown!SDLangValidationException( toSDLString(realNegInf) );
+	assertThrown!SDLangValidationException( toSDLString(realNaN) );
+	
+	assertThrown!SDLangValidationException( toSDLString(Value(floatInf)) );
+	assertThrown!SDLangValidationException( toSDLString(Value(floatNegInf)) );
+	assertThrown!SDLangValidationException( toSDLString(Value(floatNaN)) );
+
+	assertThrown!SDLangValidationException( toSDLString(Value(doubleInf)) );
+	assertThrown!SDLangValidationException( toSDLString(Value(doubleNegInf)) );
+	assertThrown!SDLangValidationException( toSDLString(Value(doubleNaN)) );
+
+	assertThrown!SDLangValidationException( toSDLString(Value(realInf)) );
+	assertThrown!SDLangValidationException( toSDLString(Value(realNegInf)) );
+	assertThrown!SDLangValidationException( toSDLString(Value(realNaN)) );
 }
 
 void toSDLString(Sink)(typeof(null) value, ref Sink sink) if(isOutputRange!(Sink,char))
@@ -194,18 +248,37 @@ void toSDLString(Sink)(long value, ref Sink sink) if(isOutputRange!(Sink,char))
 	sink.put( "%sL".format(value) );
 }
 
+private void checkUnsupportedFloatingPoint(T)(T value) if(isFloatingPoint!T)
+{
+	import std.exception;
+	import std.math;
+	
+	enforce!SDLangValidationException(
+		!isInfinity(value),
+		"SDLang does not currently support infinity for floating-point types"
+	);
+
+	enforce!SDLangValidationException(
+		!isNaN(value),
+		"SDLang does not currently support NaN for floating-point types"
+	);
+}
+
 void toSDLString(Sink)(float value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
+	checkUnsupportedFloatingPoint(value);
 	sink.put( "%.10sF".format(value) );
 }
 
 void toSDLString(Sink)(double value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
+	checkUnsupportedFloatingPoint(value);
 	sink.put( "%.30sD".format(value) );
 }
 
 void toSDLString(Sink)(real value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
+	checkUnsupportedFloatingPoint(value);
 	sink.put( "%.30sBD".format(value) );
 }
 

@@ -10,7 +10,10 @@ import sdlang.util;
 
 abstract class SDLangException : Exception
 {
-	this(string msg) { super(msg); }
+	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		super(msg, file, line);
+	}
 }
 
 class SDLangParseException : SDLangException
@@ -18,25 +21,31 @@ class SDLangParseException : SDLangException
 	Location location;
 	bool hasLocation;
 
-	this(string msg)
+	this(string msg, string file = __FILE__, size_t line = __LINE__)
 	{
 		hasLocation = false;
-		super(msg);
+		super(msg, file, line);
 	}
 
-	this(Location location, string msg)
+	this(Location location, string msg, string file = __FILE__, size_t line = __LINE__)
 	{
 		hasLocation = true;
-		super("%s: %s".format(location.toString(), msg));
+		super("%s: %s".format(location.toString(), msg), file, line);
 	}
 }
 
 class SDLangValidationException : SDLangException
 {
-	this(string msg) { super(msg); }
+	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		super(msg, file, line);
+	}
 }
 
 class SDLangRangeException : SDLangException
 {
-	this(string msg) { super(msg); }
+	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		super(msg, file, line);
+	}
 }

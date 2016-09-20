@@ -14,10 +14,11 @@ file included with your version of SDLang-D.
 
 Links:
 $(UL
+	$(LI $(LINK2 http://sdlang.org/, SDLang Language Homepage) )
 	$(LI $(LINK2 https://github.com/Abscissa/SDLang-D, SDLang-D Homepage) )
 	$(LI $(LINK2 http://semitwist.com/sdlang-d, SDLang-D API Reference (latest version) ) )
 	$(LI $(LINK2 http://semitwist.com/sdlang-d-docs, SDLang-D API Reference (earlier versions) ) )
-	$(LI $(LINK2 http://sdl.ikayzo.org/display/SDL/Language+Guide, Official SDL Site) [$(LINK2 http://semitwist.com/sdl-mirror/Language+Guide.html, mirror)] )
+	$(LI $(LINK2 http://sdl.ikayzo.org/display/SDL/Language+Guide, Old Official SDL Site) [$(LINK2 http://semitwist.com/sdl-mirror/Language+Guide.html, mirror)] )
 )
 
 Authors: Nick Sabalausky ("Abscissa") http://semitwist.com/contact

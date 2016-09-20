@@ -8,6 +8,8 @@ v0.10.0 - TBD
 - **Change:** Minimum DMDFE bumped to 2.069.
 - **Change:** [#17](https://github.com/Abscissa/SDLang-D/issues/17): Remove unnecessary FileStart and FileEnd events.
 - **Change:** Pull parser: [ParserEvent](http://semitwist.com/sdlang-d/sdlang/parser/ParserEvent.html) is now a [TaggedAlgebraic](https://github.com/s-ludwig/taggedalgebraic), instead of a [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html#.Algebraic). This enables use of `final switch` and provides simpler syntax.
+- **New:** `SDLangException` and subclasses now take the standard file and line parameters.
+- **Fixed**: [#27](https://github.com/Abscissa/SDLang-D/issues/27): Should get error when serializing unsupported infinity and nan.
 - **Fixed:** [libInputVisitor #1](https://github.com/Abscissa/libInputVisitor/issues/1): Call to Fiber crashes an application. [Windows x86_64]
 
 v0.9.6 - 2016-08-23
