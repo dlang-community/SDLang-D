@@ -39,4 +39,4 @@ The tag `sometag` is followed by an attribute and then a newline. The newline te
 
 Fortunately, you won't hit any accidental mistakes from this. That's because, as explained above, anonymous tags are required to have at least one value. So on the example above, you'll simply get an error instead of silent breakage and unexpected results.
 
-If this is an error anyway, why not just define it to be a permissible way to add children to a tag? This is being considered for a future version of the SDLang spec, but it's unclear whether it's worth the cost: It would be a special case that's inconsistent with the rest of the langauge, complicates SDLang's formal grammar, for the only benefit of opening the door to inconsistent style.
+So, if this is an error anyway, why not just define it to be a permissible way to add children to a tag? This is being considered for a future version of the SDLang spec, but it's unclear whether it's worth the cost: It would be a special case that's inconsistent with the rest of the langauge, complicates SDLang's formal grammar, for the only benefit of opening the door to inconsistent style.
