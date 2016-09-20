@@ -20,7 +20,7 @@ It's a very subtle-looking difference, and yet both are very different: The firs
 
 The first form is preferred, and the second (being confusing) is disallowed.
 
-Another reason for requiring anonymous tags to have a value is in following question:
+Another reason for requiring anonymous tags to have a value is because of the next question:
 
 
 Q: Why must opening curly braces be on the same line? Why can't they be placed on the *next* line, like in C?

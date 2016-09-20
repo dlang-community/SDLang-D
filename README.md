@@ -1,16 +1,16 @@
 SDLang-D [![Build Status](https://travis-ci.org/Abscissa/SDLang-D.svg)](https://travis-ci.org/Abscissa/SDLang-D)
 ========
 
-An [SDLang (Simple Declarative Language)](http://sdlang.org/) library for [D](http://dlang.org).
+An [SDLang (Simple Declarative Language)](http://sdlang.org/) library for [D](http://dlang.org), to read and write SDLang. Both a [DOM](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md) and a [Pull Parser](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html) are provided.
 
 Officially supported compiler versions are shown in [.travis.yml](https://github.com/Abscissa/SDLang-D/blob/master/.travis.yml).
 
 SDL is a data language like JSON, XML or YAML, except it's:
 * Less verbose than JSON and XML.
-* [Type](http://sdl.ikayzo.org/display/SDL/Language+Guide#LanguageGuide-literals)-aware [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html#LanguageGuide-literals)].
+* [Type](http://semitwist.com/sdl-mirror/Language+Guide.html#LanguageGuide-literals)-aware.
 * Easier to learn and read than YAML.
 
-This is what SDL looks like (some of these examples, and more, are from [the SDL site](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)]):
+This is what SDL looks like (some of these examples, and more, are from [the original SDL site](http://semitwist.com/sdl-mirror/Language+Guide.html):
 ```
 // A couple basic values
 first "Joe"
@@ -51,7 +51,7 @@ Also:
 * Line comments start with either ```#```, ```//``` or ```--```.
 * Block comments start with ```/*``` and end with the first occurrence of ```*/``` (ie, they do *not* nest).
 * Values always come before the attributes.
-* All the data types and syntax details are [described here](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)].
+* All the data types and syntax details are [described here](http://semitwist.com/sdl-mirror/Language+Guide.html).
 * Note that, unlike C-based languages, opening curly braces must be on the *same* line, not the next line. [Why?](https://github.com/Abscissa/SDLang-D/blob/master/FAQ.md).
 
 Differences from original Java implementation
@@ -65,9 +65,11 @@ Differences from original Java implementation
 Documentation
 -------------
 
-* [How to use SDLang-D's DOM mode (Tutorial / API Overview)](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md)
+* [How to use SDLang-D's DOM mode (Tutorial / DOM API Overview)](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md)
+* [Pull Parse SDLang](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html)
 * [API Reference](http://semitwist.com/sdlang-d/sdlang.html)
 * [Changelog](https://github.com/Abscissa/SDLang-D/blob/master/CHANGELOG.md)
+* [FAQ](https://github.com/Abscissa/SDLang-D/blob/master/FAQ.md)
 * [Included tools and scripts](https://github.com/Abscissa/SDLang-D/blob/master/TOOLS.md)
 * [License](https://github.com/Abscissa/SDLang-D/blob/master/LICENSE.txt) (zlib/libpng)
-* [Official SDL Site](http://sdl.ikayzo.org/display/SDL/Home) [[mirror](http://semitwist.com/sdl-mirror/Home.html)]
+* [Old Official SDL Site](http://sdl.ikayzo.org/display/SDL/Home) [[mirror](http://semitwist.com/sdl-mirror/Home.html)]
