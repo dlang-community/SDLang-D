@@ -117,6 +117,13 @@ class Attribute
 		this.value      = value;
 	}
 	
+	/// Copy this Attribute.
+	/// The clone does NOT have a parent, even if the original does.
+	Attribute clone()
+	{
+		return new Attribute(_namespace, _name, value, location);
+	}
+	
 	/// Removes 'this' from its parent, if any. Returns 'this' for chaining.
 	/// Inefficient ATM, but it works.
 	Attribute remove()
@@ -188,6 +195,19 @@ class Attribute
 		sink.put('=');
 		value.toSDLString(sink);
 	}
+}
+
+/// Deep-copy an array of Tag or Attribute.
+/// The top-level clones are NOT attached to any parent, even if the originals are.
+T[] clone(T)(T[] arr) if(is(T==Tag) || is(T==Attribute))
+{
+	T[] newArr;
+	newArr.length = arr.length;
+	
+	foreach(i; 0..arr.length)
+		newArr[i] = arr[i].clone();
+	
+	return newArr;
 }
 
 class Tag
@@ -307,6 +327,15 @@ class Tag
 		this.add(children);
 	}
 
+	/// Deep-copy this Tag.
+	/// The clone does NOT have a parent, even if the original does.
+	Tag clone()
+	{
+		auto newTag = new Tag(_namespace, _name, values.dup, allAttributes.clone(), allTags.clone());
+		newTag.location = location;
+		return newTag;
+	}
+	
 	private Attribute[] allAttributes; // In same order as specified in SDL file.
 	private Tag[]       allTags;       // In same order as specified in SDL file.
 	private string[]    allNamespaces; // In same order as specified in SDL file.
@@ -1799,6 +1828,25 @@ unittest
 	assert(""        !in people.namespaces);
 	assert("foobar"  !in people.namespaces);
 	testRandomAccessRange(people.all.attributes, cast(Attribute[])[]);
+	
+	// Test clone()
+	auto rootClone = root.clone();
+	assert(rootClone !is root);
+	assert(rootClone.parent is null);
+	assert(rootClone.name      == root.name);
+	assert(rootClone.namespace == root.namespace);
+	assert(rootClone.location  == root.location);
+	assert(rootClone.values    == root.values);
+	assert(rootClone.toSDLDocument() == root.toSDLDocument());
+
+	auto peopleClone = people.clone();
+	assert(peopleClone !is people);
+	assert(peopleClone.parent is null);
+	assert(peopleClone.name      == people.name);
+	assert(peopleClone.namespace == people.namespace);
+	assert(peopleClone.location  == people.location);
+	assert(peopleClone.values    == people.values);
+	assert(peopleClone.toSDLString() == people.toSDLString());
 }
 
 // Regression test, issue #11: https://github.com/Abscissa/SDLang-D/issues/11
