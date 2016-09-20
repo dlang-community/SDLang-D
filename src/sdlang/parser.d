@@ -279,8 +279,23 @@ private struct PullParser
 		parseTags();
 		
 		auto token = lexer.front;
-		if(!token.matches!"EOF"())
-			error("Expected end-of-file, not " ~ token.symbol.name);
+		if(token.matches!":"())
+		{
+			lexer.popFront();
+			token = lexer.front;
+			if(token.matches!"Ident"())
+			{
+				error("Missing namespace. If you don't wish to use a namespace, then say '"~token.data~"', not ':"~token.data~"'");
+				assert(0);
+			}
+			else
+			{
+				error("Missing namespace. If you don't wish to use a namespace, then omit the ':'");
+				assert(0);
+			}
+		}
+		else if(!token.matches!"EOF"())
+			error("Expected end-of-file or the start of a new tag, not " ~ token.symbol.name);
 	}
 
 	/// <Tags> ::= <Tag> <Tags>  (Lookaheads: Ident Value)
@@ -306,7 +321,7 @@ private struct PullParser
 			}
 			else if(token.matches!"{"())
 			{
-				error("Anonymous tags must have at least one value. They cannot just have children and attributes only.");
+				error("Anonymous tags must have at least one value. They cannot have just children only.");
 			}
 			else
 			{
@@ -339,7 +354,7 @@ private struct PullParser
 			error("Expected tag name or value, not " ~ token.symbol.name);
 
 		if(lexer.front.matches!"="())
-			error("Anonymous tags must have at least one value. They cannot just have attributes and children only.");
+			error("Anonymous tags must have at least one value. They cannot have just attributes and children only.");
 
 		parseValues();
 		parseAttributes();
@@ -576,6 +591,20 @@ private struct DOMParser
 }
 
 // Other parser tests are part of the AST's tests over in the ast module.
+
+// Regression test, issue #13: https://github.com/Abscissa/SDLang-D/issues/13
+// "Incorrectly accepts ":tagname" (blank namespace, tagname prefixed with colon)"
+version(sdlangUnittest)
+unittest
+{
+	import std.stdio;
+	import std.exception;
+	writeln("parser: Regression test issue #13...");
+	stdout.flush();
+
+	assertThrown!SDLangParseException(parseSource(`:test`));
+	assertThrown!SDLangParseException(parseSource(`:4`));
+}
 
 // Regression test, issue #16: https://github.com/Abscissa/SDLang-D/issues/16
 version(sdlangUnittest)
