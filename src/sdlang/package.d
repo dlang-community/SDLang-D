@@ -2,7 +2,7 @@
 // Written in the D programming language.
 
 /++
-$(H2 SDLang-D v0.9.3)
+$(H2 SDLang-D v0.10.0)
 
 Library for parsing and generating SDL (Simple Declarative Language).
 
@@ -22,7 +22,7 @@ $(UL
 
 Authors: Nick Sabalausky ("Abscissa") http://semitwist.com/contact
 Copyright:
-Copyright (C) 2012-2015 Nick Sabalausky.
+Copyright (C) 2012-2016 Nick Sabalausky.
 
 License: $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/LICENSE.txt, zlib/libpng)
 +/

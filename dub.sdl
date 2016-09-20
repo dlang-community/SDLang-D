@@ -10,8 +10,8 @@ importPaths "src"
 
 buildRequirements "allowWarnings"
 
-dependency "libinputvisitor" version="~>1.2.1"
-
+dependency "libinputvisitor" version="~>1.2.2"
+dependency "taggedalgebraic" version="~>0.10.2"
 
 configuration "test" {
 	targetType "executable"
