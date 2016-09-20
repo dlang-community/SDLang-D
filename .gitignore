@@ -3,7 +3,6 @@
 /obj
 /bin
 *.pnps
-/dub.selections.json
 
 /docs/docs.json
 /docs/public/sdlang/
