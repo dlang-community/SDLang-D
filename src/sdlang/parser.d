@@ -187,12 +187,12 @@ unittest
 	auto e2 = cast(TagEndEvent) event2;
 	auto e3 = cast(ValueEvent) event3;
 	auto e4 = cast(AttributeEvent) event4;
-	//auto noGood = cast(AttributeEvent) event1; // AssertError because 
+	//auto noGood = cast(AttributeEvent) event1; // AssertError: event1 is a TagStartEvent, not AttributeEvent.
 
 	// Use as base type.
 	// In many cases, no casting is even needed.
 	event1.name = "foo";  
-	//auto noGood = event3.name; // AssertError because ValueEvent doesn't have a member 'name'.
+	//auto noGood = event3.name; // AssertError: ValueEvent doesn't have a member 'name'.
 
 	// Final switch is supported:
 	final switch(event1.kind)
