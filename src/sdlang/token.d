@@ -98,31 +98,11 @@ alias ValueTypes = TypeTuple!(
 alias Value = Algebraic!( ValueTypes ); ///ditto
 enum isValueType(T) = staticIndexOf!(T, ValueTypes) != -1;
 
-template isSDLSink(T)
-{
-	enum isSink =
-		isOutputRange!T &&
-		is(ElementType!(T)[] == string);
-}
+enum isSink(T) =
+	isOutputRange!T &&
+	is(ElementType!(T)[] == string);
 
-string toSDLString(T)(T value) if(
-	is( T : Value        ) ||
-	is( T : bool         ) ||
-	is( T : string       ) ||
-	is( T : dchar        ) ||
-	is( T : int          ) ||
-	is( T : long         ) ||
-	is( T : float        ) ||
-	is( T : double       ) ||
-	is( T : real         ) ||
-	is( T : Date         ) ||
-	is( T : DateTimeFrac ) ||
-	is( T : SysTime      ) ||
-	is( T : DateTimeFracUnknownZone ) ||
-	is( T : Duration     ) ||
-	is( T : ubyte[]      ) ||
-	is( T : typeof(null) )
-)
+string toSDLString(T)(T value) if(isValueType!T)
 {
 	Appender!string sink;
 	toSDLString(value, sink);
