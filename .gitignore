@@ -3,6 +3,8 @@
 /obj
 /bin
 *.pnps
+/*.a
+/*.lib
 
 /docs/docs.json
 /docs/public/sdlang/
