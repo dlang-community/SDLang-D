@@ -3,7 +3,6 @@
 	"versions": {
 		"libinputvisitor": "1.2.2",
 		"taggedalgebraic": "0.10.2",
-		"unit-threaded": "0.6.27",
 		"unit-threaded-abscissa": "0.0.1"
 	}
 }
