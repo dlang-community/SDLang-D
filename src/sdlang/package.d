@@ -53,7 +53,7 @@ public import sdlang.util      : sdlangVersion, Location;
 version(sdlangUsingBuiltinTestRunner)
 	void main() {}
 
-version(sdlangTestApp)
+version(sdlangCliApp)
 {
 	int main(string[] args)
 	{

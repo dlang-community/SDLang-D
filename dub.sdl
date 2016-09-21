@@ -13,11 +13,11 @@ buildRequirements "allowWarnings"
 dependency "libinputvisitor" version="~>1.2.2"
 dependency "taggedalgebraic" version="~>0.10.2"
 
-configuration "test" {
+configuration "cli" {
 	targetType "executable"
 	targetPath "bin/"
 	targetName "sdlang"
-	versions "SDLang_TestApp"
+	versions "sdlangCliApp"
 }
 
 configuration "library" {
