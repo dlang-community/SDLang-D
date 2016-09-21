@@ -48,6 +48,22 @@ struct Location
 	}
 }
 
+///
+string fullName(string namespace, string name)
+{
+	if(namespace == "")
+		return name;
+	else
+		return namespace ~ ":" ~ name;
+}
+///
+unittest
+{
+	assert(fullName("", "name") == "name");
+	assert(fullName("*", "name") == "*:name");
+	assert(fullName("namespace", "name") == "namespace:name");
+}
+
 void removeIndex(E)(ref E[] arr, ptrdiff_t index)
 {
 	arr = arr[0..index] ~ arr[index+1..$];

@@ -65,7 +65,7 @@ Differences from original Java implementation
 Documentation
 -------------
 
-* [How to use SDLang-D's DOM mode (Tutorial / DOM API Overview)](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md)
+* [How to use SDLang-D (Tutorial / DOM API Overview)](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md)
 * [Pull Parse SDLang](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html)
 * [API Reference](http://semitwist.com/sdlang-d/sdlang.html)
 * [Changelog](https://github.com/Abscissa/SDLang-D/blob/master/CHANGELOG.md)

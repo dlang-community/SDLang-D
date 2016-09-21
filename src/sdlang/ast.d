@@ -20,22 +20,6 @@ import sdlang.exception;
 import sdlang.token;
 import sdlang.util;
 
-///
-string fullName(string namespace, string name)
-{
-	if(namespace == "")
-		return name;
-	else
-		return namespace ~ ":" ~ name;
-}
-///
-unittest
-{
-	assert(fullName("", "name") == "name");
-	assert(fullName("*", "name") == "*:name");
-	assert(fullName("namespace", "name") == "namespace:name");
-}
-
 class Attribute
 {
 	Value    value;
