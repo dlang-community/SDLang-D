@@ -7,7 +7,7 @@ v0.10.0 - TBD
 ---------------------
 - **New:** SDLangException and subclasses now take the standard file and line parameters.
 - **New:** Add a simple struct [FullName](http://semitwist.com/sdlang-d/sdlang/util/FullName.html) to split and combine namespace/name combinations.
-- **New:** [#6](https://github.com/Abscissa/SDLang-D/issues/6): Added [Tag.getValue](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getValue.html), [Tag.NamespaceAccess.getValue](http://semitwist.com/sdlang-d/sdlang/ast/Tag.NamespaceAccess.getValue.html), [Tag.getAttribute](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getAttribute.html) and [Tag.NamespaceAccess.getAttribute](http://semitwist.com/sdlang-d/sdlang/ast/Tag.NamespaceAccess.getAttribute.html) to more easily obtain values and attributes when only one value is expected for a given tag name.
+- **New:** [#6](https://github.com/Abscissa/SDLang-D/issues/6): Added [Tag.getValue](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getValue.html) and [Tag.getAttribute](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getAttribute.html) to more easily obtain values and attributes when only one value is expected for a given tag name.
 - **New:** [#38](https://github.com/Abscissa/SDLang-D/issues/38): Add Tag.clone/Attribute.clone to deep clone a tag (and all its children)
 - **Change:** Minimum DMDFE bumped to 2.069.
 - **Change:** [#17](https://github.com/Abscissa/SDLang-D/issues/17): Remove unnecessary FileStart and FileEnd events.
