@@ -731,8 +731,7 @@ class Lexer
 			//Base64.decode(Base64InputRange(this), OutputBuf());
 			Base64.decode(tmpBuf, OutputBuf());
 
-		//TODO: Starting with dmd 2.062, this should be a Base64Exception
-		catch(Exception e)
+		catch(Base64Exception e)
 			error("Invalid character in base64 binary literal.");
 		
 		advanceChar(ErrorOnEOF.No); // Skip ']'
