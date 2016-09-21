@@ -1,2 +1,0 @@
-@echo off
-rdmd --build-only --force -wi -Isrc -I..\libInputVisitor -ofbin\sdlang-unittest -unittest -version=sdlangUnittest -version=sdlangTrace -debug -g %* src/sdlang/package.d

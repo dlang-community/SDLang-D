@@ -50,7 +50,7 @@ public import sdlang.parser    : parseFile, parseSource;
 public import sdlang.token     : Value, Token, DateTimeFrac, DateTimeFracUnknownZone;
 public import sdlang.util      : sdlangVersion, Location;
 
-version(sdlangUnittest)
+version(sdlangUsingBuiltinTestRunner)
 	void main() {}
 
 version(sdlangTestApp)

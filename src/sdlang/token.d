@@ -125,15 +125,11 @@ void toSDLString(Sink)(Value value, ref Sink sink) if(isOutputRange!(Sink,char))
 	throw new Exception("Internal SDLang-D error: Unhandled type of Value. Contains: "~value.toString());
 }
 
-version(sdlangUnittest)
+@("toSDLString on infinity and NaN")
 unittest
 {
 	import std.exception;
-	import std.stdio;
 	
-	writeln("Unittesting toSDLString on infinity and NaN...");
-	stdout.flush();
-
 	auto floatInf    = float.infinity;
 	auto floatNegInf = -float.infinity;
 	auto floatNaN    = float.nan;
@@ -431,13 +427,9 @@ struct Token
 	}
 }
 
-version(sdlangUnittest)
+@("sdlang token")
 unittest
 {
-	import std.stdio;
-	writeln("Unittesting sdlang token...");
-	stdout.flush();
-	
 	auto loc  = Location("", 0, 0, 0);
 	auto loc2 = Location("a", 1, 1, 1);
 
@@ -465,13 +457,9 @@ unittest
 	assert(Token(symbol!"Value",loc,Value(cast(float)1.2)) != Token(symbol!"Value",loc, Value(cast(double)1.2)));
 }
 
-version(sdlangUnittest)
+@("sdlang Value.toSDLString()")
 unittest
 {
-	import std.stdio;
-	writeln("Unittesting sdlang Value.toSDLString()...");
-	stdout.flush();
-	
 	// Bool and null
 	assert(Value(null ).toSDLString() == "null");
 	assert(Value(true ).toSDLString() == "true");

@@ -24,9 +24,22 @@ configuration "library" {
 	targetType "library"
 }
 
+configuration "unittest-builtin" {
+	targetType "executable"
+	targetPath "bin/"
+	targetName "sdlang-unittest-builtin"
+	versions "sdlangUsingBuiltinTestRunner" "sdlangTrace"
+}
+
 configuration "unittest" {
 	targetType "executable"
 	targetPath "bin/"
 	targetName "sdlang-unittest"
-	versions "sdlangUnittest" "sdlangTrace"
+
+	//dependency "unit-threaded" version="~>0.6.27"
+	dependency "unit-threaded-abscissa" version="~>0.0.1"
+
+	preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"
+	mainSourceFile "bin/ut.d"
+	versions "sdlangUsingUnitThreaded" "sdlangTrace"
 }

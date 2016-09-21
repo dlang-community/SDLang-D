@@ -9,13 +9,6 @@ import std.conv;
 import std.range;
 import std.string;
 
-version(sdlangUnittest)
-version(unittest)
-{
-	import std.stdio;
-	import std.exception;
-}
-
 import sdlang.exception;
 import sdlang.token;
 import sdlang.util;
@@ -897,7 +890,7 @@ class Tag
 		}
 	}
 
-	struct NamespaceAccess
+	static struct NamespaceAccess
 	{
 		string name;
 		AttributeRange attributes;
@@ -935,8 +928,10 @@ class Tag
 		}
 		
 		///
+		@("Tag.NamespaceAccess.getValue")
 		unittest
 		{
+			import std.exception;
 			import sdlang.parser;
 			
 			auto root = parseSource(`
@@ -995,8 +990,10 @@ class Tag
 		}
 
 		///
+		@("Tag.NamespaceAccess.getAttribute")
 		unittest
 		{
+			import std.exception;
 			import sdlang.parser;
 			
 			auto root = parseSource(`
@@ -1141,8 +1138,10 @@ class Tag
 	}
 	
 	///
+	@("Tag.getValue")
 	unittest
 	{
+		import std.exception;
 		import sdlang.parser;
 		
 		auto root = parseSource(`
@@ -1247,8 +1246,10 @@ class Tag
 	}
 	
 	///
+	@("Tag.getAttribute")
 	unittest
 	{
+		import std.exception;
 		import sdlang.parser;
 		
 		auto root = parseSource(`
@@ -1528,7 +1529,7 @@ class Tag
 	}
 }
 
-version(sdlangUnittest)
+version(unittest)
 {
 	private void testRandomAccessRange(R, E)(R range, E[] expected, bool function(E, E) equals=null)
 	{
@@ -1668,12 +1669,11 @@ version(sdlangUnittest)
 	}
 }
 
-version(sdlangUnittest)
+@("*: Test sdlang ast")
 unittest
 {
+	import std.exception;
 	import sdlang.parser;
-	writeln("Unittesting sdlang ast...");
-	stdout.flush();
 	
 	Tag root;
 	root = parseSource("");
@@ -2220,13 +2220,11 @@ unittest
 }
 
 // Regression test, issue #11: https://github.com/Abscissa/SDLang-D/issues/11
-version(sdlangUnittest)
+@("*: Regression test issue #11")
 unittest
 {
 	import sdlang.parser;
-	writeln("ast: Regression test issue #11...");
-	stdout.flush();
-	
+
 	auto root = parseSource(
 `//
 a`);

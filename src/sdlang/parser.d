@@ -92,6 +92,7 @@ auto pullParseSource(string source, string filename=null)
 }
 
 ///
+@("pullParseFile/pullParseSource example")
 unittest
 {
 	// stuff.sdl
@@ -168,6 +169,7 @@ so usage has changed somewhat.
 alias ParserEvent = TaggedAlgebraic!ParserEventUnion;
 
 ///
+@("ParserEvent example")
 unittest
 {
 	// Create
@@ -594,26 +596,18 @@ private struct DOMParser
 
 // Regression test, issue #13: https://github.com/Abscissa/SDLang-D/issues/13
 // "Incorrectly accepts ":tagname" (blank namespace, tagname prefixed with colon)"
-version(sdlangUnittest)
+@("parser: Regression test issue #13")
 unittest
 {
-	import std.stdio;
 	import std.exception;
-	writeln("parser: Regression test issue #13...");
-	stdout.flush();
-
 	assertThrown!SDLangParseException(parseSource(`:test`));
 	assertThrown!SDLangParseException(parseSource(`:4`));
 }
 
 // Regression test, issue #16: https://github.com/Abscissa/SDLang-D/issues/16
-version(sdlangUnittest)
+@("parser: Regression test issue #16")
 unittest
 {
-	import std.stdio;
-	writeln("parser: Regression test issue #16...");
-	stdout.flush();
-
 	// Shouldn't crash
 	foreach(event; pullParseSource(`tag "data"`))
 	{
@@ -624,13 +618,9 @@ unittest
 
 // Regression test, issue #31: https://github.com/Abscissa/SDLang-D/issues/31
 // "Escape sequence results in range violation error"
-version(sdlangUnittest)
+@("parser: Regression test issue #31")
 unittest
 {
-	import std.stdio;
-	writeln("parser: Regression test issue #31...");
-	stdout.flush();
-
 	// Shouldn't get a Range violation
 	parseSource(`test "\"foo\""`);
 }

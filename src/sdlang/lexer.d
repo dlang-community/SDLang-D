@@ -1451,13 +1451,17 @@ class Lexer
 	}
 }
 
-version(sdlangUnittest)
+version(unittest)
 {
 	import std.stdio;
+
+	version(Have_unit_threaded) import unit_threaded;
+	else                        { enum DontTest; }
 
 	private auto loc  = Location("filename", 0, 0, 0);
 	private auto loc2 = Location("a", 1, 1, 1);
 
+	@("lexer: EOL")
 	unittest
 	{
 		assert([Token(symbol!"EOL",loc)             ] == [Token(symbol!"EOL",loc)              ] );
@@ -1465,6 +1469,7 @@ version(sdlangUnittest)
 	}
 
 	private int numErrors = 0;
+	@DontTest
 	private void testLex(string source, Token[] expected, bool test_locations = false, string file=__FILE__, size_t line=__LINE__)
 	{
 		Token[] actual;
@@ -1534,12 +1539,9 @@ version(sdlangUnittest)
 	}
 }
 
-version(sdlangUnittest)
+@("sdlang lexer")
 unittest
 {
-	writeln("Unittesting sdlang lexer...");
-	stdout.flush();
-	
 	testLex("",        []);
 	testLex(" ",       []);
 	testLex("\\\n",    []);
@@ -1997,23 +1999,17 @@ unittest
 		stderr.writeln(numErrors, " failed test(s)");
 }
 
-version(sdlangUnittest)
+@("lexer: Regression test issue #8")
 unittest
 {
-	writeln("lexer: Regression test issue #8...");
-	stdout.flush();
-
 	testLex(`"\n \n"`, [ Token(symbol!"Value",loc,Value("\n \n"),`"\n \n"`) ]);
 	testLex(`"\t\t"`, [ Token(symbol!"Value",loc,Value("\t\t"),`"\t\t"`) ]);
 	testLex(`"\n\n"`, [ Token(symbol!"Value",loc,Value("\n\n"),`"\n\n"`) ]);
 }
 
-version(sdlangUnittest)
+@("lexer: Regression test issue #11")
 unittest
 {
-	writeln("lexer: Regression test issue #11...");
-	stdout.flush();
-	
 	void test(string input)
 	{
 		testLex(
@@ -2031,12 +2027,9 @@ unittest
 	test("#\na");
 }
 
-version(sdlangUnittest)
+@("ast: Regression test issue #28")
 unittest
 {
-	writeln("lexer: Regression test issue #28...");
-	stdout.flush();
-
 	enum offset = 1; // workaround for an of-by-one error for line numbers
 	testLex("test", [
 		Token(symbol!"Ident", Location("filename", 0, 0, 0), Value(null), "test")

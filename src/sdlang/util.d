@@ -67,6 +67,7 @@ struct FullName
 		return FullName(namespace, name).toString();
 	}
 	///
+	@("FullName.combine example")
 	unittest
 	{
 		assert(FullName.combine("", "name") == "name");
@@ -94,6 +95,7 @@ struct FullName
 		return result;
 	}
 	///
+	@("FullName.split example")
 	unittest
 	{
 		assert(FullName.split("name") == FullName("", "name"));
@@ -101,6 +103,7 @@ struct FullName
 		assert(FullName.split("namespace:name") == FullName("namespace", "name"));
 	}
 }
+struct Foo { string foo; }
 
 void removeIndex(E)(ref E[] arr, ptrdiff_t index)
 {
@@ -154,3 +157,49 @@ immutable ubyte[][NBOM] ByteOrderMarks =
 	[0xFF, 0xFE, 0x00, 0x00],   //UTF32LE
 	[0x00, 0x00, 0xFE, 0xFF]    //UTF32BE
 ];
+
+/+
+version(unittest)
+shared static this()
+{
+	import core.runtime;
+	Runtime.moduleUnitTester = &customUnittestRunner;
+}
+
+bool customUnittestRunner()
+{
+	import std.stdio;
+	import std.traits;
+	writeln("Running unittests...");
+
+	size_t failed = 0;
+	foreach( m; ModuleInfo )
+	{
+		if( m )
+		{
+			auto fp = m.unitTest;
+
+			if( fp )
+			{
+				//auto xxxx = 
+				//auto udas = getUDAs!(fp, Foo);
+				//static if(udas.length > 0)
+				//	writeln("Testing ", m.name, ": ", udas[0].foo, "...");
+				//else
+					writeln("Testing ", m.name, "...");
+
+				try
+				{
+					fp();
+				}
+				catch( Throwable e )
+				{
+					writeln(e);
+					failed++;
+				}
+			}
+		}
+	}
+	return failed == 0;
+}
++/
