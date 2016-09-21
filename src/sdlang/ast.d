@@ -20,6 +20,22 @@ import sdlang.exception;
 import sdlang.token;
 import sdlang.util;
 
+///
+string fullName(string namespace, string name)
+{
+	if(namespace == "")
+		return name;
+	else
+		return namespace ~ ":" ~ name;
+}
+///
+unittest
+{
+	assert(fullName("", "name") == "name");
+	assert(fullName("*", "name") == "*:name");
+	assert(fullName("namespace", "name") == "namespace:name");
+}
+
 class Attribute
 {
 	Value    value;
@@ -861,7 +877,8 @@ class Tag
 			return NamespaceAccess(
 				namespace,
 				AttributeRange(tag, namespace, isMaybe),
-				TagRange(tag, namespace, isMaybe)
+				TagRange(tag, namespace, isMaybe),
+				tag
 			);
 		}
 		
@@ -876,7 +893,8 @@ class Tag
 			return NamespaceAccess(
 				namespace,
 				AttributeRange(tag, namespace, isMaybe),
-				TagRange(tag, namespace, isMaybe)
+				TagRange(tag, namespace, isMaybe),
+				tag
 			);
 		}
 		
@@ -900,6 +918,122 @@ class Tag
 		string name;
 		AttributeRange attributes;
 		TagRange tags;
+
+		private Tag containingTag;
+		
+		/++
+		Lookup a tag by name, and reterive a value of type T from it. Useful
+		if you only evpect one value of type T from a given tag. Only looks
+		for immediate child tags of 'this', doesn't search recursively.
+		
+		If there are multiple tags by the chosen name, the *last tag* will always
+		be chosen. That is, this function considers later tags with the same name
+		to override previous ones.
+		
+		If the chosen tag has multiple values, the *first* value matching the
+		requested type will be returned. Ie, Extra values in the tag are ignored.
+		
+		If the chosen tag doesn't have a value of the requested type, and you
+		DID provide a default value, the default value is returned.
+		
+		If the chosen tag doesn't have a value of the requested type, and you
+		DIDN'T provide a default value, a SDLangRangeException will be thrown.
+		+/
+		T getValue(T)(string tagName) if(isValueType!T)
+		{
+			return containingTag.getValueImpl!T(this.name, tagName);
+		}
+		
+		///ditto
+		T getValue(T)(string tagName, T defaultValue) if(isValueType!T)
+		{
+			return containingTag.getValueImpl!T(this.name, tagName, defaultValue);
+		}
+		
+		///
+		unittest
+		{
+			import sdlang.parser;
+			
+			auto root = parseSource(`
+				ns1:foo 1 "a" 2 "b"
+				ns1:foo 3 "c" 4 "d"
+				ns2:foo 11 "aa" 22 "bb"
+				ns2:foo 33 "cc" 44 "dd"
+				
+				ns1:bar "hi"
+				ns1:bar 379  // getValue considers this to override the first bar
+			`);
+			assert( root.namespaces["ns1"].getValue!int("foo") == 3 );
+			assert( root.all.getValue!int("foo") == 33 );
+
+			assert( root.namespaces["ns1"].getValue!string("foo") == "c" );
+			assert( root.all.getValue!string("foo") == "cc" );
+			
+			// The last "bar" tag doesn't have an int (only the first "bar" tag does)
+			assertThrown!SDLangRangeException( root.all.getValue!string("bar") );
+			assert( root.all.getValue!string("bar", "Default") == "Default" );
+		}
+
+		/++
+		Lookup a tag and attribute by name, and reterive a value of type T from it.
+		Useful if you only evpect one attribute of type T from a given tag and
+		attribute name. Only looks for immediate child tags of 'this', doesn't
+		search recursively.
+		
+		If there are multiple tags by the chosen name, the *last tag* will always
+		be chosen. That is, this function considers later tags with the same name
+		to override previous ones.
+		
+		If the chosen tag has multiple attributes with the same same, the *first*
+		such attribute matching the requested type will be returned. Ie, Extra
+		attributes in the tag are ignored.
+		
+		If the chosen tag doesn't have an attribute of the requested type, and you
+		DID provide a default value, the default value is returned.
+		
+		If the chosen tag doesn't have an attribute of the requested type, and you
+		DIDN'T provide a default value, a SDLangRangeException will be thrown.
+		
+		Note: Currently, this can only be used to lookup attributes in the default
+		namespace. It can, however, lookup attributes on TAGS that are in a
+		particular namespace.
+		+/
+		T getAttribute(T)(string tagName, string attrName) if(isValueType!T)
+		{
+			return containingTag.getAttributeImpl!T(this.name, tagName, "", attrName);
+		}
+		
+		///ditto
+		T getAttribute(T)(string tagName, string attrName, T defaultValue) if(isValueType!T)
+		{
+			return containingTag.getAttributeImpl!T(this.name, tagName, "", attrName, defaultValue);
+		}
+
+		///
+		unittest
+		{
+			import sdlang.parser;
+			
+			auto root = parseSource(`
+				ns1:foo X=1 X="a" X=2 X="b"
+				ns1:foo X=3 X="c" X=4 X="d"
+				ns2:foo X=11 X="aa" X=22 X="bb"
+				ns2:foo X=33 X="cc" X=44 X="dd"
+				
+				ns1:bar X="hi"
+				ns1:bar X=379  // getAttribute considers this to override the first bar
+			`);
+			assert( root.namespaces["ns1"].getAttribute!int("foo", "X") == 3 );
+			assert( root.all.getAttribute!int("foo", "X") == 33 );
+			
+			assert( root.namespaces["ns1"].getAttribute!string("foo", "X") == "c" );
+			assert( root.all.getAttribute!string("foo", "X") == "cc" );
+			
+			// The last "bar" tag doesn't have an int attribute named "X" (only the first "bar" tag does)
+			assertThrown!SDLangRangeException( root.all.getAttribute!string("bar", "X") );
+			assert( root.all.getAttribute!string("bar", "X", "Default") == "Default" );
+		}
 	}
 
 	alias MemberRange!(Attribute, "allAttributes", "attributeIndicies", "_attributes") AttributeRange;
@@ -933,7 +1067,8 @@ class Tag
 		return NamespaceAccess(
 			"*",
 			AttributeRange(this, "*", false),
-			TagRange(this, "*", false)
+			TagRange(this, "*", false),
+			this
 		);
 	}
 
@@ -966,8 +1101,21 @@ class Tag
 			return NamespaceAccess(
 				"*",
 				AttributeRange(tag, "*", true),
-				TagRange(tag, "*", true)
+				TagRange(tag, "*", true),
+				tag
 			);
+		}
+		
+		/// See the documentation for Tag.getValue
+		T getValue(T)(string tagName) if(isValueType!T)
+		{
+			return getValueImpl!T("", tagName);
+		}
+		
+		///ditto
+		T getValue(T)(string tagName, T defaultValue) if(isValueType!T)
+		{
+			return getValueImpl!T("", tagName, defaultValue);
 		}
 	}
 	
@@ -979,6 +1127,244 @@ class Tag
 		return MaybeAccess(this);
 	}
 	
+	/++
+	Lookup a tag by name, and reterive a value of type T from it. Useful
+	if you only evpect one value of type T from a given tag. Only looks
+	for immediate child tags of 'this', doesn't search recursively.
+	
+	If there are multiple tags by the chosen name, the *last tag* will always
+	be chosen. That is, this function considers later tags with the same name
+	to override previous ones.
+	
+	If the chosen tag has multiple values, the *first* value matching the
+	requested type will be returned. Ie, Extra values in the tag are ignored.
+	
+	If the chosen tag doesn't have a value of the requested type, and you
+	DID provide a default value, the default value is returned.
+	
+	If the chosen tag doesn't have a value of the requested type, and you
+	DIDN'T provide a default value, a SDLangRangeException will be thrown.
+	+/
+	T getValue(T)(string tagName) if(isValueType!T)
+	{
+		return getValueImpl!T("", tagName);
+	}
+	
+	///ditto
+	T getValue(T)(string tagName, T defaultValue) if(isValueType!T)
+	{
+		return getValueImpl!T("", tagName, defaultValue);
+	}
+	
+	///
+	unittest
+	{
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo 1 "a" 2 "b"
+			foo 3 "c" 4 "d"  // getValue considers this to override the first foo
+			
+			bar "hi"
+			bar 379  // getValue considers this to override the first bar
+		`);
+		assert( root.getValue!int("foo") == 3 );
+		assert( root.getValue!string("foo") == "c" );
+		
+		// The last "bar" tag doesn't have an int (only the first "bar" tag does)
+		assertThrown!SDLangRangeException( root.getValue!string("bar") );
+		assert( root.getValue!string("bar", "Default") == "Default" );
+	}
+	
+	private T getValueImpl(T)(string namespace, string tagName) if(isValueType!T)
+	{
+		return getValueImpl!T(namespace, tagName, T.init, false);
+	}
+	
+	private T getValueImpl(T)(string namespace, string tagName, T defaultValue, bool useDefaultValue=true) if(isValueType!T)
+	{
+		if(namespace !in _tags)
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+				throw new SDLangRangeException("No tags found in namespace '"~namespace~"'");
+		}
+
+		if(tagName !in _tags[namespace] || _tags[namespace][tagName].length == 0)
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+			{
+				if(namespace == "*")
+					throw new SDLangRangeException("Can't find tag '"~tagName~"' in any namespace");
+				else
+					throw new SDLangRangeException("Can't find tag '"~tagName~"' in namespace '"~namespace~"'");
+			}
+		}
+
+		foreach(value; _tags[namespace][tagName][$-1].values)
+		{
+			if(value.type == typeid(T))
+				return value.get!T();
+		}
+		
+		if(useDefaultValue)
+			return defaultValue;
+		else
+		{
+			if(namespace == "*")
+			{
+				throw new SDLangRangeException(
+					"The last tag named '"~tagName~"' in all namespaces doesn't "~
+					"have a value of type "~T.stringof
+				);
+			}
+			else
+			{
+				throw new SDLangRangeException(
+					"The last tag named '"~tagName~"' in namespace '"~namespace~"' doesn't "~
+					"have a value of type "~T.stringof
+				);
+			}
+		}
+	}
+
+	/++
+	Lookup a tag and attribute by name, and reterive a value of type T from it.
+	Useful if you only evpect one attribute of type T from a given tag and
+	attribute name. Only looks for immediate child tags of 'this', doesn't
+	search recursively.
+	
+	If there are multiple tags by the chosen name, the *last tag* will always
+	be chosen. That is, this function considers later tags with the same name
+	to override previous ones.
+	
+	If the chosen tag has multiple attributes with the same same, the *first*
+	such attribute matching the requested type will be returned. Ie, Extra
+	attributes in the tag are ignored.
+	
+	If the chosen tag doesn't have an attribute of the requested type, and you
+	DID provide a default value, the default value is returned.
+	
+	If the chosen tag doesn't have an attribute of the requested type, and you
+	DIDN'T provide a default value, a SDLangRangeException will be thrown.
+	+/
+	T getAttribute(T)(string tagName, string attrName) if(isValueType!T)
+	{
+		return getAttributeImpl!T("", tagName, "", attrName);
+	}
+	
+	///ditto
+	T getAttribute(T)(string tagName, string attrName, T defaultValue) if(isValueType!T)
+	{
+		return getAttributeImpl!T("", tagName, "", attrName, defaultValue);
+	}
+	
+	///
+	unittest
+	{
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo X=1 X="a" X=2 X="b"
+			foo X=3 X="c" X=4 X="d"  // getAttribute considers this to override the first foo
+			
+			bar X="hi"
+			bar X=379  // getAttribute considers this to override the first bar
+		`);
+		assert( root.getAttribute!int("foo", "X") == 3 );
+		assert( root.getAttribute!string("foo", "X") == "c" );
+		
+		// The last "bar" tag doesn't have an int attribute named "X" (only the first "bar" tag does)
+		assertThrown!SDLangRangeException( root.getAttribute!string("bar", "X") );
+		assert( root.getAttribute!string("bar", "X", "Default") == "Default" );
+	}
+	
+	private T getAttributeImpl(T)(string namespace, string tagName, string attrNamespace, string attrName)
+	if(isValueType!T)
+	{
+		return getAttributeImpl!T(namespace, tagName, attrNamespace, attrName, T.init, false);
+	}
+	
+	private T getAttributeImpl(T)(string namespace, string tagName, string attrNamespace,
+	string attrName, T defaultValue, bool useDefaultValue=true)
+	if(isValueType!T)
+	{
+		if(namespace !in _tags)
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+				throw new SDLangRangeException("No attributes found in namespace '"~namespace~"'");
+		}
+
+		if(tagName !in _tags[namespace] || _tags[namespace][tagName].length == 0)
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+			{
+				if(namespace == "*")
+					throw new SDLangRangeException("Can't find tag '"~tagName~"' in any namespace");
+				else
+					throw new SDLangRangeException("Can't find tag '"~tagName~"' in namespace '"~namespace~"'");
+			}
+		}
+
+		auto foundTag = _tags[namespace][tagName][$-1];
+		
+		if(attrNamespace !in foundTag._attributes || attrName !in foundTag._attributes[attrNamespace])
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+			{
+				if(namespace == "*")
+				{
+					throw new SDLangRangeException(
+						"The last tag named '"~tagName~"' in all namespaces doesn't "~
+						"have any attributes '"~.fullName(attrNamespace, attrName)~"'"
+					);
+				}
+				else
+				{
+					throw new SDLangRangeException(
+						"The last tag named '"~tagName~"' in namespace '"~namespace~"' doesn't "~
+						"have any attributes '"~.fullName(attrNamespace, attrName)~"'"
+					);
+				}
+			}
+		}
+
+		foreach(attr; foundTag._attributes[""][attrName])
+		{
+			if(attr.value.type == typeid(T))
+				return attr.value.get!T();
+		}
+		
+		if(useDefaultValue)
+			return defaultValue;
+		else
+		{
+			if(namespace == "*")
+			{
+				throw new SDLangRangeException(
+					"The last tag named '"~tagName~"' in all namespaces doesn't "~
+					"have an attribute '"~.fullName(attrNamespace, attrName)~"' of type "~T.stringof
+				);
+			}
+			else
+			{
+				throw new SDLangRangeException(
+					"The last tag named '"~tagName~"' in namespace '"~namespace~"' doesn't "~
+					"have an attribute '"~.fullName(attrNamespace, attrName)~"' of type "~T.stringof
+				);
+			}
+		}
+	}
+
 	override bool opEquals(Object o)
 	{
 		auto t = cast(Tag)o;

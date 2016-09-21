@@ -7,6 +7,7 @@ import std.array;
 import std.base64;
 import std.conv;
 import std.datetime;
+import std.meta;
 import std.range;
 import std.string;
 import std.traits;
@@ -84,7 +85,7 @@ Date Time (no timezone):              DateTimeFrac
 Date Time (with a known timezone):    SysTime
 Date Time (with an unknown timezone): DateTimeFracUnknownZone
 +/
-alias TypeTuple!(
+alias ValueTypes = TypeTuple!(
 	bool,
 	string, dchar,
 	int, long,
@@ -92,9 +93,10 @@ alias TypeTuple!(
 	Date, DateTimeFrac, SysTime, DateTimeFracUnknownZone, Duration,
 	ubyte[],
 	typeof(null),
-) ValueTypes;
+);
 
-alias Algebraic!( ValueTypes ) Value; ///ditto
+alias Value = Algebraic!( ValueTypes ); ///ditto
+enum isValueType(T) = staticIndexOf!(T, ValueTypes) != -1;
 
 template isSDLSink(T)
 {
