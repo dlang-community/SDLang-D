@@ -102,7 +102,7 @@ enum isSink(T) =
 	isOutputRange!T &&
 	is(ElementType!(T)[] == string);
 
-string toSDLString(T)(T value) if(isValueType!T)
+string toSDLString(T)(T value) if(is(T==Value) || isValueType!T)
 {
 	Appender!string sink;
 	toSDLString(value, sink);
