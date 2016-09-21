@@ -1309,14 +1309,14 @@ class Tag
 				{
 					throw new SDLangRangeException(
 						"The last tag named '"~tagName~"' in all namespaces doesn't "~
-						"have any attributes '"~.fullName(attrNamespace, attrName)~"'"
+						"have any attributes '"~FullName.combine(attrNamespace, attrName)~"'"
 					);
 				}
 				else
 				{
 					throw new SDLangRangeException(
 						"The last tag named '"~tagName~"' in namespace '"~namespace~"' doesn't "~
-						"have any attributes '"~.fullName(attrNamespace, attrName)~"'"
+						"have any attributes '"~FullName.combine(attrNamespace, attrName)~"'"
 					);
 				}
 			}
@@ -1336,14 +1336,14 @@ class Tag
 			{
 				throw new SDLangRangeException(
 					"The last tag named '"~tagName~"' in all namespaces doesn't "~
-					"have an attribute '"~.fullName(attrNamespace, attrName)~"' of type "~T.stringof
+					"have an attribute '"~FullName.combine(attrNamespace, attrName)~"' of type "~T.stringof
 				);
 			}
 			else
 			{
 				throw new SDLangRangeException(
 					"The last tag named '"~tagName~"' in namespace '"~namespace~"' doesn't "~
-					"have an attribute '"~.fullName(attrNamespace, attrName)~"' of type "~T.stringof
+					"have an attribute '"~FullName.combine(attrNamespace, attrName)~"' of type "~T.stringof
 				);
 			}
 		}

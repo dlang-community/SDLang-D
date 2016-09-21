@@ -48,20 +48,58 @@ struct Location
 	}
 }
 
-///
-string fullName(string namespace, string name)
+struct FullName
 {
-	if(namespace == "")
-		return name;
-	else
-		return namespace ~ ":" ~ name;
-}
-///
-unittest
-{
-	assert(fullName("", "name") == "name");
-	assert(fullName("*", "name") == "*:name");
-	assert(fullName("namespace", "name") == "namespace:name");
+	string namespace;
+	string name;
+
+	string toString()
+	{
+		if(namespace == "")
+			return name;
+		else
+			return namespace ~ ":" ~ name;
+	}
+
+	///
+	static string combine(string namespace, string name)
+	{
+		return FullName(namespace, name).toString();
+	}
+	///
+	unittest
+	{
+		assert(FullName.combine("", "name") == "name");
+		assert(FullName.combine("*", "name") == "*:name");
+		assert(FullName.combine("namespace", "name") == "namespace:name");
+	}
+
+	///
+	static FullName split(string fullName)
+	{
+		FullName result;
+		
+		auto parts = fullName.findSplit(":");
+		if(parts[1] == "") // No colon
+		{
+			result.namespace = "";
+			result.name      = parts[0];
+		}
+		else
+		{
+			result.namespace = parts[0];
+			result.name      = parts[2];
+		}
+
+		return result;
+	}
+	///
+	unittest
+	{
+		assert(FullName.split("name") == FullName("", "name"));
+		assert(FullName.split("*:name") == FullName("*", "name"));
+		assert(FullName.split("namespace:name") == FullName("namespace", "name"));
+	}
 }
 
 void removeIndex(E)(ref E[] arr, ptrdiff_t index)
