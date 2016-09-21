@@ -12,9 +12,9 @@ The list of officially supported D compiler versions is always available in [.tr
 
 The recommended way to use SDLang-D is via [DUB](http://code.dlang.org/getting_started). Just add a dependency to ```sdlang-d``` in your project's ```dub.json``` or ```dub.sdl``` file [as shown here](http://code.dlang.org/packages/sdlang-d). Then simply build your project with DUB as usual.
 
-Alternatively, you can ```git clone``` both SDLang-D and the latest version of [libInputVisitor](https://github.com/Abscissa/libInputVisitor), and include ```-I{path to SDLang-D}/src -I{path to libInputVisitor}/src``` when running the compiler.
+Alternatively, you can ```git clone``` both SDLang-D and the latest versions of [libInputVisitor](https://github.com/Abscissa/libInputVisitor) and [TaggedAlgebraic](https://github.com/s-ludwig/taggedalgebraic), and include ```-I{path to SDLang-D}/src -I{path to libInputVisitor} -I{path to TaggedAlgebraic}/source``` when running the compiler.
 
-Note that ```-inline``` currently causes some problems. On DMD 2.063.2 and below, it caused compilation to fail, likely due to [DMD #5776](https://issues.dlang.org/show_bug.cgi?id=5776) and/or [DMD #11377](https://issues.dlang.org/show_bug.cgi?id=11377). On DMD 2.064 and up, it causes a segfault when parsing a Base64 value (currently being investigated).
+Note that prior to DMD 2.071.0, ```-inline``` causes some problems. It causes SDLang-D to segfault when parsing a Base64 value. As of DMD 2.071.0 and up, ```-inline``` works fine.
 
 Importing
 ---------
@@ -25,10 +25,10 @@ To use SDL, first import the module ```sdlang```:
 import sdlang;
 ```
 
-If you're not using DUB, then you must also include the path the SDLang-D sources when you compile:
+If you're not using DUB, then you must also include the paths to the sources of SDLang-D and its dependencies when you compile:
 
 ```
-rdmd --build-only -I{path to sdlang}/src -I{path to libInputVisitor}/src {other flags} yourProgram.d
+rdmd --build-only -I{path to sdlang}/src -I{path to libInputVisitor} -I{path to TaggedAlgebraic}/source {other flags} yourProgram.d
 ```
 
 Example
@@ -36,59 +36,63 @@ Example
 
 [example.d](https://github.com/Abscissa/SDLang-D/blob/master/example.d):
 ```d
+/+ dub.sdl:
+	name "example"
+	dependency "sdlang-d" version="~>0.9.6"
++/
+
 import std.stdio;
 import sdlang;
 
 int main()
 {
-    Tag root;
-    
-    try
-    {
-        // Or:
-        // root = parseFile("myFile.sdl");
-        root = parseSource(`
-            welcome "Hello world"
+	Tag root;
+	
+	try
+	{
+		// Or:
+		// root = parseFile("myFile.sdl");
+		root = parseSource(`
+			welcome "Hello world"
 
-            // Uncomment this for an error:
-            // badSuffix 12Q
+			// Uncomment this for an error:
+			// badSuffix 12Q
 
-            myNamespace:person name="Joe Coder" {
-                age 36
-            }
-        `);
-    }
-    catch(SDLangParseException e)
-    {
-        // Messages will be of the form:
-        // myFile.sdl(5:28): Error: Invalid integer suffix.
-        stderr.writeln(e.msg);
-        return 1;
-    }
-    
-    // Value is a std.variant.Algebraic
-    Value welcome = root.tags["welcome"][0].values[0];
-    assert(welcome.type == typeid(string));
-    writeln(welcome);
-    
-    Tag person = root.namespaces["myNamespace"].tags["person"][0];
-    writeln("Name: ", person.attributes["name"][0].value);
-    
-    int age = person.tags["age"][0].values[0].get!int();
-    writeln("Age: ", age);
-    
-    // Output back to SDL
-    writeln("The full SDL:");
-    writeln(root.toSDLDocument());
-    
-    return 0;
+			myNamespace:person name="Joe Coder" {
+				age 36
+			}
+		`);
+	}
+	catch(SDLangParseException e)
+	{
+		// Messages will be of the form:
+		// myFile.sdl(5:28): Error: Invalid integer suffix.
+		stderr.writeln(e.msg);
+		return 1;
+	}
+	
+	// Value is a std.variant.Algebraic
+	Value welcome = root.tags["welcome"][0].values[0];
+	assert(welcome.type == typeid(string));
+	writeln(welcome);
+	
+	Tag person = root.namespaces["myNamespace"].tags["person"][0];
+	writeln("Name: ", person.attributes["name"][0].value);
+	
+	int age = person.tags["age"][0].values[0].get!int();
+	writeln("Age: ", age);
+	
+	// Output back to SDL
+	writeln("The full SDL:");
+	writeln(root.toSDLDocument());
+	
+	return 0;
 }
 ```
 
 Compile and run:
 ```console
-> rdmd --build-only -I./src example.d
-> example
+> dub example.d
 Hello world
 Name: Joe Coder
 Age: 36
@@ -120,7 +124,7 @@ Beyond that, your interactions with SDL will be via ```class Tag```,
 Tag and Attribute API Summary
 -----------------------------
 
-Ultimately, the Tag and Attribute APIs work like this (where ```{...}``` means "optional", and ```|``` means "or"):
+You can view the full API reference for [Tag](http://semitwist.com/sdlang-d/sdlang/ast/Tag.html) and [Attribute](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.html), but put simply, the Tag and Attribute APIs work as follows (where ```{...}``` means optional, and ```|``` means or):
 
 ```d
 // Constructors:

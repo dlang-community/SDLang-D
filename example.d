@@ -1,3 +1,8 @@
+/+ dub.sdl:
+	name "example"
+	dependency "sdlang-d" version="~>0.9.6"
++/
+
 import std.stdio;
 import sdlang;
 
