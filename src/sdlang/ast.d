@@ -973,8 +973,79 @@ class Tag
 	}
 	
 	/++
+	Lookup a child tag by name. Useful if you only expect one, and only one,
+	child tag of a given name. Only looks for immediate child tags of 'this',
+	doesn't search recursively.
+	
+	The name can optionally include a namespace, as in "namespace:name".
+	Or, you can search all namespaces using "*:name".
+	
+	If there are multiple tags by the chosen name, the *last tag* will always
+	be chosen. That is, this function considers later tags with the same name
+	to override previous ones.
+	
+	If the tag cannot be found, and you provides a default value, the default
+	value is returned. Otherwise null is returned. If you'd prefer an
+	exceptoion thrown, use expectTag instead.
+	+/
+	Tag getTag(string tagName, Tag defaultValue=null)
+	{
+		auto splitName = FullName.split(tagName);
+		return getTagImpl(splitName.namespace, splitName.name, defaultValue);
+	}
+	
+	///
+	@("Tag.getTag")
+	unittest
+	{
+		import std.exception;
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo 1
+			foo 2  // getTag considers this to override the first foo
+
+			ns1:foo 3
+			ns1:foo 4   // getTag considers this to override the first ns1:foo
+			ns2:foo 33
+			ns2:foo 44  // getTag considers this to override the first ns2:foo
+		`);
+		assert( root.getTag("foo"    ).values[0].get!int() == 2  );
+		assert( root.getTag("ns1:foo").values[0].get!int() == 4  );
+		assert( root.getTag("*:foo"  ).values[0].get!int() == 44 ); // Search all namespaces
+		
+		// Not found
+		assert( root.getTag("bar") is null );
+
+		// Default value
+		auto foo = root.getTag("foo");
+		assert( root.getTag("bar", foo) is foo );
+	}
+	
+	private Tag getTagImpl(string namespace, string tagName, Tag defaultValue=null, bool useDefaultValue=true)
+	{
+		if(namespace !in _tags)
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+				throw new SDLangRangeException("No tags found in namespace '"~namespace~"'");
+		}
+
+		if(tagName !in _tags[namespace] || _tags[namespace][tagName].length == 0)
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+				throw new SDLangRangeException("Can't find tag matching '"~FullName.combine(namespace, tagName)~"'");
+		}
+
+		return _tags[namespace][tagName][$-1];
+	}
+
+	/++
 	Lookup a tag by name, and reterive a value of type T from it. Useful
-	if you only evpect one value of type T from a given tag. Only looks
+	if you only expect one value of type T from a given tag. Only looks
 	for immediate child tags of 'this', doesn't search recursively.
 	
 	The name can optionally include a namespace, as in "namespace:name".
@@ -1090,7 +1161,7 @@ class Tag
 
 	/++
 	Lookup a tag and attribute by name, and reterive a value of type T from it.
-	Useful if you only evpect one attribute of type T from a given tag and
+	Useful if you only expect one attribute of type T from a given tag and
 	attribute name. Only looks for immediate child tags of 'this', doesn't
 	search recursively.
 	
