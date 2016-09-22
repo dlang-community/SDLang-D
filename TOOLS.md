@@ -23,10 +23,11 @@ Using [DUB](http://code.dlang.org/download):
 
 ```console
 > dub test
+or
 > dub test --config=unittest-buitin
 ```
 
-The first one runs the tests via [unit-threaded](https://github.com/atilaneves/unit-threaded). The second uses D's built-in test runner. (Note, due to [unit-threaded #43](https://github.com/atilaneves/unit-threaded/issues/43), the first one currently skips some of the tests, so the built-in test runner is still needed.)
+The first one runs the tests via [unit-threaded](https://github.com/atilaneves/unit-threaded). The second uses D's built-in test runner.
 
 Build API Reference
 -------------------

@@ -13,6 +13,8 @@ buildRequirements "allowWarnings"
 dependency "libinputvisitor" version="~>1.2.2"
 dependency "taggedalgebraic" version="~>0.10.2"
 
+// Run with: dub
+// Or with:  dub build && bin/sdlang
 configuration "cli" {
 	targetType "executable"
 	targetPath "bin/"
@@ -24,6 +26,7 @@ configuration "library" {
 	targetType "library"
 }
 
+// Run with: dub test -c unittest-builtin
 configuration "unittest-builtin" {
 	targetType "executable"
 	targetPath "bin/"
@@ -31,6 +34,7 @@ configuration "unittest-builtin" {
 	versions "sdlangUsingBuiltinTestRunner" "sdlangTrace"
 }
 
+// Run with: dub test
 configuration "unittest" {
 	targetType "executable"
 	targetPath "bin/"
