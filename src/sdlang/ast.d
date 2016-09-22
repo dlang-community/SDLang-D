@@ -973,9 +973,10 @@ class Tag
 	}
 	
 	/++
-	Lookup a child tag by name. Useful if you only expect one, and only one,
-	child tag of a given name. Only looks for immediate child tags of `this`,
-	doesn't search recursively.
+	Lookup a child tag by name. Returns null if not found.
+	
+	Useful if you only expect one, and only one, child tag of a given name.
+	Only looks for immediate child tags of `this`, doesn't search recursively.
 	
 	The name can optionally include a namespace, as in `"namespace:name"`.
 	Or, you can search all namespaces using `"*:name"`. Use an empty string
@@ -989,7 +990,7 @@ class Tag
 	
 	If the tag cannot be found, and you provides a default value, the default
 	value is returned. Otherwise null is returned. If you'd prefer an
-	exceptoion thrown, use `expectTag` instead.
+	exception thrown, use `expectTag` instead.
 	+/
 	Tag getTag(string tagName, Tag defaultValue=null)
 	{
@@ -1030,9 +1031,10 @@ class Tag
 	}
 	
 	/++
-	Lookup a child tag by name. Useful if you only expect one, and only one,
-	child tag of a given name. Only looks for immediate child tags of `this`,
-	doesn't search recursively.
+	Lookup a child tag by name. Throws if not found.
+	
+	Useful if you only expect one, and only one, child tag of a given name.
+	Only looks for immediate child tags of `this`, doesn't search recursively.
 	
 	The name can optionally include a namespace, as in `"namespace:name"`.
 	Or, you can search all namespaces using `"*:name"`. Use an empty string
@@ -1106,10 +1108,12 @@ class Tag
 	}
 
 	/++
-	Retrieve a value of type T from `this` tag. Useful if you only expect one
-	value of type T from this tag. Only looks for values of `this` tag, it does
-	not search child tags. If you wish to search for a value in a child tag
-	(for example, if this current tag is a root tag), try `getTagValue`.
+	Retrieve a value of type T from `this` tag. Returns a default value if not found.
+	
+	Useful if you only expect one value of type T from this tag. Only looks for
+	values of `this` tag, it does not search child tags. If you wish to search
+	for a value in a child tag (for example, if this current tag is a root tag),
+	try `getTagValue`.
 
 	If this tag has multiple values, the $(B $(I first)) value matching the
 	requested type will be returned. Ie, Extra values in the tag are ignored.
@@ -1155,10 +1159,12 @@ class Tag
 	}
 
 	/++
-	Retrieve a value of type T from `this` tag. Useful if you only expect one
-	value of type T from this tag. Only looks for values of `this` tag, it does
-	not search child tags. If you wish to search for a value in a child tag
-	(for example, if this current tag is a root tag), try `expectTagValue`.
+	Retrieve a value of type T from `this` tag. Throws if not found.
+	
+	Useful if you only expect one value of type T from this tag. Only looks
+	for values of `this` tag, it does not search child tags. If you wish to
+	search for a value in a child tag (for example, if this current tag is a
+	root tag), try `expectTagValue`.
 
 	If this tag has multiple values, the $(B $(I first)) value matching the
 	requested type will be returned. Ie, Extra values in the tag are ignored.
@@ -1193,8 +1199,10 @@ class Tag
 	}
 
 	/++
-	Lookup a child tag by name, and retrieve a value of type T from it. Useful
-	if you only expect one value of type T from a given tag. Only looks
+	Lookup a child tag by name, and retrieve a value of type T from it.
+	Returns a default value if not found.
+	
+	Useful if you only expect one value of type T from a given tag. Only looks
 	for immediate child tags of `this`, doesn't search recursively.
 
 	This is a shortcut for `getTag().getValue()`, except if the tag isn't found,
@@ -1261,9 +1269,11 @@ class Tag
 	}
 
 	/++
-	Lookup a child tag by name, and retrieve a value of type T from it. Useful
-	if you only expect one value of type T from a given tag. Only looks
-	for immediate child tags of `this`, doesn't search recursively.
+	Lookup a child tag by name, and retrieve a value of type T from it.
+	Throws if not found,
+	
+	Useful if you only expect one value of type T from a given tag. Only
+	looks for immediate child tags of `this`, doesn't search recursively.
 	
 	This is a shortcut for `expectTag().expectValue()`.
 	+/
@@ -1336,7 +1346,9 @@ class Tag
 
 	/++
 	Lookup an attribute of `this` tag by name, and retrieve a value of type T
-	from it. Useful if you only expect one attribute of the given name and type.
+	from it. Returns a default value if not found.
+	
+	Useful if you only expect one attribute of the given name and type.
 	
 	Only looks for attributes of `this` tag, it does not search child tags.
 	If you wish to search for a value in a child tag (for example, if this
@@ -1420,7 +1432,9 @@ class Tag
 	
 	/++
 	Lookup an attribute of `this` tag by name, and retrieve a value of type T
-	from it. Useful if you only expect one attribute of the given name and type.
+	from it. Throws if not found.
+	
+	Useful if you only expect one attribute of the given name and type.
 	
 	Only looks for attributes of `this` tag, it does not search child tags.
 	If you wish to search for a value in a child tag (for example, if this
@@ -1495,7 +1509,9 @@ class Tag
 
 	/++
 	Lookup a child tag and attribute by name, and retrieve a value of type T
-	from it. Useful if you only expect one attribute of type T from given
+	from it. Returns a default value if not found.
+	
+	Useful if you only expect one attribute of type T from given
 	the tag and attribute names. Only looks for immediate child tags of
 	`this`, doesn't search recursively.
 
@@ -1571,7 +1587,9 @@ class Tag
 
 	/++
 	Lookup a child tag and attribute by name, and retrieve a value of type T
-	from it. Useful if you only expect one attribute of type T from given
+	from it. Throws if not found.
+	
+	Useful if you only expect one attribute of type T from given
 	the tag and attribute names. Only looks for immediate child tags of
 	`this`, doesn't search recursively.
 
@@ -1877,7 +1895,7 @@ class Tag
 			sink.put("\n");
 	}
 
-	/// Not the most efficient, but it works.
+	/// Outputs full information on the tag.
 	string toDebugString()
 	{
 		import std.algorithm : sort;
