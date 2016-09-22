@@ -4,6 +4,7 @@
 module sdlang.util;
 
 import std.algorithm;
+import std.conv;
 import std.datetime;
 import std.stdio;
 import std.string;
@@ -59,7 +60,7 @@ struct FullName
 		if(namespace == "")
 			return name;
 		else
-			return namespace ~ ":" ~ name;
+			return text(namespace, ":", name);
 	}
 
 	///

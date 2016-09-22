@@ -280,11 +280,18 @@ class Tag
 	}
 	
 	/// This tag's name, including namespace if one exists.
+	deprecated("Use 'getFullName().toString()'")
 	@property string fullName()
 	{
-		return _namespace==""? _name : text(_namespace, ":", _name);
+		return getFullName().toString();
 	}
-
+	
+	/// This tag's name, including namespace if one exists.
+	FullName getFullName()
+	{
+		return FullName(_namespace, _name);
+	}
+	
 	// Tracks dirtiness. This is incremented every time a change is made which
 	// could invalidate existing ranges. This way, the ranges can detect when
 	// they've been invalidated.
@@ -1039,9 +1046,7 @@ class Tag
 			else
 			{
 				throw new AttributeNotFoundException(
-					FullName(this.namespace, this.name),
-					attrFullName,
-					typeid(T),
+					this.getFullName(), attrFullName, typeid(T),
 					"Can't find attribute '"~FullName.combine(attrNS, attrName)~"'"
 				);
 			}
@@ -1060,9 +1065,7 @@ class Tag
 		else
 		{
 			throw new AttributeNotFoundException(
-				FullName(this.namespace, this.name),
-				attrFullName,
-				typeid(T),
+				this.getFullName(), attrFullName, typeid(T),
 				"Can't find attribute '"~FullName.combine(attrNS, attrName)~"' of type "~T.stringof
 			);
 		}
