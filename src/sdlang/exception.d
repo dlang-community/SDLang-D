@@ -8,7 +8,7 @@ import std.string;
 
 import sdlang.util;
 
-/// All SDLang-D defined exceptions inherit from this.
+/// Abstract parent class of all SDLang-D defined exceptions.
 abstract class SDLangException : Exception
 {
 	this(string msg, string file = __FILE__, size_t line = __LINE__)
@@ -81,3 +81,56 @@ class DOMRangeException : SDLangException
 deprecated("The new name is DOMRangeException")
 alias SDLangRangeException = DOMRangeException;
 
+/// Abstract parent class of `TagNotFoundException`, `ValueNotFoundException`
+/// and `AttributeNotFoundException`.
+///
+/// Thrown by the DOM's `sdlang.ast.Tag.expectTag`, etc. functions if a matching element isn't found.
+abstract class DOMNotFoundException : SDLangException
+{
+	FullName tagName;
+
+	this(FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		this.tagName = tagName;
+		super(msg, file, line);
+	}
+}
+
+/// Thrown by the DOM's `sdlang.ast.Tag.expectTag`, etc. functions if a Tag isn't found.
+class TagNotFoundException : DOMNotFoundException
+{
+	this(FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		super(tagName, msg, file, line);
+	}
+}
+
+/// Thrown by the DOM's `sdlang.ast.Tag.expectValue`, etc. functions if a Value isn't found.
+class ValueNotFoundException : DOMNotFoundException
+{
+	/// Expected type for the not-found value.
+	TypeInfo valueType;
+
+	this(FullName tagName, TypeInfo valueType, string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		this.valueType = valueType;
+		super(tagName, msg, file, line);
+	}
+}
+
+/// Thrown by the DOM's `sdlang.ast.Tag.expectAttribute`, etc. functions if an Attribute isn't found.
+class AttributeNotFoundException : DOMNotFoundException
+{
+	FullName attributeName;
+
+	/// Expected type for the not-found attribute's value.
+	TypeInfo valueType;
+
+	this(FullName tagName, FullName attributeName, TypeInfo valueType, string msg,
+		string file = __FILE__, size_t line = __LINE__)
+	{
+		this.valueType = valueType;
+		this.attributeName = attributeName;
+		super(tagName, msg, file, line);
+	}
+}

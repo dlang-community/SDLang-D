@@ -5,6 +5,8 @@ SDLang-D - ChangeLog
 
 v0.10.0 - TBD
 ---------------------
+Big enhancements to DOM interface, an improved pull parser interface, and a few bugfixes.
+
 - **New:** SDLangException and subclasses now take the standard file and line parameters.
 - **New:** Add a simple struct [FullName](http://semitwist.com/sdlang-d/sdlang/util/FullName.html) to split and combine namespace/name combinations.
 - **New:** [#6](https://github.com/Abscissa/SDLang-D/issues/6): Added [Tag.getValue](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getValue.html) and [Tag.getAttribute](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getAttribute.html) to more easily obtain values and attributes when only one value is expected for a given tag name.

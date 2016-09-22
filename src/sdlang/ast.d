@@ -1046,8 +1046,8 @@ class Tag
 	always be chosen. That is, this function considers later tags with the
 	same name to override previous ones.
 	
-	If no such tag is found, an `DOMRangeException` will be thrown. If
-	you'd rather receive a default value, use `getTag` instead.
+	If no such tag is found, an `sdlang.exception.TagNotFoundException` will
+	be thrown. If you'd rather receive a default value, use `getTag` instead.
 	+/
 	Tag expectTag(string tagName)
 	{
@@ -1080,7 +1080,7 @@ class Tag
 		
 		// Not found
 		// If you'd rather receive a default value than an exception, use `getTag` instead.
-		assertThrown!DOMRangeException( root.expectTag("doesnt-exist") );
+		assertThrown!TagNotFoundException( root.expectTag("doesnt-exist") );
 	}
 	
 	private Tag getTagImpl(string namespace, string tagName, Tag defaultValue=null, bool useDefaultValue=true)
@@ -1091,7 +1091,7 @@ class Tag
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new DOMRangeException("No tags found in namespace '"~namespace~"'");
+				throw new TagNotFoundException(FullName(namespace, tagName), "No tags found in namespace '"~namespace~"'");
 		}
 
 		// Can find tag in namespace?
@@ -1100,7 +1100,7 @@ class Tag
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new DOMRangeException("Can't find tag '"~FullName.combine(namespace, tagName)~"'");
+				throw new TagNotFoundException(FullName(namespace, tagName), "Can't find tag '"~FullName.combine(namespace, tagName)~"'");
 		}
 
 		// Return last matching tag found
@@ -1169,8 +1169,9 @@ class Tag
 	If this tag has multiple values, the $(B $(I first)) value matching the
 	requested type will be returned. Ie, Extra values in the tag are ignored.
 	
-	An `DOMRangeException` will be thrown if no value of the requested type
-	can be found. If you'd rather receive a default value, use `getValue` instead.
+	An `sdlang.exception.ValueNotFoundException` will be thrown if no value of
+	the requested type can be found. If you'd rather receive a default value,
+	use `getValue` instead.
 	+/
 	T expectValue(T)() if(isValueType!T)
 	{
@@ -1194,8 +1195,8 @@ class Tag
 
 		// No strings or floats found
 		// If you'd rather receive a default value than an exception, use `getValue` instead.
-		assertThrown!DOMRangeException( foo.expectValue!string() );
-		assertThrown!DOMRangeException( foo.expectValue!float() );
+		assertThrown!ValueNotFoundException( foo.expectValue!string() );
+		assertThrown!ValueNotFoundException( foo.expectValue!float() );
 	}
 
 	/++
@@ -1301,7 +1302,10 @@ class Tag
 		
 		// The last "bar" tag doesn't have a string (only the first "bar" tag does)
 		// If you'd rather receive a default value than an exception, use `getTagValue` instead.
-		assertThrown!DOMRangeException( root.expectTagValue!string("bar") );
+		assertThrown!ValueNotFoundException( root.expectTagValue!string("bar") );
+
+		// Tag not found
+		assertThrown!TagNotFoundException( root.expectTagValue!int("doesnt-exist") );
 
 		// Using namespaces:
 		root = parseSource(`
@@ -1320,7 +1324,10 @@ class Tag
 		assert( root.expectTagValue!string("*:foo"  ) == "cc" ); // Search all namespaces
 		
 		// The last "bar" tag doesn't have a string (only the first "bar" tag does)
-		assertThrown!DOMRangeException( root.expectTagValue!string("*:bar") );
+		assertThrown!ValueNotFoundException( root.expectTagValue!string("*:bar") );
+		
+		// Namespace not found
+		assertThrown!TagNotFoundException( root.expectTagValue!int("doesnt-exist:bar") );
 	}
 
 	private T getValueImpl(T)(T defaultValue, bool useDefaultValue=true)
@@ -1338,7 +1345,9 @@ class Tag
 			return defaultValue;
 		else
 		{
-			throw new DOMRangeException(
+			throw new ValueNotFoundException(
+				FullName(this.namespace, this.name),
+				typeid(T),
 				"No value of type "~T.stringof~" found."
 			);
 		}
@@ -1450,9 +1459,9 @@ class Tag
 	matching the requested name and type will be returned. Ie, Extra
 	attributes in the tag are ignored.
 	
-	An `DOMRangeException` will be thrown if no value of the requested type
-	can be found. If you'd rather receive a default value, use `getAttribute`
-	instead.
+	An `sdlang.exception.AttributeNotFoundException` will be thrown if no
+	value of the requested type can be found. If you'd rather receive a
+	default value, use `getAttribute` instead.
 	+/
 	T expectAttribute(T)(string fullAttributeName) if(isValueType!T)
 	{
@@ -1480,13 +1489,13 @@ class Tag
 
 		// Attribute name not found
 		// If you'd rather receive a default value than an exception, use `getAttribute` instead.
-		assertThrown!DOMRangeException( foo.expectAttribute!int("doesnt-exist") );
+		assertThrown!AttributeNotFoundException( foo.expectAttribute!int("doesnt-exist") );
 
 		// No strings found
-		assertThrown!DOMRangeException( foo.expectAttribute!string("X") );
+		assertThrown!AttributeNotFoundException( foo.expectAttribute!string("X") );
 
 		// No floats found
-		assertThrown!DOMRangeException( foo.expectAttribute!float("X") );
+		assertThrown!AttributeNotFoundException( foo.expectAttribute!float("X") );
 
 		
 		// Using namespaces:
@@ -1498,13 +1507,13 @@ class Tag
 		assert( foo.expectAttribute!int("*:X") == 1 ); // Search all namespaces
 		
 		// Namespace not found
-		assertThrown!DOMRangeException( foo.expectAttribute!int("doesnt-exist:X") );
+		assertThrown!AttributeNotFoundException( foo.expectAttribute!int("doesnt-exist:X") );
 		
 		// No attribute X is in the default namespace
-		assertThrown!DOMRangeException( foo.expectAttribute!int("X") );
+		assertThrown!AttributeNotFoundException( foo.expectAttribute!int("X") );
 		
 		// Attribute name not found
-		assertThrown!DOMRangeException( foo.expectAttribute!int("ns1:doesnt-exist") );
+		assertThrown!AttributeNotFoundException( foo.expectAttribute!int("ns1:doesnt-exist") );
 	}
 
 	/++
@@ -1619,8 +1628,10 @@ class Tag
 		
 		// The last "bar" tag doesn't have an int attribute named "X" (only the first "bar" tag does)
 		// If you'd rather receive a default value than an exception, use `getAttribute` instead.
-		assertThrown!DOMRangeException( root.expectTagAttribute!string("bar", "X") );
+		assertThrown!AttributeNotFoundException( root.expectTagAttribute!string("bar", "X") );
 		
+		// Tag not found
+		assertThrown!TagNotFoundException( root.expectTagAttribute!int("doesnt-exist", "X") );
 
 		// Using namespaces:
 		root = parseSource(`
@@ -1639,10 +1650,13 @@ class Tag
 		assert( root.expectTagAttribute!string("*:foo",   "X") == "cc" ); // Search all namespaces
 		
 		// bar's attribute X is't in the default namespace
-		assertThrown!DOMRangeException( root.expectTagAttribute!int("*:bar", "X") );
+		assertThrown!AttributeNotFoundException( root.expectTagAttribute!int("*:bar", "X") );
 
 		// The last "bar" tag's "attrNS:X" attribute doesn't have a string (only the first "bar" tag does)
-		assertThrown!DOMRangeException( root.expectTagAttribute!string("*:bar", "attrNS:X") );
+		assertThrown!AttributeNotFoundException( root.expectTagAttribute!string("*:bar", "attrNS:X") );
+
+		// Tag's namespace not found
+		assertThrown!TagNotFoundException( root.expectTagAttribute!int("doesnt-exist:bar", "attrNS:X") );
 	}
 
 	private T getAttributeImpl(T)(string attrNamespace,	string attrName, T defaultValue, bool useDefaultValue=true)
@@ -1655,7 +1669,10 @@ class Tag
 				return defaultValue;
 			else
 			{
-				throw new DOMRangeException(
+				throw new AttributeNotFoundException(
+					FullName(this.namespace, this.name),
+					FullName(attrNamespace, attrName),
+					typeid(T),
 					"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"'"
 				);
 			}
@@ -1673,7 +1690,10 @@ class Tag
 			return defaultValue;
 		else
 		{
-			throw new DOMRangeException(
+			throw new AttributeNotFoundException(
+				FullName(this.namespace, this.name),
+				FullName(attrNamespace, attrName),
+				typeid(T),
 				"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"' of type "~T.stringof
 			);
 		}
