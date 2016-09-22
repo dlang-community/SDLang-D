@@ -972,6 +972,97 @@ class Tag
 		return MaybeAccess(this);
 	}
 	
+	// Internal implementations for the get/expect functions further below:
+	
+	private Tag getTagImpl(string namespace, string tagName, Tag defaultValue=null, bool useDefaultValue=true)
+	{
+		// Can find namespace?
+		if(namespace !in _tags)
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+				throw new TagNotFoundException(FullName(namespace, tagName), "No tags found in namespace '"~namespace~"'");
+		}
+
+		// Can find tag in namespace?
+		if(tagName !in _tags[namespace] || _tags[namespace][tagName].length == 0)
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+				throw new TagNotFoundException(FullName(namespace, tagName), "Can't find tag '"~FullName.combine(namespace, tagName)~"'");
+		}
+
+		// Return last matching tag found
+		return _tags[namespace][tagName][$-1];
+	}
+
+	private T getValueImpl(T)(T defaultValue, bool useDefaultValue=true)
+	if(isValueType!T)
+	{
+		// Find value
+		foreach(value; this.values)
+		{
+			if(value.type == typeid(T))
+				return value.get!T();
+		}
+		
+		// No value of type T found
+		if(useDefaultValue)
+			return defaultValue;
+		else
+		{
+			throw new ValueNotFoundException(
+				FullName(this.namespace, this.name),
+				typeid(T),
+				"No value of type "~T.stringof~" found."
+			);
+		}
+	}
+
+	private T getAttributeImpl(T)(string attrNamespace,	string attrName, T defaultValue, bool useDefaultValue=true)
+	if(isValueType!T)
+	{
+		// Can find namespace and attribute name?
+		if(attrNamespace !in this._attributes || attrName !in this._attributes[attrNamespace])
+		{
+			if(useDefaultValue)
+				return defaultValue;
+			else
+			{
+				throw new AttributeNotFoundException(
+					FullName(this.namespace, this.name),
+					FullName(attrNamespace, attrName),
+					typeid(T),
+					"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"'"
+				);
+			}
+		}
+
+		// Find value with chosen type
+		foreach(attr; this._attributes[attrNamespace][attrName])
+		{
+			if(attr.value.type == typeid(T))
+				return attr.value.get!T();
+		}
+		
+		// Chosen type not found
+		if(useDefaultValue)
+			return defaultValue;
+		else
+		{
+			throw new AttributeNotFoundException(
+				FullName(this.namespace, this.name),
+				FullName(attrNamespace, attrName),
+				typeid(T),
+				"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"' of type "~T.stringof
+			);
+		}
+	}
+
+	// High-level interfaces for get/expect funtions:
+	
 	/++
 	Lookup a child tag by name. Returns null if not found.
 	
@@ -1083,30 +1174,6 @@ class Tag
 		assertThrown!TagNotFoundException( root.expectTag("doesnt-exist") );
 	}
 	
-	private Tag getTagImpl(string namespace, string tagName, Tag defaultValue=null, bool useDefaultValue=true)
-	{
-		// Can find namespace?
-		if(namespace !in _tags)
-		{
-			if(useDefaultValue)
-				return defaultValue;
-			else
-				throw new TagNotFoundException(FullName(namespace, tagName), "No tags found in namespace '"~namespace~"'");
-		}
-
-		// Can find tag in namespace?
-		if(tagName !in _tags[namespace] || _tags[namespace][tagName].length == 0)
-		{
-			if(useDefaultValue)
-				return defaultValue;
-			else
-				throw new TagNotFoundException(FullName(namespace, tagName), "Can't find tag '"~FullName.combine(namespace, tagName)~"'");
-		}
-
-		// Return last matching tag found
-		return _tags[namespace][tagName][$-1];
-	}
-
 	/++
 	Retrieve a value of type T from `this` tag. Returns a default value if not found.
 	
@@ -1328,29 +1395,6 @@ class Tag
 		
 		// Namespace not found
 		assertThrown!TagNotFoundException( root.expectTagValue!int("doesnt-exist:bar") );
-	}
-
-	private T getValueImpl(T)(T defaultValue, bool useDefaultValue=true)
-	if(isValueType!T)
-	{
-		// Find value
-		foreach(value; this.values)
-		{
-			if(value.type == typeid(T))
-				return value.get!T();
-		}
-		
-		// No value of type T found
-		if(useDefaultValue)
-			return defaultValue;
-		else
-		{
-			throw new ValueNotFoundException(
-				FullName(this.namespace, this.name),
-				typeid(T),
-				"No value of type "~T.stringof~" found."
-			);
-		}
 	}
 
 	/++
@@ -1657,46 +1701,6 @@ class Tag
 
 		// Tag's namespace not found
 		assertThrown!TagNotFoundException( root.expectTagAttribute!int("doesnt-exist:bar", "attrNS:X") );
-	}
-
-	private T getAttributeImpl(T)(string attrNamespace,	string attrName, T defaultValue, bool useDefaultValue=true)
-	if(isValueType!T)
-	{
-		// Can find namespace and attribute name?
-		if(attrNamespace !in this._attributes || attrName !in this._attributes[attrNamespace])
-		{
-			if(useDefaultValue)
-				return defaultValue;
-			else
-			{
-				throw new AttributeNotFoundException(
-					FullName(this.namespace, this.name),
-					FullName(attrNamespace, attrName),
-					typeid(T),
-					"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"'"
-				);
-			}
-		}
-
-		// Find value with chosen type
-		foreach(attr; this._attributes[attrNamespace][attrName])
-		{
-			if(attr.value.type == typeid(T))
-				return attr.value.get!T();
-		}
-		
-		// Chosen type not found
-		if(useDefaultValue)
-			return defaultValue;
-		else
-		{
-			throw new AttributeNotFoundException(
-				FullName(this.namespace, this.name),
-				FullName(attrNamespace, attrName),
-				typeid(T),
-				"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"' of type "~T.stringof
-			);
-		}
 	}
 
 	@("*: Disallow wildcards for names")
