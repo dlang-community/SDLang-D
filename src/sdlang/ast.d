@@ -1092,7 +1092,7 @@ class Tag
 	+/
 	Tag getTag(string fullTagName, Tag defaultValue=null)
 	{
-		auto parsedName = FullName.split(fullTagName);
+		auto parsedName = FullName.parse(fullTagName);
 		parsedName.ensureNoWildcardName(
 			"Instead, use 'Tag.maybe.tags[0]', 'Tag.maybe.all.tags[0]' or 'Tag.maybe.namespace[ns].tags[0]'."
 		);
@@ -1149,7 +1149,7 @@ class Tag
 	+/
 	Tag expectTag(string fullTagName)
 	{
-		auto parsedName = FullName.split(fullTagName);
+		auto parsedName = FullName.parse(fullTagName);
 		parsedName.ensureNoWildcardName(
 			"Instead, use 'Tag.tags[0]', 'Tag.all.tags[0]' or 'Tag.namespace[ns].tags[0]'."
 		);
@@ -1433,7 +1433,7 @@ class Tag
 	+/
 	T getAttribute(T)(string fullAttributeName, T defaultValue = T.init) if(isValueType!T)
 	{
-		auto parsedName = FullName.split(fullAttributeName);
+		auto parsedName = FullName.parse(fullAttributeName);
 		parsedName.ensureNoWildcardName(
 			"Instead, use 'Attribute.maybe.tags[0]', 'Attribute.maybe.all.tags[0]' or 'Attribute.maybe.namespace[ns].tags[0]'."
 		);
@@ -1516,7 +1516,7 @@ class Tag
 	+/
 	T expectAttribute(T)(string fullAttributeName) if(isValueType!T)
 	{
-		auto parsedName = FullName.split(fullAttributeName);
+		auto parsedName = FullName.parse(fullAttributeName);
 		parsedName.ensureNoWildcardName(
 			"Instead, use 'Attribute.tags[0]', 'Attribute.all.tags[0]' or 'Attribute.namespace[ns].tags[0]'."
 		);

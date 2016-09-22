@@ -77,7 +77,7 @@ struct FullName
 	}
 
 	///
-	static FullName split(string fullName)
+	static FullName parse(string fullName)
 	{
 		FullName result;
 		
@@ -96,12 +96,12 @@ struct FullName
 		return result;
 	}
 	///
-	@("FullName.split example")
+	@("FullName.parse example")
 	unittest
 	{
-		assert(FullName.split("name") == FullName("", "name"));
-		assert(FullName.split("*:name") == FullName("*", "name"));
-		assert(FullName.split("namespace:name") == FullName("namespace", "name"));
+		assert(FullName.parse("name") == FullName("", "name"));
+		assert(FullName.parse("*:name") == FullName("*", "name"));
+		assert(FullName.parse("namespace:name") == FullName("namespace", "name"));
 	}
 
 	/// Throws with appropriate message if this.name is "*".
