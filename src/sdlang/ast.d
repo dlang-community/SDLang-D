@@ -974,28 +974,31 @@ class Tag
 	
 	// Internal implementations for the get/expect functions further below:
 	
-	private Tag getTagImpl(string namespace, string tagName, Tag defaultValue=null, bool useDefaultValue=true)
+	private Tag getTagImpl(FullName tagFullName, Tag defaultValue=null, bool useDefaultValue=true)
 	{
+		auto tagNS   = tagFullName.namespace;
+		auto tagName = tagFullName.name;
+		
 		// Can find namespace?
-		if(namespace !in _tags)
+		if(tagNS !in _tags)
 		{
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new TagNotFoundException(FullName(namespace, tagName), "No tags found in namespace '"~namespace~"'");
+				throw new TagNotFoundException(tagFullName, "No tags found in namespace '"~namespace~"'");
 		}
 
 		// Can find tag in namespace?
-		if(tagName !in _tags[namespace] || _tags[namespace][tagName].length == 0)
+		if(tagName !in _tags[tagNS] || _tags[tagNS][tagName].length == 0)
 		{
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new TagNotFoundException(FullName(namespace, tagName), "Can't find tag '"~FullName.combine(namespace, tagName)~"'");
+				throw new TagNotFoundException(tagFullName, "Can't find tag '"~tagFullName.toString()~"'");
 		}
 
 		// Return last matching tag found
-		return _tags[namespace][tagName][$-1];
+		return _tags[tagNS][tagName][$-1];
 	}
 
 	private T getValueImpl(T)(T defaultValue, bool useDefaultValue=true)
@@ -1021,11 +1024,14 @@ class Tag
 		}
 	}
 
-	private T getAttributeImpl(T)(string attrNamespace,	string attrName, T defaultValue, bool useDefaultValue=true)
+	private T getAttributeImpl(T)(FullName attrFullName, T defaultValue, bool useDefaultValue=true)
 	if(isValueType!T)
 	{
+		auto attrNS   = attrFullName.namespace;
+		auto attrName = attrFullName.name;
+		
 		// Can find namespace and attribute name?
-		if(attrNamespace !in this._attributes || attrName !in this._attributes[attrNamespace])
+		if(attrNS !in this._attributes || attrName !in this._attributes[attrNS])
 		{
 			if(useDefaultValue)
 				return defaultValue;
@@ -1033,15 +1039,15 @@ class Tag
 			{
 				throw new AttributeNotFoundException(
 					FullName(this.namespace, this.name),
-					FullName(attrNamespace, attrName),
+					attrFullName,
 					typeid(T),
-					"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"'"
+					"Can't find attribute '"~FullName.combine(attrNS, attrName)~"'"
 				);
 			}
 		}
 
 		// Find value with chosen type
-		foreach(attr; this._attributes[attrNamespace][attrName])
+		foreach(attr; this._attributes[attrNS][attrName])
 		{
 			if(attr.value.type == typeid(T))
 				return attr.value.get!T();
@@ -1054,9 +1060,9 @@ class Tag
 		{
 			throw new AttributeNotFoundException(
 				FullName(this.namespace, this.name),
-				FullName(attrNamespace, attrName),
+				attrFullName,
 				typeid(T),
-				"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"' of type "~T.stringof
+				"Can't find attribute '"~FullName.combine(attrNS, attrName)~"' of type "~T.stringof
 			);
 		}
 	}
@@ -1083,13 +1089,13 @@ class Tag
 	value is returned. Otherwise null is returned. If you'd prefer an
 	exception thrown, use `expectTag` instead.
 	+/
-	Tag getTag(string tagName, Tag defaultValue=null)
+	Tag getTag(string fullTagName, Tag defaultValue=null)
 	{
-		auto splitName = FullName.split(tagName);
-		splitName.ensureNoWildcardName(
+		auto parsedName = FullName.split(fullTagName);
+		parsedName.ensureNoWildcardName(
 			"Instead, use 'Tag.maybe.tags[0]', 'Tag.maybe.all.tags[0]' or 'Tag.maybe.namespace[ns].tags[0]'."
 		);
-		return getTagImpl(splitName.namespace, splitName.name, defaultValue);
+		return getTagImpl(parsedName, defaultValue);
 	}
 	
 	///
@@ -1140,13 +1146,13 @@ class Tag
 	If no such tag is found, an `sdlang.exception.TagNotFoundException` will
 	be thrown. If you'd rather receive a default value, use `getTag` instead.
 	+/
-	Tag expectTag(string tagName)
+	Tag expectTag(string fullTagName)
 	{
-		auto splitName = FullName.split(tagName);
-		splitName.ensureNoWildcardName(
+		auto parsedName = FullName.split(fullTagName);
+		parsedName.ensureNoWildcardName(
 			"Instead, use 'Tag.tags[0]', 'Tag.all.tags[0]' or 'Tag.namespace[ns].tags[0]'."
 		);
-		return getTagImpl(splitName.namespace, splitName.name, null, false);
+		return getTagImpl(parsedName, null, false);
 	}
 	
 	///
@@ -1426,11 +1432,11 @@ class Tag
 	+/
 	T getAttribute(T)(string fullAttributeName, T defaultValue = T.init) if(isValueType!T)
 	{
-		auto splitAttrName = FullName.split(fullAttributeName);
-		splitAttrName.ensureNoWildcardName(
+		auto parsedName = FullName.split(fullAttributeName);
+		parsedName.ensureNoWildcardName(
 			"Instead, use 'Attribute.maybe.tags[0]', 'Attribute.maybe.all.tags[0]' or 'Attribute.maybe.namespace[ns].tags[0]'."
 		);
-		return getAttributeImpl!T(splitAttrName.namespace, splitAttrName.name, defaultValue);
+		return getAttributeImpl!T(parsedName, defaultValue);
 	}
 	
 	///
@@ -1509,11 +1515,11 @@ class Tag
 	+/
 	T expectAttribute(T)(string fullAttributeName) if(isValueType!T)
 	{
-		auto splitAttrName = FullName.split(fullAttributeName);
-		splitAttrName.ensureNoWildcardName(
+		auto parsedName = FullName.split(fullAttributeName);
+		parsedName.ensureNoWildcardName(
 			"Instead, use 'Attribute.tags[0]', 'Attribute.all.tags[0]' or 'Attribute.namespace[ns].tags[0]'."
 		);
-		return getAttributeImpl!T(splitAttrName.namespace, splitAttrName.name, T.init, false);
+		return getAttributeImpl!T(parsedName, T.init, false);
 	}
 	
 	///
