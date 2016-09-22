@@ -964,9 +964,10 @@ class Tag
 		}
 	}
 	
-	/// Access 'attributes', 'tags', 'namespaces' and 'all' like normal,
+	/// Access `attributes`, `tags`, `namespaces` and `all` like normal,
 	/// except that looking up a non-existant name/namespace with
-	/// opIndex(string) results in an empty array instead of a thrown DOMRangeException.
+	/// opIndex(string) results in an empty array instead of
+	/// a thrown `sdlang.exception.DOMRangeException`.
 	@property MaybeAccess maybe()
 	{
 		return MaybeAccess(this);
@@ -1753,46 +1754,46 @@ class Tag
 		assert( root.expectTagAttribute!int("ns:foo", "ns:X") == 4 );
 		
 		// No namespace
-		assertThrown!DOMRangeException( root.getTag   ("*") );
-		assertThrown!DOMRangeException( root.expectTag("*") );
+		assertThrown!ArgumentException( root.getTag   ("*") );
+		assertThrown!ArgumentException( root.expectTag("*") );
 		
-		assertThrown!DOMRangeException( root.getTagValue   !int("*") );
-		assertThrown!DOMRangeException( root.expectTagValue!int("*") );
+		assertThrown!ArgumentException( root.getTagValue   !int("*") );
+		assertThrown!ArgumentException( root.expectTagValue!int("*") );
 
-		assertThrown!DOMRangeException( foo.getAttribute       !int("*")        );
-		assertThrown!DOMRangeException( foo.expectAttribute    !int("*")        );
-		assertThrown!DOMRangeException( root.getTagAttribute   !int("*", "X")   );
-		assertThrown!DOMRangeException( root.expectTagAttribute!int("*", "X")   );
-		assertThrown!DOMRangeException( root.getTagAttribute   !int("foo", "*") );
-		assertThrown!DOMRangeException( root.expectTagAttribute!int("foo", "*") );
+		assertThrown!ArgumentException( foo.getAttribute       !int("*")        );
+		assertThrown!ArgumentException( foo.expectAttribute    !int("*")        );
+		assertThrown!ArgumentException( root.getTagAttribute   !int("*", "X")   );
+		assertThrown!ArgumentException( root.expectTagAttribute!int("*", "X")   );
+		assertThrown!ArgumentException( root.getTagAttribute   !int("foo", "*") );
+		assertThrown!ArgumentException( root.expectTagAttribute!int("foo", "*") );
 
 		// With namespace
-		assertThrown!DOMRangeException( root.getTag   ("ns:*") );
-		assertThrown!DOMRangeException( root.expectTag("ns:*") );
+		assertThrown!ArgumentException( root.getTag   ("ns:*") );
+		assertThrown!ArgumentException( root.expectTag("ns:*") );
 		
-		assertThrown!DOMRangeException( root.getTagValue   !int("ns:*") );
-		assertThrown!DOMRangeException( root.expectTagValue!int("ns:*") );
+		assertThrown!ArgumentException( root.getTagValue   !int("ns:*") );
+		assertThrown!ArgumentException( root.expectTagValue!int("ns:*") );
 
-		assertThrown!DOMRangeException( nsfoo.getAttribute     !int("ns:*")           );
-		assertThrown!DOMRangeException( nsfoo.expectAttribute  !int("ns:*")           );
-		assertThrown!DOMRangeException( root.getTagAttribute   !int("ns:*",   "ns:X") );
-		assertThrown!DOMRangeException( root.expectTagAttribute!int("ns:*",   "ns:X") );
-		assertThrown!DOMRangeException( root.getTagAttribute   !int("ns:foo", "ns:*") );
-		assertThrown!DOMRangeException( root.expectTagAttribute!int("ns:foo", "ns:*") );
+		assertThrown!ArgumentException( nsfoo.getAttribute     !int("ns:*")           );
+		assertThrown!ArgumentException( nsfoo.expectAttribute  !int("ns:*")           );
+		assertThrown!ArgumentException( root.getTagAttribute   !int("ns:*",   "ns:X") );
+		assertThrown!ArgumentException( root.expectTagAttribute!int("ns:*",   "ns:X") );
+		assertThrown!ArgumentException( root.getTagAttribute   !int("ns:foo", "ns:*") );
+		assertThrown!ArgumentException( root.expectTagAttribute!int("ns:foo", "ns:*") );
 
 		// With wildcard namespace
-		assertThrown!DOMRangeException( root.getTag   ("*:*") );
-		assertThrown!DOMRangeException( root.expectTag("*:*") );
+		assertThrown!ArgumentException( root.getTag   ("*:*") );
+		assertThrown!ArgumentException( root.expectTag("*:*") );
 		
-		assertThrown!DOMRangeException( root.getTagValue   !int("*:*") );
-		assertThrown!DOMRangeException( root.expectTagValue!int("*:*") );
+		assertThrown!ArgumentException( root.getTagValue   !int("*:*") );
+		assertThrown!ArgumentException( root.expectTagValue!int("*:*") );
 
-		assertThrown!DOMRangeException( nsfoo.getAttribute     !int("*:*")          );
-		assertThrown!DOMRangeException( nsfoo.expectAttribute  !int("*:*")          );
-		assertThrown!DOMRangeException( root.getTagAttribute   !int("*:*",   "*:X") );
-		assertThrown!DOMRangeException( root.expectTagAttribute!int("*:*",   "*:X") );
-		assertThrown!DOMRangeException( root.getTagAttribute   !int("*:foo", "*:*") );
-		assertThrown!DOMRangeException( root.expectTagAttribute!int("*:foo", "*:*") );
+		assertThrown!ArgumentException( nsfoo.getAttribute     !int("*:*")          );
+		assertThrown!ArgumentException( nsfoo.expectAttribute  !int("*:*")          );
+		assertThrown!ArgumentException( root.getTagAttribute   !int("*:*",   "*:X") );
+		assertThrown!ArgumentException( root.expectTagAttribute!int("*:*",   "*:X") );
+		assertThrown!ArgumentException( root.getTagAttribute   !int("*:foo", "*:*") );
+		assertThrown!ArgumentException( root.expectTagAttribute!int("*:foo", "*:*") );
 	}
 	
 	override bool opEquals(Object o)

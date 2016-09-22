@@ -41,8 +41,7 @@ deprecated("The new name is ParseException")
 alias SDLangParseException = ParseException;
 
 /++
-Thrown when attempting to do something in the DOM that's unsupported
-by the SDLang format, such as:
+Thrown when attempting to do something in the DOM that's unsupported, such as:
 
 $(UL
 $(LI Adding the same instance of a tag or attribute to more than one parent.)
@@ -67,6 +66,14 @@ class ValidationException : SDLangException
 deprecated("The new name is ValidationException")
 alias SDLangValidationException = ValidationException;
 
+/// Thrown when someting is wrong with the provided arguments to a function.
+class ArgumentException : SDLangException
+{
+	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		super(msg, file, line);
+	}
+}
 
 /// Thrown by the DOM on empty range and out-of-range conditions.
 class DOMRangeException : SDLangException
