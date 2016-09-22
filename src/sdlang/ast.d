@@ -1147,6 +1147,44 @@ class Tag
 	}
 
 	/++
+	Retrieve a value of type T from `this` tag. Useful if you only expect one
+	value of type T from this tag. Only looks for values of `this` tag, it does
+	not search child tags. If you wish to search for a value in a child tag
+	(for example, if this current tag is a root tag), try `expectTagValue`.
+
+	If this tag has multiple values, the $(B $(I first)) value matching the
+	requested type will be returned. Ie, Extra values in the tag are ignored.
+	
+	An `SDLangRangeException` will be thrown if no value of the requested type
+	can be found. If you'd rather receive a default value, use `getValue` instead.
+	+/
+	T expectValue(T)() if(isValueType!T)
+	{
+		return getValueImpl!T(T.init, false);
+	}
+
+	///
+	@("Tag.expectValue")
+	unittest
+	{
+		import std.exception;
+		import std.math;
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo 1 true 2 false
+		`);
+		auto foo = root.getTag("foo");
+		assert( foo.expectValue!int() == 1 );
+		assert( foo.expectValue!bool() == true );
+
+		// No strings or floats found
+		// If you'd rather receive a default value than an exception, use `getValue` instead.
+		assertThrown!SDLangRangeException( foo.expectValue!string() );
+		assertThrown!SDLangRangeException( foo.expectValue!float() );
+	}
+
+	/++
 	Lookup a child tag by name, and retrieve a value of type T from it. Useful
 	if you only expect one value of type T from a given tag. Only looks
 	for immediate child tags of `this`, doesn't search recursively.
@@ -1212,44 +1250,6 @@ class Tag
 		// The last "bar" tag doesn't have a string (only the first "bar" tag does)
 		assert( root.getTagValue!string("*:bar", "Default") == "Default" );
 		assert( root.getTagValue!string("*:bar") is null );
-	}
-
-	/++
-	Retrieve a value of type T from `this` tag. Useful if you only expect one
-	value of type T from this tag. Only looks for values of `this` tag, it does
-	not search child tags. If you wish to search for a value in a child tag
-	(for example, if this current tag is a root tag), try `expectTagValue`.
-
-	If this tag has multiple values, the $(B $(I first)) value matching the
-	requested type will be returned. Ie, Extra values in the tag are ignored.
-	
-	An `SDLangRangeException` will be thrown if no value of the requested type
-	can be found. If you'd rather receive a default value, use `getValue` instead.
-	+/
-	T expectValue(T)() if(isValueType!T)
-	{
-		return getValueImpl!T(T.init, false);
-	}
-
-	///
-	@("Tag.expectValue")
-	unittest
-	{
-		import std.exception;
-		import std.math;
-		import sdlang.parser;
-		
-		auto root = parseSource(`
-			foo 1 true 2 false
-		`);
-		auto foo = root.getTag("foo");
-		assert( foo.expectValue!int() == 1 );
-		assert( foo.expectValue!bool() == true );
-
-		// No strings or floats found
-		// If you'd rather receive a default value than an exception, use `getValue` instead.
-		assertThrown!SDLangRangeException( foo.expectValue!string() );
-		assertThrown!SDLangRangeException( foo.expectValue!float() );
 	}
 
 	/++
@@ -1407,6 +1407,77 @@ class Tag
 	}
 	
 	/++
+	Lookup an attribute of `this` tag by name, and retrieve a value of type T
+	from it. Useful if you only expect one attribute of the given name and type.
+	
+	Only looks for attributes of `this` tag, it does not search child tags.
+	If you wish to search for a value in a child tag (for example, if this
+	current tag is a root tag), try `expectTagAttribute`.
+
+	The attribute name can optionally include a namespace, as in
+	`"namespace:name"`. Or, you can search all namespaces using `"*:name"`.
+	(Note that unlike tags. attributes can't be anonymous - that's what
+	values are.)
+
+	If this tag has multiple attributes, the $(B $(I first)) attribute
+	matching the requested name and type will be returned. Ie, Extra
+	attributes in the tag are ignored.
+	
+	An `SDLangRangeException` will be thrown if no value of the requested type
+	can be found. If you'd rather receive a default value, use `getAttribute`
+	instead.
+	+/
+	T expectAttribute(T)(string fullAttributeName) if(isValueType!T)
+	{
+		auto splitAttrName = FullName.split(fullAttributeName);
+		return getAttributeImpl!T(splitAttrName.namespace, splitAttrName.name, T.init, false);
+	}
+	
+	///
+	@("Tag.expectAttribute")
+	unittest
+	{
+		import std.exception;
+		import std.math;
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo z=0 X=1 X=true X=2 X=false
+		`);
+		auto foo = root.getTag("foo");
+		assert( foo.expectAttribute!int("X") == 1 );
+		assert( foo.expectAttribute!bool("X") == true );
+
+		// Attribute name not found
+		// If you'd rather receive a default value than an exception, use `getAttribute` instead.
+		assertThrown!SDLangRangeException( foo.expectAttribute!int("doesnt-exist") );
+
+		// No strings found
+		assertThrown!SDLangRangeException( foo.expectAttribute!string("X") );
+
+		// No floats found
+		assertThrown!SDLangRangeException( foo.expectAttribute!float("X") );
+
+		
+		// Using namespaces:
+		root = parseSource(`
+			foo  ns1:z=0  ns1:X=1  ns1:X=2  ns2:X=3  ns2:X=4
+		`);
+		foo = root.getTag("foo");
+		assert( foo.expectAttribute!int("ns2:X") == 3 );
+		assert( foo.expectAttribute!int("*:X") == 1 ); // Search all namespaces
+		
+		// Namespace not found
+		assertThrown!SDLangRangeException( foo.expectAttribute!int("doesnt-exist:X") );
+		
+		// No attribute X is in the default namespace
+		assertThrown!SDLangRangeException( foo.expectAttribute!int("X") );
+		
+		// Attribute name not found
+		assertThrown!SDLangRangeException( foo.expectAttribute!int("ns1:doesnt-exist") );
+	}
+
+	/++
 	Lookup a child tag and attribute by name, and retrieve a value of type T
 	from it. Useful if you only expect one attribute of type T from given
 	the tag and attribute names. Only looks for immediate child tags of
@@ -1480,77 +1551,6 @@ class Tag
 		// The last "bar" tag's "attrNS:X" attribute doesn't have a string (only the first "bar" tag does)
 		assert( root.getTagAttribute!string("*:bar", "attrNS:X", "Default") == "Default" );
 		assert( root.getTagAttribute!string("*:bar", "attrNS:X") is null);
-	}
-	
-	/++
-	Lookup an attribute of `this` tag by name, and retrieve a value of type T
-	from it. Useful if you only expect one attribute of the given name and type.
-	
-	Only looks for attributes of `this` tag, it does not search child tags.
-	If you wish to search for a value in a child tag (for example, if this
-	current tag is a root tag), try `expectTagAttribute`.
-
-	The attribute name can optionally include a namespace, as in
-	`"namespace:name"`. Or, you can search all namespaces using `"*:name"`.
-	(Note that unlike tags. attributes can't be anonymous - that's what
-	values are.)
-
-	If this tag has multiple attributes, the $(B $(I first)) attribute
-	matching the requested name and type will be returned. Ie, Extra
-	attributes in the tag are ignored.
-	
-	An `SDLangRangeException` will be thrown if no value of the requested type
-	can be found. If you'd rather receive a default value, use `getAttribute`
-	instead.
-	+/
-	T expectAttribute(T)(string fullAttributeName) if(isValueType!T)
-	{
-		auto splitAttrName = FullName.split(fullAttributeName);
-		return getAttributeImpl!T(splitAttrName.namespace, splitAttrName.name, T.init, false);
-	}
-	
-	///
-	@("Tag.expectAttribute")
-	unittest
-	{
-		import std.exception;
-		import std.math;
-		import sdlang.parser;
-		
-		auto root = parseSource(`
-			foo z=0 X=1 X=true X=2 X=false
-		`);
-		auto foo = root.getTag("foo");
-		assert( foo.expectAttribute!int("X") == 1 );
-		assert( foo.expectAttribute!bool("X") == true );
-
-		// Attribute name not found
-		// If you'd rather receive a default value than an exception, use `getAttribute` instead.
-		assertThrown!SDLangRangeException( foo.expectAttribute!int("doesnt-exist") );
-
-		// No strings found
-		assertThrown!SDLangRangeException( foo.expectAttribute!string("X") );
-
-		// No floats found
-		assertThrown!SDLangRangeException( foo.expectAttribute!float("X") );
-
-		
-		// Using namespaces:
-		root = parseSource(`
-			foo  ns1:z=0  ns1:X=1  ns1:X=2  ns2:X=3  ns2:X=4
-		`);
-		foo = root.getTag("foo");
-		assert( foo.expectAttribute!int("ns2:X") == 3 );
-		assert( foo.expectAttribute!int("*:X") == 1 ); // Search all namespaces
-		
-		// Namespace not found
-		assertThrown!SDLangRangeException( foo.expectAttribute!int("doesnt-exist:X") );
-		
-		// No attribute X is in the default namespace
-		assertThrown!SDLangRangeException( foo.expectAttribute!int("X") );
-		
-		// Attribute name not found
-		assertThrown!SDLangRangeException( foo.expectAttribute!int("ns1:doesnt-exist") );
 	}
 
 	/++
