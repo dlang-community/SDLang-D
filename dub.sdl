@@ -36,8 +36,7 @@ configuration "unittest" {
 	targetPath "bin/"
 	targetName "sdlang-unittest"
 
-	//dependency "unit-threaded" version="~>0.6.27"
-	dependency "unit-threaded-abscissa" version="~>0.0.1"
+	dependency "unit-threaded" version="~>0.6.28"
 
 	preBuildCommands "dub run unit-threaded-abscissa -c gen_ut_main -- -f bin/ut.d"
 	mainSourceFile "bin/ut.d"
