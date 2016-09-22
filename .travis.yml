@@ -1,11 +1,6 @@
 language: d
 sudo: false
 
-# At the moment, unit-threaded isn't detecting all all the tests
-# (issue: https://github.com/atilaneves/unit-threaded/issues/43)
-# so when done, run the tests again using built-in test runner.
-script: dub test && dub test --config=unittest-builtin
-
 matrix:
     include:
         - d: dmd
