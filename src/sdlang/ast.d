@@ -980,7 +980,8 @@ class Tag
 	The name can optionally include a namespace, as in `"namespace:name"`.
 	Or, you can search all namespaces using `"*:name"`. Use an empty string
 	to search for anonymous tags, or `"namespace:"` for anonymous tags inside
-	a namespace.
+	a namespace. Wildcard searching is only supported for namespaces, not names.
+	Use `tags[0]` if you don't care about the name.
 	
 	If there are multiple tags by the chosen name, the $(B $(I last tag)) will
 	always be chosen. That is, this function considers later tags with the
@@ -1036,7 +1037,8 @@ class Tag
 	The name can optionally include a namespace, as in `"namespace:name"`.
 	Or, you can search all namespaces using `"*:name"`. Use an empty string
 	to search for anonymous tags, or `"namespace:"` for anonymous tags inside
-	a namespace.
+	a namespace. Wildcard searching is only supported for namespaces, not names.
+	Use `tags[0]` if you don't care about the name.
 	
 	If there are multiple tags by the chosen name, the $(B $(I last tag)) will
 	always be chosen. That is, this function considers later tags with the
@@ -1343,7 +1345,8 @@ class Tag
 	The attribute name can optionally include a namespace, as in
 	`"namespace:name"`. Or, you can search all namespaces using `"*:name"`.
 	(Note that unlike tags. attributes can't be anonymous - that's what
-	values are.)
+	values are.) Wildcard searching is only supported for namespaces, not names.
+	Use `attributes[0]` if you don't care about the name.
 
 	If this tag has multiple attributes, the $(B $(I first)) attribute
 	matching the requested name and type will be returned. Ie, Extra
@@ -1426,7 +1429,8 @@ class Tag
 	The attribute name can optionally include a namespace, as in
 	`"namespace:name"`. Or, you can search all namespaces using `"*:name"`.
 	(Note that unlike tags. attributes can't be anonymous - that's what
-	values are.)
+	values are.) Wildcard searching is only supported for namespaces, not names.
+	Use `attributes[0]` if you don't care about the name.
 
 	If this tag has multiple attributes, the $(B $(I first)) attribute
 	matching the requested name and type will be returned. Ie, Extra
