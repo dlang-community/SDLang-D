@@ -78,7 +78,7 @@ version(sdlangCliApp)
 			else
 				doToSDL(filename);
 		}
-		catch(SDLangParseException e)
+		catch(ParseException e)
 		{
 			stderr.writeln(e.msg);
 			return 1;

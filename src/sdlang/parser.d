@@ -254,7 +254,7 @@ private struct PullParser
 
 	private void error(Location loc, string msg)
 	{
-		throw new SDLangParseException(loc, "Error: "~msg);
+		throw new ParseException(loc, "Error: "~msg);
 	}
 	
 	private InputVisitor!(PullParser, ParserEvent) v;
@@ -600,8 +600,8 @@ private struct DOMParser
 unittest
 {
 	import std.exception;
-	assertThrown!SDLangParseException(parseSource(`:test`));
-	assertThrown!SDLangParseException(parseSource(`:4`));
+	assertThrown!ParseException(parseSource(`:test`));
+	assertThrown!ParseException(parseSource(`:4`));
 }
 
 // Regression test, issue #16: https://github.com/Abscissa/SDLang-D/issues/16

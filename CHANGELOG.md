@@ -11,6 +11,7 @@ v0.10.0 - TBD
 - **New:** [#38](https://github.com/Abscissa/SDLang-D/issues/38): Add Tag.clone/Attribute.clone to deep clone a tag (and all its children)
 - **Improved:** Various documentation improvements.
 - **Change:** Minimum DMDFE bumped to 2.069.
+- **Change:** Cleaned up the names of the [exceptions](http://semitwist.com/sdlang-d/sdlang/exception.html).
 - **Change:** [#17](https://github.com/Abscissa/SDLang-D/issues/17): Remove unnecessary FileStart and FileEnd events.
 - **Change:** Pull parser: [ParserEvent](http://semitwist.com/sdlang-d/sdlang/parser/ParserEvent.html) is now a [TaggedAlgebraic](https://github.com/s-ludwig/taggedalgebraic), instead of a [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html#.Algebraic). This enables use of `final switch` and provides simpler syntax.
 - **Fixed:** Fixed building the CLI tool via dub.

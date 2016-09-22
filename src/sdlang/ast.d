@@ -341,7 +341,7 @@ class Tag
 	
 	/// Adds a Value, Attribute, Tag (or array of such) as a member/child of this Tag.
 	/// Returns `this` for chaining.
-	/// Throws `SDLangValidationException` if trying to add an Attribute or Tag
+	/// Throws `ValidationException` if trying to add an Attribute or Tag
 	/// that already has a parent.
 	Tag add(Value val)
 	{
@@ -364,7 +364,7 @@ class Tag
 	{
 		if(attr._parent)
 		{
-			throw new SDLangValidationException(
+			throw new ValidationException(
 				"Attribute is already attached to a parent tag. "~
 				"Use Attribute.remove() before adding it to another tag."
 			);
@@ -398,7 +398,7 @@ class Tag
 	{
 		if(tag._parent)
 		{
-			throw new SDLangValidationException(
+			throw new ValidationException(
 				"Tag is already attached to a parent tag. "~
 				"Use Tag.remove() before adding it to another tag."
 			);
@@ -539,7 +539,7 @@ class Tag
 		void popFront()
 		{
 			if(empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 
 			frontIndex++;
 		}
@@ -552,7 +552,7 @@ class Tag
 		void popBack()
 		{
 			if(empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 
 			endIndex--;
 		}
@@ -587,7 +587,7 @@ class Tag
 				r.endIndex > this.endIndex ||
 				r.frontIndex > r.endIndex
 			)
-				throw new SDLangRangeException("Slice out of range");
+				throw new DOMRangeException("Slice out of range");
 			
 			return r;
 		}
@@ -595,7 +595,7 @@ class Tag
 		T opIndex(size_t index)
 		{
 			if(empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 
 			return mixin("tag."~membersGrouped~"[namespace][name][frontIndex+index]");
 		}
@@ -648,7 +648,7 @@ class Tag
 		void popFront()
 		{
 			if(empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 
 			frontIndex++;
 		}
@@ -661,7 +661,7 @@ class Tag
 		void popBack()
 		{
 			if(empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 
 			endIndex--;
 		}
@@ -698,7 +698,7 @@ class Tag
 				r.endIndex > this.endIndex ||
 				r.frontIndex > r.endIndex
 			)
-				throw new SDLangRangeException("Slice out of range");
+				throw new DOMRangeException("Slice out of range");
 			
 			return r;
 		}
@@ -706,7 +706,7 @@ class Tag
 		T opIndex(size_t index)
 		{
 			if(empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 
 			if(namespace == "*")
 				return mixin("tag."~allMembers~"[ frontIndex+index ]");
@@ -719,7 +719,7 @@ class Tag
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
 			{
-				throw new SDLangRangeException(
+				throw new DOMRangeException(
 					"Cannot lookup tags/attributes by name on a subset of a range, "~
 					"only across the entire tag. "~
 					"Please make sure you haven't called popFront or popBack on this "~
@@ -728,10 +728,10 @@ class Tag
 			}
 			
 			if(!isMaybe && empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 			
 			if(!isMaybe && name !in this)
-				throw new SDLangRangeException(`No such `~T.stringof~` named: "`~name~`"`);
+				throw new DOMRangeException(`No such `~T.stringof~` named: "`~name~`"`);
 
 			return ThisNamedMemberRange(tag, namespace, name, updateId);
 		}
@@ -740,7 +740,7 @@ class Tag
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
 			{
-				throw new SDLangRangeException(
+				throw new DOMRangeException(
 					"Cannot lookup tags/attributes by name on a subset of a range, "~
 					"only across the entire tag. "~
 					"Please make sure you haven't called popFront or popBack on this "~
@@ -791,7 +791,7 @@ class Tag
 		void popFront()
 		{
 			if(empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 			
 			frontIndex++;
 		}
@@ -804,7 +804,7 @@ class Tag
 		void popBack()
 		{
 			if(empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 			
 			endIndex--;
 		}
@@ -840,7 +840,7 @@ class Tag
 				r.endIndex > this.endIndex ||
 				r.frontIndex > r.endIndex
 			)
-				throw new SDLangRangeException("Slice out of range");
+				throw new DOMRangeException("Slice out of range");
 			
 			return r;
 		}
@@ -848,7 +848,7 @@ class Tag
 		NamespaceAccess opIndex(size_t index)
 		{
 			if(empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 
 			auto namespace = tag.allNamespaces[frontIndex+index];
 			return NamespaceAccess(
@@ -861,10 +861,10 @@ class Tag
 		NamespaceAccess opIndex(string namespace)
 		{
 			if(!isMaybe && empty)
-				throw new SDLangRangeException("Range is empty");
+				throw new DOMRangeException("Range is empty");
 			
 			if(!isMaybe && namespace !in this)
-				throw new SDLangRangeException(`No such namespace: "`~namespace~`"`);
+				throw new DOMRangeException(`No such namespace: "`~namespace~`"`);
 			
 			return NamespaceAccess(
 				namespace,
@@ -966,7 +966,7 @@ class Tag
 	
 	/// Access 'attributes', 'tags', 'namespaces' and 'all' like normal,
 	/// except that looking up a non-existant name/namespace with
-	/// opIndex(string) results in an empty array instead of a thrown SDLangRangeException.
+	/// opIndex(string) results in an empty array instead of a thrown DOMRangeException.
 	@property MaybeAccess maybe()
 	{
 		return MaybeAccess(this);
@@ -1046,7 +1046,7 @@ class Tag
 	always be chosen. That is, this function considers later tags with the
 	same name to override previous ones.
 	
-	If no such tag is found, an `SDLangRangeException` will be thrown. If
+	If no such tag is found, an `DOMRangeException` will be thrown. If
 	you'd rather receive a default value, use `getTag` instead.
 	+/
 	Tag expectTag(string tagName)
@@ -1080,7 +1080,7 @@ class Tag
 		
 		// Not found
 		// If you'd rather receive a default value than an exception, use `getTag` instead.
-		assertThrown!SDLangRangeException( root.expectTag("doesnt-exist") );
+		assertThrown!DOMRangeException( root.expectTag("doesnt-exist") );
 	}
 	
 	private Tag getTagImpl(string namespace, string tagName, Tag defaultValue=null, bool useDefaultValue=true)
@@ -1091,7 +1091,7 @@ class Tag
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new SDLangRangeException("No tags found in namespace '"~namespace~"'");
+				throw new DOMRangeException("No tags found in namespace '"~namespace~"'");
 		}
 
 		// Can find tag in namespace?
@@ -1100,7 +1100,7 @@ class Tag
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new SDLangRangeException("Can't find tag '"~FullName.combine(namespace, tagName)~"'");
+				throw new DOMRangeException("Can't find tag '"~FullName.combine(namespace, tagName)~"'");
 		}
 
 		// Return last matching tag found
@@ -1169,7 +1169,7 @@ class Tag
 	If this tag has multiple values, the $(B $(I first)) value matching the
 	requested type will be returned. Ie, Extra values in the tag are ignored.
 	
-	An `SDLangRangeException` will be thrown if no value of the requested type
+	An `DOMRangeException` will be thrown if no value of the requested type
 	can be found. If you'd rather receive a default value, use `getValue` instead.
 	+/
 	T expectValue(T)() if(isValueType!T)
@@ -1194,8 +1194,8 @@ class Tag
 
 		// No strings or floats found
 		// If you'd rather receive a default value than an exception, use `getValue` instead.
-		assertThrown!SDLangRangeException( foo.expectValue!string() );
-		assertThrown!SDLangRangeException( foo.expectValue!float() );
+		assertThrown!DOMRangeException( foo.expectValue!string() );
+		assertThrown!DOMRangeException( foo.expectValue!float() );
 	}
 
 	/++
@@ -1301,7 +1301,7 @@ class Tag
 		
 		// The last "bar" tag doesn't have a string (only the first "bar" tag does)
 		// If you'd rather receive a default value than an exception, use `getTagValue` instead.
-		assertThrown!SDLangRangeException( root.expectTagValue!string("bar") );
+		assertThrown!DOMRangeException( root.expectTagValue!string("bar") );
 
 		// Using namespaces:
 		root = parseSource(`
@@ -1320,7 +1320,7 @@ class Tag
 		assert( root.expectTagValue!string("*:foo"  ) == "cc" ); // Search all namespaces
 		
 		// The last "bar" tag doesn't have a string (only the first "bar" tag does)
-		assertThrown!SDLangRangeException( root.expectTagValue!string("*:bar") );
+		assertThrown!DOMRangeException( root.expectTagValue!string("*:bar") );
 	}
 
 	private T getValueImpl(T)(T defaultValue, bool useDefaultValue=true)
@@ -1338,7 +1338,7 @@ class Tag
 			return defaultValue;
 		else
 		{
-			throw new SDLangRangeException(
+			throw new DOMRangeException(
 				"No value of type "~T.stringof~" found."
 			);
 		}
@@ -1450,7 +1450,7 @@ class Tag
 	matching the requested name and type will be returned. Ie, Extra
 	attributes in the tag are ignored.
 	
-	An `SDLangRangeException` will be thrown if no value of the requested type
+	An `DOMRangeException` will be thrown if no value of the requested type
 	can be found. If you'd rather receive a default value, use `getAttribute`
 	instead.
 	+/
@@ -1480,13 +1480,13 @@ class Tag
 
 		// Attribute name not found
 		// If you'd rather receive a default value than an exception, use `getAttribute` instead.
-		assertThrown!SDLangRangeException( foo.expectAttribute!int("doesnt-exist") );
+		assertThrown!DOMRangeException( foo.expectAttribute!int("doesnt-exist") );
 
 		// No strings found
-		assertThrown!SDLangRangeException( foo.expectAttribute!string("X") );
+		assertThrown!DOMRangeException( foo.expectAttribute!string("X") );
 
 		// No floats found
-		assertThrown!SDLangRangeException( foo.expectAttribute!float("X") );
+		assertThrown!DOMRangeException( foo.expectAttribute!float("X") );
 
 		
 		// Using namespaces:
@@ -1498,13 +1498,13 @@ class Tag
 		assert( foo.expectAttribute!int("*:X") == 1 ); // Search all namespaces
 		
 		// Namespace not found
-		assertThrown!SDLangRangeException( foo.expectAttribute!int("doesnt-exist:X") );
+		assertThrown!DOMRangeException( foo.expectAttribute!int("doesnt-exist:X") );
 		
 		// No attribute X is in the default namespace
-		assertThrown!SDLangRangeException( foo.expectAttribute!int("X") );
+		assertThrown!DOMRangeException( foo.expectAttribute!int("X") );
 		
 		// Attribute name not found
-		assertThrown!SDLangRangeException( foo.expectAttribute!int("ns1:doesnt-exist") );
+		assertThrown!DOMRangeException( foo.expectAttribute!int("ns1:doesnt-exist") );
 	}
 
 	/++
@@ -1619,7 +1619,7 @@ class Tag
 		
 		// The last "bar" tag doesn't have an int attribute named "X" (only the first "bar" tag does)
 		// If you'd rather receive a default value than an exception, use `getAttribute` instead.
-		assertThrown!SDLangRangeException( root.expectTagAttribute!string("bar", "X") );
+		assertThrown!DOMRangeException( root.expectTagAttribute!string("bar", "X") );
 		
 
 		// Using namespaces:
@@ -1639,10 +1639,10 @@ class Tag
 		assert( root.expectTagAttribute!string("*:foo",   "X") == "cc" ); // Search all namespaces
 		
 		// bar's attribute X is't in the default namespace
-		assertThrown!SDLangRangeException( root.expectTagAttribute!int("*:bar", "X") );
+		assertThrown!DOMRangeException( root.expectTagAttribute!int("*:bar", "X") );
 
 		// The last "bar" tag's "attrNS:X" attribute doesn't have a string (only the first "bar" tag does)
-		assertThrown!SDLangRangeException( root.expectTagAttribute!string("*:bar", "attrNS:X") );
+		assertThrown!DOMRangeException( root.expectTagAttribute!string("*:bar", "attrNS:X") );
 	}
 
 	private T getAttributeImpl(T)(string attrNamespace,	string attrName, T defaultValue, bool useDefaultValue=true)
@@ -1655,7 +1655,7 @@ class Tag
 				return defaultValue;
 			else
 			{
-				throw new SDLangRangeException(
+				throw new DOMRangeException(
 					"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"'"
 				);
 			}
@@ -1673,7 +1673,7 @@ class Tag
 			return defaultValue;
 		else
 		{
-			throw new SDLangRangeException(
+			throw new DOMRangeException(
 				"Can't find attribute '"~FullName.combine(attrNamespace, attrName)~"' of type "~T.stringof
 			);
 		}
@@ -1723,46 +1723,46 @@ class Tag
 		assert( root.expectTagAttribute!int("ns:foo", "ns:X") == 4 );
 		
 		// No namespace
-		assertThrown!SDLangRangeException( root.getTag   ("*") );
-		assertThrown!SDLangRangeException( root.expectTag("*") );
+		assertThrown!DOMRangeException( root.getTag   ("*") );
+		assertThrown!DOMRangeException( root.expectTag("*") );
 		
-		assertThrown!SDLangRangeException( root.getTagValue   !int("*") );
-		assertThrown!SDLangRangeException( root.expectTagValue!int("*") );
+		assertThrown!DOMRangeException( root.getTagValue   !int("*") );
+		assertThrown!DOMRangeException( root.expectTagValue!int("*") );
 
-		assertThrown!SDLangRangeException( foo.getAttribute       !int("*")        );
-		assertThrown!SDLangRangeException( foo.expectAttribute    !int("*")        );
-		assertThrown!SDLangRangeException( root.getTagAttribute   !int("*", "X")   );
-		assertThrown!SDLangRangeException( root.expectTagAttribute!int("*", "X")   );
-		assertThrown!SDLangRangeException( root.getTagAttribute   !int("foo", "*") );
-		assertThrown!SDLangRangeException( root.expectTagAttribute!int("foo", "*") );
+		assertThrown!DOMRangeException( foo.getAttribute       !int("*")        );
+		assertThrown!DOMRangeException( foo.expectAttribute    !int("*")        );
+		assertThrown!DOMRangeException( root.getTagAttribute   !int("*", "X")   );
+		assertThrown!DOMRangeException( root.expectTagAttribute!int("*", "X")   );
+		assertThrown!DOMRangeException( root.getTagAttribute   !int("foo", "*") );
+		assertThrown!DOMRangeException( root.expectTagAttribute!int("foo", "*") );
 
 		// With namespace
-		assertThrown!SDLangRangeException( root.getTag   ("ns:*") );
-		assertThrown!SDLangRangeException( root.expectTag("ns:*") );
+		assertThrown!DOMRangeException( root.getTag   ("ns:*") );
+		assertThrown!DOMRangeException( root.expectTag("ns:*") );
 		
-		assertThrown!SDLangRangeException( root.getTagValue   !int("ns:*") );
-		assertThrown!SDLangRangeException( root.expectTagValue!int("ns:*") );
+		assertThrown!DOMRangeException( root.getTagValue   !int("ns:*") );
+		assertThrown!DOMRangeException( root.expectTagValue!int("ns:*") );
 
-		assertThrown!SDLangRangeException( nsfoo.getAttribute     !int("ns:*")           );
-		assertThrown!SDLangRangeException( nsfoo.expectAttribute  !int("ns:*")           );
-		assertThrown!SDLangRangeException( root.getTagAttribute   !int("ns:*",   "ns:X") );
-		assertThrown!SDLangRangeException( root.expectTagAttribute!int("ns:*",   "ns:X") );
-		assertThrown!SDLangRangeException( root.getTagAttribute   !int("ns:foo", "ns:*") );
-		assertThrown!SDLangRangeException( root.expectTagAttribute!int("ns:foo", "ns:*") );
+		assertThrown!DOMRangeException( nsfoo.getAttribute     !int("ns:*")           );
+		assertThrown!DOMRangeException( nsfoo.expectAttribute  !int("ns:*")           );
+		assertThrown!DOMRangeException( root.getTagAttribute   !int("ns:*",   "ns:X") );
+		assertThrown!DOMRangeException( root.expectTagAttribute!int("ns:*",   "ns:X") );
+		assertThrown!DOMRangeException( root.getTagAttribute   !int("ns:foo", "ns:*") );
+		assertThrown!DOMRangeException( root.expectTagAttribute!int("ns:foo", "ns:*") );
 
 		// With wildcard namespace
-		assertThrown!SDLangRangeException( root.getTag   ("*:*") );
-		assertThrown!SDLangRangeException( root.expectTag("*:*") );
+		assertThrown!DOMRangeException( root.getTag   ("*:*") );
+		assertThrown!DOMRangeException( root.expectTag("*:*") );
 		
-		assertThrown!SDLangRangeException( root.getTagValue   !int("*:*") );
-		assertThrown!SDLangRangeException( root.expectTagValue!int("*:*") );
+		assertThrown!DOMRangeException( root.getTagValue   !int("*:*") );
+		assertThrown!DOMRangeException( root.expectTagValue!int("*:*") );
 
-		assertThrown!SDLangRangeException( nsfoo.getAttribute     !int("*:*")          );
-		assertThrown!SDLangRangeException( nsfoo.expectAttribute  !int("*:*")          );
-		assertThrown!SDLangRangeException( root.getTagAttribute   !int("*:*",   "*:X") );
-		assertThrown!SDLangRangeException( root.expectTagAttribute!int("*:*",   "*:X") );
-		assertThrown!SDLangRangeException( root.getTagAttribute   !int("*:foo", "*:*") );
-		assertThrown!SDLangRangeException( root.expectTagAttribute!int("*:foo", "*:*") );
+		assertThrown!DOMRangeException( nsfoo.getAttribute     !int("*:*")          );
+		assertThrown!DOMRangeException( nsfoo.expectAttribute  !int("*:*")          );
+		assertThrown!DOMRangeException( root.getTagAttribute   !int("*:*",   "*:X") );
+		assertThrown!DOMRangeException( root.expectTagAttribute!int("*:*",   "*:X") );
+		assertThrown!DOMRangeException( root.getTagAttribute   !int("*:foo", "*:*") );
+		assertThrown!DOMRangeException( root.expectTagAttribute!int("*:foo", "*:*") );
 	}
 	
 	override bool opEquals(Object o)
@@ -1798,7 +1798,7 @@ class Tag
 	
 	/// Treats `this` as the root tag. Note that root tags cannot have
 	/// values or attributes, and cannot be part of a namespace.
-	/// If this isn't a valid root tag, 'SDLangValidationException' will be thrown.
+	/// If this isn't a valid root tag, 'ValidationException' will be thrown.
 	string toSDLDocument()(string indent="\t", int indentLevel=0)
 	{
 		Appender!string sink;
@@ -1811,13 +1811,13 @@ class Tag
 		if(isOutputRange!(Sink,char))
 	{
 		if(values.length > 0)
-			throw new SDLangValidationException("Root tags cannot have any values, only child tags.");
+			throw new ValidationException("Root tags cannot have any values, only child tags.");
 
 		if(allAttributes.length > 0)
-			throw new SDLangValidationException("Root tags cannot have any attributes, only child tags.");
+			throw new ValidationException("Root tags cannot have any attributes, only child tags.");
 
 		if(_namespace != "")
-			throw new SDLangValidationException("Root tags cannot have a namespace.");
+			throw new ValidationException("Root tags cannot have a namespace.");
 		
 		foreach(tag; allTags)
 			tag.toSDLString(sink, indent, indentLevel);
@@ -1838,10 +1838,10 @@ class Tag
 		if(isOutputRange!(Sink,char))
 	{
 		if(_name == "" && values.length == 0)
-			throw new SDLangValidationException("Anonymous tags must have at least one value.");
+			throw new ValidationException("Anonymous tags must have at least one value.");
 		
 		if(_name == "" && _namespace != "")
-			throw new SDLangValidationException("Anonymous tags cannot have a namespace.");
+			throw new ValidationException("Anonymous tags cannot have a namespace.");
 	
 		// Indent
 		foreach(i; 0..indentLevel)
@@ -2287,26 +2287,26 @@ unittest
 	testRandomAccessRange(root.all.tags["blue"],                   [blue3, blue5]);
 	testRandomAccessRange(root.all.tags["orange"],                 [orange]);
 
-	assertThrown!SDLangRangeException(root.tags["foobar"]);
-	assertThrown!SDLangRangeException(root.all.tags["foobar"]);
-	assertThrown!SDLangRangeException(root.attributes["foobar"]);
-	assertThrown!SDLangRangeException(root.all.attributes["foobar"]);
+	assertThrown!DOMRangeException(root.tags["foobar"]);
+	assertThrown!DOMRangeException(root.all.tags["foobar"]);
+	assertThrown!DOMRangeException(root.attributes["foobar"]);
+	assertThrown!DOMRangeException(root.all.attributes["foobar"]);
 	
 	// DMD Issue #12585 causes a segfault in these two tests when using 2.064 or 2.065,
 	// so work around it.
-	//assertThrown!SDLangRangeException(root.namespaces["foobar"].tags["foobar"]);
-	//assertThrown!SDLangRangeException(root.namespaces["foobar"].attributes["foobar"]);
+	//assertThrown!DOMRangeException(root.namespaces["foobar"].tags["foobar"]);
+	//assertThrown!DOMRangeException(root.namespaces["foobar"].attributes["foobar"]);
 	bool didCatch = false;
 	try
 		auto x = root.namespaces["foobar"].tags["foobar"];
-	catch(SDLangRangeException e)
+	catch(DOMRangeException e)
 		didCatch = true;
 	assert(didCatch);
 	
 	didCatch = false;
 	try
 		auto x = root.namespaces["foobar"].attributes["foobar"];
-	catch(SDLangRangeException e)
+	catch(DOMRangeException e)
 		didCatch = true;
 	assert(didCatch);
 

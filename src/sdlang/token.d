@@ -146,29 +146,29 @@ unittest
 	assertNotThrown( toSDLString(0.0)  );
 	assertNotThrown( toSDLString(0.0L) );
 	
-	assertThrown!SDLangValidationException( toSDLString(floatInf) );
-	assertThrown!SDLangValidationException( toSDLString(floatNegInf) );
-	assertThrown!SDLangValidationException( toSDLString(floatNaN) );
+	assertThrown!ValidationException( toSDLString(floatInf) );
+	assertThrown!ValidationException( toSDLString(floatNegInf) );
+	assertThrown!ValidationException( toSDLString(floatNaN) );
 
-	assertThrown!SDLangValidationException( toSDLString(doubleInf) );
-	assertThrown!SDLangValidationException( toSDLString(doubleNegInf) );
-	assertThrown!SDLangValidationException( toSDLString(doubleNaN) );
+	assertThrown!ValidationException( toSDLString(doubleInf) );
+	assertThrown!ValidationException( toSDLString(doubleNegInf) );
+	assertThrown!ValidationException( toSDLString(doubleNaN) );
 
-	assertThrown!SDLangValidationException( toSDLString(realInf) );
-	assertThrown!SDLangValidationException( toSDLString(realNegInf) );
-	assertThrown!SDLangValidationException( toSDLString(realNaN) );
+	assertThrown!ValidationException( toSDLString(realInf) );
+	assertThrown!ValidationException( toSDLString(realNegInf) );
+	assertThrown!ValidationException( toSDLString(realNaN) );
 	
-	assertThrown!SDLangValidationException( toSDLString(Value(floatInf)) );
-	assertThrown!SDLangValidationException( toSDLString(Value(floatNegInf)) );
-	assertThrown!SDLangValidationException( toSDLString(Value(floatNaN)) );
+	assertThrown!ValidationException( toSDLString(Value(floatInf)) );
+	assertThrown!ValidationException( toSDLString(Value(floatNegInf)) );
+	assertThrown!ValidationException( toSDLString(Value(floatNaN)) );
 
-	assertThrown!SDLangValidationException( toSDLString(Value(doubleInf)) );
-	assertThrown!SDLangValidationException( toSDLString(Value(doubleNegInf)) );
-	assertThrown!SDLangValidationException( toSDLString(Value(doubleNaN)) );
+	assertThrown!ValidationException( toSDLString(Value(doubleInf)) );
+	assertThrown!ValidationException( toSDLString(Value(doubleNegInf)) );
+	assertThrown!ValidationException( toSDLString(Value(doubleNaN)) );
 
-	assertThrown!SDLangValidationException( toSDLString(Value(realInf)) );
-	assertThrown!SDLangValidationException( toSDLString(Value(realNegInf)) );
-	assertThrown!SDLangValidationException( toSDLString(Value(realNaN)) );
+	assertThrown!ValidationException( toSDLString(Value(realInf)) );
+	assertThrown!ValidationException( toSDLString(Value(realNegInf)) );
+	assertThrown!ValidationException( toSDLString(Value(realNaN)) );
 }
 
 void toSDLString(Sink)(typeof(null) value, ref Sink sink) if(isOutputRange!(Sink,char))
@@ -231,12 +231,12 @@ private void checkUnsupportedFloatingPoint(T)(T value) if(isFloatingPoint!T)
 	import std.exception;
 	import std.math;
 	
-	enforce!SDLangValidationException(
+	enforce!ValidationException(
 		!isInfinity(value),
 		"SDLang does not currently support infinity for floating-point types"
 	);
 
-	enforce!SDLangValidationException(
+	enforce!ValidationException(
 		!isNaN(value),
 		"SDLang does not currently support NaN for floating-point types"
 	);

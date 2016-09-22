@@ -18,7 +18,7 @@ abstract class SDLangException : Exception
 }
 
 /// Thrown when a syntax error is encounterd while parsing.
-class SDLangParseException : SDLangException
+class ParseException : SDLangException
 {
 	Location location;
 	bool hasLocation;
@@ -36,6 +36,10 @@ class SDLangParseException : SDLangException
 	}
 }
 
+/// Compatibility alias
+deprecated("The new name is ParseException")
+alias SDLangParseException = ParseException;
+
 /++
 Thrown when attempting to do something in the DOM that's unsupported
 by the SDLang format, such as:
@@ -51,7 +55,7 @@ $(LI Writing SDLang where:
 	)
 ))
 +/
-class SDLangValidationException : SDLangException
+class ValidationException : SDLangException
 {
 	this(string msg, string file = __FILE__, size_t line = __LINE__)
 	{
@@ -59,11 +63,21 @@ class SDLangValidationException : SDLangException
 	}
 }
 
+/// Compatibility alias
+deprecated("The new name is ValidationException")
+alias SDLangValidationException = ValidationException;
+
+
 /// Thrown by the DOM on empty range and out-of-range conditions.
-class SDLangRangeException : SDLangException
+class DOMRangeException : SDLangException
 {
 	this(string msg, string file = __FILE__, size_t line = __LINE__)
 	{
 		super(msg, file, line);
 	}
 }
+
+/// Compatibility alias
+deprecated("The new name is DOMRangeException")
+alias SDLangRangeException = DOMRangeException;
+

@@ -109,7 +109,7 @@ struct FullName
 	void ensureNoWildcardName(string extaMsg = null)
 	{
 		if(name == "*")
-			throw new SDLangRangeException(`Wildcards ("*") only allowed for namespaces, not names. `~extaMsg);
+			throw new DOMRangeException(`Wildcards ("*") only allowed for namespaces, not names. `~extaMsg);
 	}
 }
 struct Foo { string foo; }
