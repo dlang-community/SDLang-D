@@ -8,6 +8,7 @@ import std.datetime;
 import std.stdio;
 import std.string;
 
+import sdlang.exception;
 import sdlang.token;
 
 enum sdlangVersion = "0.9.1";
@@ -101,6 +102,14 @@ struct FullName
 		assert(FullName.split("name") == FullName("", "name"));
 		assert(FullName.split("*:name") == FullName("*", "name"));
 		assert(FullName.split("namespace:name") == FullName("namespace", "name"));
+	}
+
+	/// Throws with appropriate message if this.name is "*".
+	/// Wildcards are only supported for namespaces, not names.
+	void ensureNoWildcardName(string extaMsg = null)
+	{
+		if(name == "*")
+			throw new SDLangRangeException(`Wildcards ("*") only allowed for namespaces, not names. `~extaMsg);
 	}
 }
 struct Foo { string foo; }

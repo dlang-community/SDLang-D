@@ -993,6 +993,9 @@ class Tag
 	Tag getTag(string tagName, Tag defaultValue=null)
 	{
 		auto splitName = FullName.split(tagName);
+		splitName.ensureNoWildcardName(
+			"Instead, use 'Tag.maybe.tags[0]', 'Tag.maybe.all.tags[0]' or 'Tag.maybe.namespace[ns].tags[0]'."
+		);
 		return getTagImpl(splitName.namespace, splitName.name, defaultValue);
 	}
 	
@@ -1045,6 +1048,9 @@ class Tag
 	Tag expectTag(string tagName)
 	{
 		auto splitName = FullName.split(tagName);
+		splitName.ensureNoWildcardName(
+			"Instead, use 'Tag.tags[0]', 'Tag.all.tags[0]' or 'Tag.namespace[ns].tags[0]'."
+		);
 		return getTagImpl(splitName.namespace, splitName.name, null, false);
 	}
 	
@@ -1353,6 +1359,9 @@ class Tag
 	T getAttribute(T)(string fullAttributeName, T defaultValue = T.init) if(isValueType!T)
 	{
 		auto splitAttrName = FullName.split(fullAttributeName);
+		splitAttrName.ensureNoWildcardName(
+			"Instead, use 'Attribute.maybe.tags[0]', 'Attribute.maybe.all.tags[0]' or 'Attribute.maybe.namespace[ns].tags[0]'."
+		);
 		return getAttributeImpl!T(splitAttrName.namespace, splitAttrName.name, defaultValue);
 	}
 	
@@ -1430,6 +1439,9 @@ class Tag
 	T expectAttribute(T)(string fullAttributeName) if(isValueType!T)
 	{
 		auto splitAttrName = FullName.split(fullAttributeName);
+		splitAttrName.ensureNoWildcardName(
+			"Instead, use 'Attribute.tags[0]', 'Attribute.all.tags[0]' or 'Attribute.namespace[ns].tags[0]'."
+		);
 		return getAttributeImpl!T(splitAttrName.namespace, splitAttrName.name, T.init, false);
 	}
 	
@@ -1645,6 +1657,92 @@ class Tag
 		}
 	}
 
+	@("*: Disallow wildcards for names")
+	unittest
+	{
+		import std.exception;
+		import std.math;
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo 1 X=2
+			ns:foo 3 ns:X=4
+		`);
+		auto foo = root.getTag("foo");
+		auto nsfoo = root.getTag("ns:foo");
+
+		// Sanity check
+		assert( foo !is null );
+		assert( foo.name == "foo" );
+		assert( foo.namespace == "" );
+
+		assert( nsfoo !is null );
+		assert( nsfoo.name == "foo" );
+		assert( nsfoo.namespace == "ns" );
+
+		assert( foo.getValue     !int() == 1 );
+		assert( foo.expectValue  !int() == 1 );
+		assert( nsfoo.getValue   !int() == 3 );
+		assert( nsfoo.expectValue!int() == 3 );
+
+		assert( root.getTagValue   !int("foo")    == 1 );
+		assert( root.expectTagValue!int("foo")    == 1 );
+		assert( root.getTagValue   !int("ns:foo") == 3 );
+		assert( root.expectTagValue!int("ns:foo") == 3 );
+
+		assert( foo.getAttribute     !int("X")    == 2 );
+		assert( foo.expectAttribute  !int("X")    == 2 );
+		assert( nsfoo.getAttribute   !int("ns:X") == 4 );
+		assert( nsfoo.expectAttribute!int("ns:X") == 4 );
+
+		assert( root.getTagAttribute   !int("foo", "X")       == 2 );
+		assert( root.expectTagAttribute!int("foo", "X")       == 2 );
+		assert( root.getTagAttribute   !int("ns:foo", "ns:X") == 4 );
+		assert( root.expectTagAttribute!int("ns:foo", "ns:X") == 4 );
+		
+		// No namespace
+		assertThrown!SDLangRangeException( root.getTag   ("*") );
+		assertThrown!SDLangRangeException( root.expectTag("*") );
+		
+		assertThrown!SDLangRangeException( root.getTagValue   !int("*") );
+		assertThrown!SDLangRangeException( root.expectTagValue!int("*") );
+
+		assertThrown!SDLangRangeException( foo.getAttribute       !int("*")        );
+		assertThrown!SDLangRangeException( foo.expectAttribute    !int("*")        );
+		assertThrown!SDLangRangeException( root.getTagAttribute   !int("*", "X")   );
+		assertThrown!SDLangRangeException( root.expectTagAttribute!int("*", "X")   );
+		assertThrown!SDLangRangeException( root.getTagAttribute   !int("foo", "*") );
+		assertThrown!SDLangRangeException( root.expectTagAttribute!int("foo", "*") );
+
+		// With namespace
+		assertThrown!SDLangRangeException( root.getTag   ("ns:*") );
+		assertThrown!SDLangRangeException( root.expectTag("ns:*") );
+		
+		assertThrown!SDLangRangeException( root.getTagValue   !int("ns:*") );
+		assertThrown!SDLangRangeException( root.expectTagValue!int("ns:*") );
+
+		assertThrown!SDLangRangeException( nsfoo.getAttribute     !int("ns:*")           );
+		assertThrown!SDLangRangeException( nsfoo.expectAttribute  !int("ns:*")           );
+		assertThrown!SDLangRangeException( root.getTagAttribute   !int("ns:*",   "ns:X") );
+		assertThrown!SDLangRangeException( root.expectTagAttribute!int("ns:*",   "ns:X") );
+		assertThrown!SDLangRangeException( root.getTagAttribute   !int("ns:foo", "ns:*") );
+		assertThrown!SDLangRangeException( root.expectTagAttribute!int("ns:foo", "ns:*") );
+
+		// With wildcard namespace
+		assertThrown!SDLangRangeException( root.getTag   ("*:*") );
+		assertThrown!SDLangRangeException( root.expectTag("*:*") );
+		
+		assertThrown!SDLangRangeException( root.getTagValue   !int("*:*") );
+		assertThrown!SDLangRangeException( root.expectTagValue!int("*:*") );
+
+		assertThrown!SDLangRangeException( nsfoo.getAttribute     !int("*:*")          );
+		assertThrown!SDLangRangeException( nsfoo.expectAttribute  !int("*:*")          );
+		assertThrown!SDLangRangeException( root.getTagAttribute   !int("*:*",   "*:X") );
+		assertThrown!SDLangRangeException( root.expectTagAttribute!int("*:*",   "*:X") );
+		assertThrown!SDLangRangeException( root.getTagAttribute   !int("*:foo", "*:*") );
+		assertThrown!SDLangRangeException( root.expectTagAttribute!int("*:foo", "*:*") );
+	}
+	
 	override bool opEquals(Object o)
 	{
 		auto t = cast(Tag)o;
