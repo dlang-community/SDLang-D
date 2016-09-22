@@ -117,7 +117,7 @@ class Attribute
 		return new Attribute(_namespace, _name, value, location);
 	}
 	
-	/// Removes 'this' from its parent, if any. Returns 'this' for chaining.
+	/// Removes `this` from its parent, if any. Returns `this` for chaining.
 	/// Inefficient ATM, but it works.
 	Attribute remove()
 	{
@@ -340,8 +340,8 @@ class Tag
 	private Tag[][string][string]       _tags;       // tags[namespace or "*"][name][i]
 	
 	/// Adds a Value, Attribute, Tag (or array of such) as a member/child of this Tag.
-	/// Returns 'this' for chaining.
-	/// Throws 'SDLangValidationException' if trying to add an Attribute or Tag
+	/// Returns `this` for chaining.
+	/// Throws `SDLangValidationException` if trying to add an Attribute or Tag
 	/// that already has a parent.
 	Tag add(Value val)
 	{
@@ -427,7 +427,7 @@ class Tag
 		return this;
 	}
 	
-	/// Removes 'this' from its parent, if any. Returns 'this' for chaining.
+	/// Removes `this` from its parent, if any. Returns `this` for chaining.
 	/// Inefficient ATM, but it works.
 	Tag remove()
 	{
@@ -974,19 +974,19 @@ class Tag
 	
 	/++
 	Lookup a child tag by name. Useful if you only expect one, and only one,
-	child tag of a given name. Only looks for immediate child tags of 'this',
+	child tag of a given name. Only looks for immediate child tags of `this`,
 	doesn't search recursively.
 	
-	The name can optionally include a namespace, as in "namespace:name".
-	Or, you can search all namespaces using "*:name".
+	The name can optionally include a namespace, as in `"namespace:name"`.
+	Or, you can search all namespaces using `"*:name"`.
 	
-	If there are multiple tags by the chosen name, the *last tag* will always
-	be chosen. That is, this function considers later tags with the same name
-	to override previous ones.
+	If there are multiple tags by the chosen name, the $(B $(I last tag)) will
+	always be chosen. That is, this function considers later tags with the
+	same name to override previous ones.
 	
 	If the tag cannot be found, and you provides a default value, the default
 	value is returned. Otherwise null is returned. If you'd prefer an
-	exceptoion thrown, use expectTag instead.
+	exceptoion thrown, use `expectTag` instead.
 	+/
 	Tag getTag(string tagName, Tag defaultValue=null)
 	{
@@ -1015,11 +1015,56 @@ class Tag
 		assert( root.getTag("*:foo"  ).values[0].get!int() == 44 ); // Search all namespaces
 		
 		// Not found
-		assert( root.getTag("bar") is null );
+		assert( root.getTag("doesnt-exist") is null );
 
 		// Default value
 		auto foo = root.getTag("foo");
-		assert( root.getTag("bar", foo) is foo );
+		assert( root.getTag("doesnt-exist", foo) is foo );
+	}
+	
+	/++
+	Lookup a child tag by name. Useful if you only expect one, and only one,
+	child tag of a given name. Only looks for immediate child tags of `this`,
+	doesn't search recursively.
+	
+	The name can optionally include a namespace, as in `"namespace:name"`.
+	Or, you can search all namespaces using `"*:name"`.
+	
+	If there are multiple tags by the chosen name, the $(B $(I last tag)) will
+	always be chosen. That is, this function considers later tags with the
+	same name to override previous ones.
+	
+	If no such tag is found, an `SDLangRangeException` will be thrown. If
+	you'd rather receive a default value, use `getTag` instead.
+	+/
+	Tag expectTag(string tagName)
+	{
+		auto splitName = FullName.split(tagName);
+		return getTagImpl(splitName.namespace, splitName.name, null, false);
+	}
+	
+	///
+	@("Tag.expectTag")
+	unittest
+	{
+		import std.exception;
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo 1
+			foo 2  // expectTag considers this to override the first foo
+
+			ns1:foo 3
+			ns1:foo 4   // expectTag considers this to override the first ns1:foo
+			ns2:foo 33
+			ns2:foo 44  // expectTag considers this to override the first ns2:foo
+		`);
+		assert( root.expectTag("foo"    ).values[0].get!int() == 2  );
+		assert( root.expectTag("ns1:foo").values[0].get!int() == 4  );
+		assert( root.expectTag("*:foo"  ).values[0].get!int() == 44 ); // Search all namespaces
+		
+		// Not found
+		assertThrown!SDLangRangeException( root.expectTag("doesnt-exist") );
 	}
 	
 	private Tag getTagImpl(string namespace, string tagName, Tag defaultValue=null, bool useDefaultValue=true)
@@ -1044,39 +1089,33 @@ class Tag
 	}
 
 	/++
-	Lookup a tag by name, and reterive a value of type T from it. Useful
+	Lookup a child tag by name, and reterive a value of type T from it. Useful
 	if you only expect one value of type T from a given tag. Only looks
-	for immediate child tags of 'this', doesn't search recursively.
+	for immediate child tags of `this`, doesn't search recursively.
 	
-	The name can optionally include a namespace, as in "namespace:name".
-	Or, you can search all namespaces using "*:name".
+	The name can optionally include a namespace, as in `"namespace:name"`.
+	Or, you can search all namespaces using `"*:name"`.
 	
-	If there are multiple tags by the chosen name, the *last tag* will always
+	If there are multiple tags by the chosen name, the $(B $(I last tag)) will always
 	be chosen. That is, this function considers later tags with the same name
 	to override previous ones.
 	
-	If the chosen tag has multiple values, the *first* value matching the
+	If the chosen tag has multiple values, the $(B $(I first)) value matching the
 	requested type will be returned. Ie, Extra values in the tag are ignored.
 	
-	If the chosen tag doesn't have a value of the requested type, and you
-	DID provide a default value, the default value is returned.
+	You may provide a default value to be returned in case no such tag or
+	value of requested type can be found. If you don't provide a default value,
+	`T.init` will be used.
 	
-	If the chosen tag doesn't have a value of the requested type, and you
-	DIDN'T provide a default value, a SDLangRangeException will be thrown.
+	If you'd rather an exception be thrown when a tag/value cannot be found,
+	use `expectValue` instead.
 	+/
-	T getValue(T)(string tagName) if(isValueType!T)
-	{
-		auto splitName = FullName.split(tagName);
-		return getValueImpl!T(splitName.namespace, splitName.name);
-	}
-	
-	///ditto
-	T getValue(T)(string tagName, T defaultValue) if(isValueType!T)
+	T getValue(T)(string tagName, T defaultValue = T.init) if(isValueType!T)
 	{
 		auto splitName = FullName.split(tagName);
 		return getValueImpl!T(splitName.namespace, splitName.name, defaultValue);
 	}
-	
+
 	///
 	@("Tag.getValue")
 	unittest
@@ -1093,10 +1132,18 @@ class Tag
 		`);
 		assert( root.getValue!int("foo") == 3 );
 		assert( root.getValue!string("foo") == "c" );
+
+		// Value found, default value ignored.
+		assert( root.getValue!int("foo", 999) == 3 );
+
+		// Tag not found
+		// If you'd prefer an exception, use `expectValue` instead of `getValue`
+		assert( root.getValue!int("doesnt-exist", 999) == 999 );
+		assert( root.getValue!int("doesnt-exist") == 0 );
 		
 		// The last "bar" tag doesn't have an int (only the first "bar" tag does)
-		assertThrown!SDLangRangeException( root.getValue!string("bar") );
 		assert( root.getValue!string("bar", "Default") == "Default" );
+		assert( root.getValue!string("bar") is null );
 
 		// Using namespaces:
 		root = parseSource(`
@@ -1114,9 +1161,75 @@ class Tag
 		assert( root.getValue!string("ns1:foo") == "c"  );
 		assert( root.getValue!string("*:foo"  ) == "cc" ); // Search all namespaces
 		
-		// The last "bar" tag doesn't have an int (only the first "bar" tag does)
-		assertThrown!SDLangRangeException( root.getValue!string("*:bar") );
+		// The last "bar" tag doesn't have a string (only the first "bar" tag does)
 		assert( root.getValue!string("*:bar", "Default") == "Default" );
+		assert( root.getValue!string("*:bar") is null );
+	}
+
+	/++
+	Lookup a child tag by name, and reterive a value of type T from it. Useful
+	if you only expect one value of type T from a given tag. Only looks
+	for immediate child tags of `this`, doesn't search recursively.
+	
+	The name can optionally include a namespace, as in `"namespace:name"`.
+	Or, you can search all namespaces using `"*:name"`.
+	
+	If there are multiple tags by the chosen name, the $(B $(I last tag)) will always
+	be chosen. That is, this function considers later tags with the same name
+	to override previous ones.
+	
+	If the chosen tag has multiple values, the $(B $(I first value)) matching the
+	requested type will be returned. Ie, Extra values in the tag are ignored.
+	
+	If no such tag is found, or the tag found doesn't have a value of the
+	requested type, an `SDLangRangeException` will be thrown. If you'd rather
+	receive a default value, use `getValue` instead.
+	+/
+	T expectValue(T)(string tagName) if(isValueType!T)
+	{
+		auto splitName = FullName.split(tagName);
+		return getValueImpl!T(splitName.namespace, splitName.name);
+	}
+
+	///
+	@("Tag.expectValue")
+	unittest
+	{
+		import std.exception;
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo 1 "a" 2 "b"
+			foo 3 "c" 4 "d"  // expectValue considers this to override the first foo
+			
+			bar "hi"
+			bar 379  // expectValue considers this to override the first bar
+		`);
+		assert( root.expectValue!int("foo") == 3 );
+		assert( root.expectValue!string("foo") == "c" );
+		
+		// The last "bar" tag doesn't have a string (only the first "bar" tag does)
+		// If you'd rather receive a default value than an exception, use `getAttribute` instead.
+		assertThrown!SDLangRangeException( root.expectValue!string("bar") );
+
+		// Using namespaces:
+		root = parseSource(`
+			ns1:foo 1 "a" 2 "b"
+			ns1:foo 3 "c" 4 "d"
+			ns2:foo 11 "aa" 22 "bb"
+			ns2:foo 33 "cc" 44 "dd"
+			
+			ns1:bar "hi"
+			ns1:bar 379  // expectValue considers this to override the first bar
+		`);
+		assert( root.expectValue!int("ns1:foo") == 3  );
+		assert( root.expectValue!int("*:foo"  ) == 33 ); // Search all namespaces
+
+		assert( root.expectValue!string("ns1:foo") == "c"  );
+		assert( root.expectValue!string("*:foo"  ) == "cc" ); // Search all namespaces
+		
+		// The last "bar" tag doesn't have a string (only the first "bar" tag does)
+		assertThrown!SDLangRangeException( root.expectValue!string("*:bar") );
 	}
 	
 	private T getValueImpl(T)(string namespace, string tagName) if(isValueType!T)
@@ -1139,7 +1252,7 @@ class Tag
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new SDLangRangeException("Can't find tag matching '"~FullName.combine(namespace, tagName)~"'");
+				throw new SDLangRangeException("Can't find tag '"~FullName.combine(namespace, tagName)~"'");
 		}
 
 		foreach(value; _tags[namespace][tagName][$-1].values)
@@ -1153,47 +1266,37 @@ class Tag
 		else
 		{
 			throw new SDLangRangeException(
-				"The last tag matching '"~FullName.combine(namespace, tagName)~"' doesn't "~
+				"The last tag '"~FullName.combine(namespace, tagName)~"' doesn't "~
 				"have a value of type "~T.stringof
 			);
 		}
 	}
 
 	/++
-	Lookup a tag and attribute by name, and reterive a value of type T from it.
-	Useful if you only expect one attribute of type T from a given tag and
-	attribute name. Only looks for immediate child tags of 'this', doesn't
-	search recursively.
+	Lookup an attribute of a child tag by their names, and reterive a value of
+	type T from it.	Useful if you only expect one attribute of type T from a
+	given tag and attribute name. Only looks for immediate child tags of
+	`this`, doesn't	search recursively.
 	
-	The tag and attributes names can optionally include a namespace, as in
-	"namespace:name". Or, you can search all namespaces using "*:name".
+	The tag and attribute names can optionally include a namespace, as in
+	`"namespace:name"`. Or, you can search all namespaces using `"*:name"`.
 
-	If there are multiple tags by the chosen name, the *last tag* will always
-	be chosen. That is, this function considers later tags with the same name
-	to override previous ones.
+	If there are multiple tags by the chosen name, the $(B $(I last tag)) will
+	always be chosen. That is, this function considers later tags with the
+	same name to override previous ones.
 	
-	If the chosen tag has multiple attributes with the same same, the *first*
-	such attribute matching the requested type will be returned. Ie, Extra
-	attributes in the tag are ignored.
+	If the chosen tag has multiple attributes with the same name,
+	the $(B $(I first)) such attribute matching the requested type will be
+	returned. Ie, Extra attributes in the tag are ignored.
 	
-	If the chosen tag doesn't have an attribute of the requested type, and you
-	DID provide a default value, the default value is returned.
+	You may provide a default value to be returned in case no such
+	tag and attribute are found. If you don't provide a default value, `T.init`
+	will be used.
 	
-	If the chosen tag doesn't have an attribute of the requested type, and you
-	DIDN'T provide a default value, a SDLangRangeException will be thrown.
+	If you'd rather an exception be thrown when a tag/attribute cannot be found,
+	use `expectAttribute` instead.
 	+/
-	T getAttribute(T)(string tagName, string attrName) if(isValueType!T)
-	{
-		auto splitTagName = FullName.split(tagName);
-		auto splitAttrName = FullName.split(attrName);
-		return getAttributeImpl!T(
-			splitTagName.namespace, splitTagName.name,
-			splitAttrName.namespace, splitAttrName.name
-		);
-	}
-	
-	///ditto
-	T getAttribute(T)(string tagName, string attrName, T defaultValue) if(isValueType!T)
+	T getAttribute(T)(string tagName, string attrName, T defaultValue = T.init) if(isValueType!T)
 	{
 		auto splitTagName = FullName.split(tagName);
 		auto splitAttrName = FullName.split(attrName);
@@ -1219,10 +1322,20 @@ class Tag
 		`);
 		assert( root.getAttribute!int("foo", "X") == 3 );
 		assert( root.getAttribute!string("foo", "X") == "c" );
+
+		// Value found, default value ignored.
+		assert( root.getAttribute!int("foo", "X", 999) == 3 );
+
+		// Tag not found
+		// If you'd prefer an exception, use `expectAttribute` instead of `getAttribute`
+		assert( root.getAttribute!int("doesnt-exist", "X", 999)   == 999 );
+		assert( root.getAttribute!int("doesnt-exist", "X")        == 0   );
+		assert( root.getAttribute!int("foo", "doesnt-exist", 999) == 999 );
+		assert( root.getAttribute!int("foo", "doesnt-exist")      == 0   );
 		
-		// The last "bar" tag doesn't have an int attribute named "X" (only the first "bar" tag does)
-		assertThrown!SDLangRangeException( root.getAttribute!string("bar", "X") );
+		// The last "bar" tag doesn't have a string (only the first "bar" tag does)
 		assert( root.getAttribute!string("bar", "X", "Default") == "Default" );
+		assert( root.getAttribute!string("bar", "X") is null );
 		
 
 		// Using namespaces:
@@ -1237,14 +1350,92 @@ class Tag
 		`);
 		assert( root.getAttribute!int("ns1:foo", "X") == 3  );
 		assert( root.getAttribute!int("*:foo",   "X") == 33 ); // Search all namespaces
-		
+
 		assert( root.getAttribute!string("ns1:foo", "X") == "c"  );
 		assert( root.getAttribute!string("*:foo",   "X") == "cc" ); // Search all namespaces
 		
-		// The last "bar" tag doesn't have an int attribute named "X" (only the first "bar" tag does)
-		assertThrown!SDLangRangeException( root.getAttribute!string("*:bar", "attrNS:X") );
+		// bar's attribute X is't in the default namespace
+		assert( root.getAttribute!int("*:bar", "X", 999) == 999 );
+		assert( root.getAttribute!int("*:bar", "X") == 0 );
+
+		// The last "bar" tag's "attrNS:X" attribute doesn't have a string (only the first "bar" tag does)
 		assert( root.getAttribute!string("*:bar", "attrNS:X", "Default") == "Default" );
+		assert( root.getAttribute!string("*:bar", "attrNS:X") is null);
+	}
+	
+	/++
+	Lookup an attribute of a child tag by their names, and reterive a value of
+	type T from it.	Useful if you only expect one attribute of type T from a
+	given tag and attribute name. Only looks for immediate child tags of
+	`this`, doesn't	search recursively.
+	
+	The tag and attribute names can optionally include a namespace, as in
+	`"namespace:name"`. Or, you can search all namespaces using `"*:name"`.
+
+	If there are multiple tags by the chosen name, the $(B $(I last tag)) will
+	always be chosen. That is, this function considers later tags with the
+	same name to override previous ones.
+	
+	If the chosen tag has multiple attributes with the same name,
+	the $(B $(I first)) such attribute matching the requested type will be
+	returned. Ie, Extra attributes in the tag are ignored.
+	
+	If no such tag and attribute is found, an `SDLangRangeException` will
+	be thrown. If you'd rather receive a default value, use `getAttribute` instead.
+	+/
+	T expectAttribute(T)(string tagName, string attrName) if(isValueType!T)
+	{
+		auto splitTagName = FullName.split(tagName);
+		auto splitAttrName = FullName.split(attrName);
+		return getAttributeImpl!T(
+			splitTagName.namespace, splitTagName.name,
+			splitAttrName.namespace, splitAttrName.name
+		);
+	}
+	
+	///
+	@("Tag.expectAttribute")
+	unittest
+	{
+		import std.exception;
+		import sdlang.parser;
 		
+		auto root = parseSource(`
+			foo X=1 X="a" X=2 X="b"
+			foo X=3 X="c" X=4 X="d"  // expectAttribute considers this to override the first foo
+			
+			bar X="hi"
+			bar X=379  // expectAttribute considers this to override the first bar
+		`);
+		assert( root.expectAttribute!int("foo", "X") == 3 );
+		assert( root.expectAttribute!string("foo", "X") == "c" );
+		
+		// The last "bar" tag doesn't have an int attribute named "X" (only the first "bar" tag does)
+		// If you'd rather receive a default value than an exception, use `getAttribute` instead.
+		assertThrown!SDLangRangeException( root.expectAttribute!string("bar", "X") );
+		
+
+		// Using namespaces:
+		root = parseSource(`
+			ns1:foo X=1 X="a" X=2 X="b"
+			ns1:foo X=3 X="c" X=4 X="d"
+			ns2:foo X=11 X="aa" X=22 X="bb"
+			ns2:foo X=33 X="cc" X=44 X="dd"
+			
+			ns1:bar attrNS:X="hi"
+			ns1:bar attrNS:X=379  // expectAttribute considers this to override the first bar
+		`);
+		assert( root.expectAttribute!int("ns1:foo", "X") == 3  );
+		assert( root.expectAttribute!int("*:foo",   "X") == 33 ); // Search all namespaces
+		
+		assert( root.expectAttribute!string("ns1:foo", "X") == "c"  );
+		assert( root.expectAttribute!string("*:foo",   "X") == "cc" ); // Search all namespaces
+		
+		// bar's attribute X is't in the default namespace
+		assertThrown!SDLangRangeException( root.expectAttribute!int("*:bar", "X") );
+
+		// The last "bar" tag's "attrNS:X" attribute doesn't have a string (only the first "bar" tag does)
+		assertThrown!SDLangRangeException( root.expectAttribute!string("*:bar", "attrNS:X") );
 	}
 	
 	private T getAttributeImpl(T)(string tagNamespace, string tagName, string attrNamespace, string attrName)
@@ -1270,7 +1461,7 @@ class Tag
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new SDLangRangeException("Can't find tag matching '"~FullName.combine(tagNamespace, tagName)~"'");
+				throw new SDLangRangeException("Can't find tag '"~FullName.combine(tagNamespace, tagName)~"'");
 		}
 
 		auto foundTag = _tags[tagNamespace][tagName][$-1];
@@ -1282,8 +1473,8 @@ class Tag
 			else
 			{
 				throw new SDLangRangeException(
-					"The last tag matching '"~FullName.combine(tagNamespace, tagName)~"' doesn't "~
-					"have any attributes '"~FullName.combine(attrNamespace, attrName)~"'"
+					"The last tag '"~FullName.combine(tagNamespace, tagName)~"' doesn't "~
+					"have an attribute '"~FullName.combine(attrNamespace, attrName)~"'"
 				);
 			}
 		}
@@ -1299,7 +1490,7 @@ class Tag
 		else
 		{
 			throw new SDLangRangeException(
-				"The last tag matching '"~FullName.combine(tagNamespace, tagName)~"' doesn't "~
+				"The last tag '"~FullName.combine(tagNamespace, tagName)~"' doesn't "~
 				"have an attribute '"~FullName.combine(attrNamespace, attrName)~"' of type "~T.stringof
 			);
 		}
@@ -1336,7 +1527,7 @@ class Tag
 		return allTags == t.allTags;
 	}
 	
-	/// Treats 'this' as the root tag. Note that root tags cannot have
+	/// Treats `this` as the root tag. Note that root tags cannot have
 	/// values or attributes, and cannot be part of a namespace.
 	/// If this isn't a valid root tag, 'SDLangValidationException' will be thrown.
 	string toSDLDocument()(string indent="\t", int indentLevel=0)
@@ -1363,9 +1554,9 @@ class Tag
 			tag.toSDLString(sink, indent, indentLevel);
 	}
 	
-	/// Output this entire tag in SDL format. Does *not* treat 'this' as
+	/// Output this entire tag in SDL format. Does $(B $(I not)) treat `this` as
 	/// a root tag. If you intend this to be the root of a standard SDL
-	/// document, use 'toSDLDocument' instead.
+	/// document, use `toSDLDocument` instead.
 	string toSDLString()(string indent="\t", int indentLevel=0)
 	{
 		Appender!string sink;
