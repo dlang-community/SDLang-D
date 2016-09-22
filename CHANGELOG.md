@@ -9,6 +9,7 @@ v0.10.0 - TBD
 - **New:** Add a simple struct [FullName](http://semitwist.com/sdlang-d/sdlang/util/FullName.html) to split and combine namespace/name combinations.
 - **New:** [#6](https://github.com/Abscissa/SDLang-D/issues/6): Added [Tag.getValue](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getValue.html) and [Tag.getAttribute](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getAttribute.html) to more easily obtain values and attributes when only one value is expected for a given tag name.
 - **New:** [#38](https://github.com/Abscissa/SDLang-D/issues/38): Add Tag.clone/Attribute.clone to deep clone a tag (and all its children)
+- **Improved:** Various documentation improvements.
 - **Change:** Minimum DMDFE bumped to 2.069.
 - **Change:** [#17](https://github.com/Abscissa/SDLang-D/issues/17): Remove unnecessary FileStart and FileEnd events.
 - **Change:** Pull parser: [ParserEvent](http://semitwist.com/sdlang-d/sdlang/parser/ParserEvent.html) is now a [TaggedAlgebraic](https://github.com/s-ludwig/taggedalgebraic), instead of a [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html#.Algebraic). This enables use of `final switch` and provides simpler syntax.
