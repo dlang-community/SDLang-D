@@ -1870,7 +1870,7 @@ class Tag
 		
 		auto root = parseSource(`
 			foo 1 "a" 2 "b"
-			foo 3 "c" 4 "d"  // getTagValue considers this to override the first foo
+			foo 3 "c" 4 "d"  // getTagValues considers this to override the first foo
 		`);
 		assert( root.getTagValues("foo") == [Value(3), Value("c"), Value(4), Value("d")] );
 
@@ -1882,10 +1882,17 @@ class Tag
 	}
 	
 	/++
-	Lookup a child tag by name, and retrieve all attributes from it.
+	Lookup a child tag by name, and retrieve all attributes in a chosen
+	(or default) namespace from it.
 
-	This just like using `getTag()`.`attributes`, except if the tag isn't found,
-	it safely returns an empty range instead of a dereferencing null error.
+	This just like using `getTag()`.`attributes` (or
+	`getTag()`.`namespace[...]`.`attributes`, or `getTag()`.`all`.`attributes`),
+	except if the tag isn't found, it safely returns an empty range instead
+	of a dereferencing null error.
+	
+	If provided, the `attributeNamespace` parameter can be either the name of
+	a namespace, or an empty string for the default namespace (the default),
+	or `"*"` to retreive attributes from all namespaces.
 	
 	Note that, unlike `getAttributes`, this doesn't discriminate by the
 	value's type. It simply returns the usual `attributes` range.
@@ -1893,13 +1900,20 @@ class Tag
 	If you'd prefer an exception thrown when the tag isn't found, use
 	`expectTag`.`attributes` instead.
 	+/
-	auto getTagAttributes(string fullTagName)
+	auto getTagAttributes(string fullTagName, string attributeNamespace = null)
 	{
 		auto tag = getTag(fullTagName);
 		if(tag)
-			return tag.attributes;
-		else
-			return AttributeRange(null, null, false);
+		{
+			if(attributeNamespace && attributeNamespace in tag.namespaces)
+				return tag.namespaces[attributeNamespace].attributes;
+			else if(attributeNamespace == "*")
+				return tag.all.attributes;
+			else
+				return tag.attributes;
+		}
+
+		return AttributeRange(null, null, false);
 	}
 	
 	///
@@ -1911,14 +1925,32 @@ class Tag
 		
 		auto root = parseSource(`
 			foo X=1 X=2
-			foo X1=3 X2="c" X3=4 X4="d"  // getTagValue considers this to override the first foo
+			
+			// getTagAttributes considers this to override the first foo
+			foo X1=3 X2="c" namespace:bar=7 X3=4 X4="d"
 		`);
+
 		auto fooAttrs = root.getTagAttributes("foo");
 		assert( !fooAttrs.empty );
+		assert( fooAttrs.length == 4 );
 		assert( fooAttrs[0].name == "X1" && fooAttrs[0].value == Value(3)   );
 		assert( fooAttrs[1].name == "X2" && fooAttrs[1].value == Value("c") );
 		assert( fooAttrs[2].name == "X3" && fooAttrs[2].value == Value(4)   );
 		assert( fooAttrs[3].name == "X4" && fooAttrs[3].value == Value("d") );
+
+		fooAttrs = root.getTagAttributes("foo", "namespace");
+		assert( !fooAttrs.empty );
+		assert( fooAttrs.length == 1 );
+		assert( fooAttrs[0].name == "bar" && fooAttrs[0].value == Value(7) );
+
+		fooAttrs = root.getTagAttributes("foo", "*");
+		assert( !fooAttrs.empty );
+		assert( fooAttrs.length == 5 );
+		assert( fooAttrs[0].name == "X1"  && fooAttrs[0].value == Value(3)   );
+		assert( fooAttrs[1].name == "X2"  && fooAttrs[1].value == Value("c") );
+		assert( fooAttrs[2].name == "bar" && fooAttrs[2].value == Value(7)   );
+		assert( fooAttrs[3].name == "X3"  && fooAttrs[3].value == Value(4)   );
+		assert( fooAttrs[4].name == "X4"  && fooAttrs[4].value == Value("d") );
 
 		// Tag not found
 		// If you'd prefer an exception, use `expectTag.attributes` instead.
