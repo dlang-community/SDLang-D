@@ -30,7 +30,7 @@ void main()
 
 	// Get the person tag:
 	//
-	// SDL supports multiple tags/attributes with the same name,
+	// SDLang supports multiple tags/attributes with the same name,
 	// therefore the [0] is needed.
 	Tag akiko = root.tags["person"][0];
 	assert( akiko.namespace == "" ); // Default namespace is ""
@@ -95,7 +95,7 @@ void main()
 	assert(daughter is akiko.tags[1]);      // Second child of Akiko-san
 	assert(daughter is akiko.all.tags[2]);  // Third if you include pets
 	
-	// Akiko-san's namespaces, in order of first appearance in the SDL file:
+	// Akiko-san's namespaces, in order of first appearance in the SDLang file:
 	assert(akiko.namespaces[0].name == "dimensions"); // First found in attribute "height"
 	assert(akiko.namespaces[1].name == "");           // First found in child "son"
 	assert(akiko.namespaces[2].name == "pet");        // First found in child "kitty"
@@ -133,7 +133,7 @@ void main()
 	son.add(hobbies); // Ok
 	
 	/*
-	Output the modified SDL document:
+	Output the modified SDLang document:
 
 	"This is an anonymous tag with two values" 123
 	"Another anon tag"
@@ -159,7 +159,7 @@ void main()
 	assertThrown!SDLangValidationException( root.toSDLDocument() );
 	
 	// But you can still convert such tags, or any other Tag, Attribute or Value,
-	// to an SDL string with 'toSDLString':
+	// to an SDLang string with 'toSDLString':
 	// 
 	// pet:cat "Neko"
 	stdout.rawWrite( kitty.toSDLString() );

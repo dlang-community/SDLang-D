@@ -44,8 +44,8 @@ int main()
 	int age = person.tags["age"][0].values[0].get!int();
 	writeln("Age: ", age);
 	
-	// Output back to SDL
-	writeln("The full SDL:");
+	// Output back to SDLang
+	writeln("The full SDLang:");
 	writeln(root.toSDLDocument());
 	
 	return 0;

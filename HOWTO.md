@@ -1,9 +1,19 @@
 How to use SDLang-D (Tutorial / API Overview)
 =============================================
 
-SDLang-D offers two ways to work with SDL: DOM style and StAX/Pull style. DOM style is easier and more convenient and can both read and write SDL. StAX/Pull style is faster and more efficient, although it's only used for reading SDL, not writing it.
+SDLang-D offers two ways to work with SDLang: DOM style and StAX/Pull style. DOM style is easier and more convenient and can both read and write SDLang. StAX/Pull style is faster and more efficient, although it's only used for reading SDLang, not writing it.
 
 This document explains how to use SDLang-D in the DOM style. If you're familiar with StAX/Pull style parsing for other languages, such as XML, then SDLang-D's StAX/Pull parser should be fairly straightforward to understand. See [pullParseFile](http://semitwist.com/sdlang-d/sdlang/parser/pullParseFile.html) and [pullParseSource](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html) in the [API reference](http://semitwist.com/sdlang-d/sdlang.html) for details. You can also see SDLang-D's source as a real-world example, as the DOM parser is built directly on top of the StAX/Pull parser (just search ```parser.d``` for ```DOMParser```).
+
+**Contents**
+- [Installation](#installation)
+- [Importing](#importing)
+- [Example](#example)
+- [Main Interface: Parsing SDLang](#main-interface-parsing-sdlang)
+- [Value](#value)
+- [DOM API Summary](#dom-api-summary)
+- [DOM Example](#dom-example)
+- [Outputting SDLang](#outputting-sdlang)
 
 Installation
 ------------
@@ -19,7 +29,7 @@ Note that prior to DMD 2.071.0, ```-inline``` causes some problems. It causes SD
 Importing
 ---------
 
-To use SDL, first import the module ```sdlang```:
+To use SDLang-D, first import the module ```sdlang```:
 
 ```d
 import sdlang;
@@ -28,7 +38,7 @@ import sdlang;
 If you're not using DUB, then you must also include the paths to the sources of SDLang-D and its dependencies when you compile:
 
 ```
-rdmd --build-only -I{path to sdlang}/src -I{path to libInputVisitor} -I{path to TaggedAlgebraic}/source {other flags} yourProgram.d
+rdmd --build-only -I{path to sdlang-d}/src -I{path to libInputVisitor} -I{path to TaggedAlgebraic}/source {other flags} yourProgram.d
 ```
 
 Example
@@ -82,8 +92,8 @@ int main()
 	int age = person.tags["age"][0].values[0].get!int();
 	writeln("Age: ", age);
 	
-	// Output back to SDL
-	writeln("The full SDL:");
+	// Output back to SDLang
+	writeln("The full SDLang:");
 	writeln(root.toSDLDocument());
 	
 	return 0;
@@ -96,15 +106,15 @@ Compile and run:
 Hello world
 Name: Joe Coder
 Age: 36
-The full SDL:
+The full SDLang:
 welcome "Hello world"
 myNamespace:person name="Joe Coder" {
 	age 36
 }
 ```
 
-Main Interface: Parsing SDL
----------------------------
+Main Interface: Parsing SDLang
+------------------------------
 
 The main interface for SDLang-D is the two parse functions:
 
@@ -113,16 +123,55 @@ The main interface for SDLang-D is the two parse functions:
 Tag parseFile(string filename);
 
 /// Returns root tag. The optional 'filename' parameter can be included
-/// so that the SDL document's filename (if any) can be displayed with
+/// so that the SDLang document's filename (if any) can be displayed with
 /// any syntax error messages.
 Tag parseSource(string source, string filename=null);
 ```
 
-Beyond that, your interactions with SDL will be via ```class Tag```,
+Beyond that, your interactions with SDLang-D will be via ```class Tag```,
 ```struct Attribute``` and ```alias Value``` (an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html)).
 
-Tag and Attribute API Summary
------------------------------
+Value
+-----
+
+The type ```Value``` is an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html). It's defined like this:
+
+```
+SDLang's datatypes map to D's datatypes as described below.
+Most are straightforward, but take special note of the date/time-related types.
+
+Boolean:                       bool
+Null:                          typeof(null)
+Unicode Character:             dchar
+Double-Quote Unicode String:   string
+Raw Backtick Unicode String:   string
+Integer (32 bits signed):      int
+Long Integer (64 bits signed): long
+Float (32 bits signed):        float
+Double Float (64 bits signed): double
+Decimal (128+ bits signed):    real
+Binary (standard Base64):      ubyte[]
+Time Span:                     Duration
+
+Date (with no time at all):           Date
+Date Time (no timezone):              DateTimeFrac
+Date Time (with a known timezone):    SysTime
+Date Time (with an unknown timezone): DateTimeFracUnknownZone
+```
+```d
+alias Algebraic!(
+    bool,
+    string, dchar,
+    int, long,
+    float, double, real,
+    Date, DateTimeFrac, SysTime, DateTimeFracUnknownZone, Duration,
+    ubyte[],
+    typeof(null),
+) Value;
+```
+
+DOM API Summary
+---------------
 
 You can view the full API reference for [Tag](http://semitwist.com/sdlang-d/sdlang/ast/Tag.html) and [Attribute](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.html), but put simply, the Tag and Attribute APIs work as follows (where ```{...}``` means optional, and ```|``` means or):
 
@@ -136,7 +185,7 @@ Attribute.this(string name, Value value,
 Attribute.namespace  // string: "" if no namespace
 Attribute.name       // string: "" if anonymous
 Attribute.fullName   // string: Read-only, returns "namespace:name" if there's a namespace
-Attribute.location   // Location: filename, line, column and index in original SDL file
+Attribute.location   // Location: filename, line, column and index in original SDLang file
 Attribute.value      // Value
 Attribute.parent     // Tag: Read-only
 
@@ -151,7 +200,7 @@ Tag.this(Tag parent,
 Tag.namespace  // string: "" if no namespace
 Tag.name       // string: "" if anonymous
 Tag.fullName   // string: Read-only, returns "namespace:name" if there's a namespace
-Tag.location   // Location: filename, line, column and index in original SDL file
+Tag.location   // Location: filename, line, column and index in original SDLang file
 Tag.values     // Value[]
 Tag.parent     // Tag: Read-only
 
@@ -187,101 +236,12 @@ All of the interfaces above are shallow. For example:
 
 Ranges will be invalidated if you add/remove/rename any child tags, attributes or namespaces, on the Tag which the Range operates on. But, if assertions and struct invariants are enabled, then this will be detected and any further attempt to use the invalidated range will throw an assertion failure.
 
-Since this library is designed primarily for reading and writing SDL files, it's optimized for building and navigating trees rather than manipulating them. Keep in mind that removing or renaming tags, attributes or namespaces may be slow. If you're concerned about speed, it might be best to minimize direct manipulations and prefer using use the SDLang-D data structures as pure input/output.
-
-Value
------
-
-The type ```Value``` is an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html). It's defined like this:
-
-```
-SDL's datatypes map to D's datatypes as described below.
-Most are straightforward, but take special note of the date/time-related types.
-
-Boolean:                       bool
-Null:                          typeof(null)
-Unicode Character:             dchar
-Double-Quote Unicode String:   string
-Raw Backtick Unicode String:   string
-Integer (32 bits signed):      int
-Long Integer (64 bits signed): long
-Float (32 bits signed):        float
-Double Float (64 bits signed): double
-Decimal (128+ bits signed):    real
-Binary (standard Base64):      ubyte[]
-Time Span:                     Duration
-
-Date (with no time at all):           Date
-Date Time (no timezone):              DateTimeFrac
-Date Time (with a known timezone):    SysTime
-Date Time (with an unknown timezone): DateTimeFracUnknownZone
-```
-```d
-alias Algebraic!(
-    bool,
-    string, dchar,
-    int, long,
-    float, double, real,
-    Date, DateTimeFrac, SysTime, DateTimeFracUnknownZone, Duration,
-    ubyte[],
-    typeof(null),
-) Value;
-```
-
-Outputting SDL
---------------
-
-To output SDL, simply call ```Tag.toSDLDocument()``` on whichever tag is your "root" tag. The root tag is simply used as a collection of tags. As such, its namespace must be blank and it cannot have any values or attributes. It can, however, have any name (which will be ignored), and it is allowed to have a parent (also ignored).
-
-Additionally, tags, attributes and values all have a ```toSDLString()``` function, to convert just one Tag (any tag, not just a root tag), Attribute or Value to an SDL string.
-
-The ```Tag.toSDLDocument()``` function and ```toSDLString()``` functions can optionally take an OutputRange sink instead of allocating and returning a string. The Tag-based functions also have optional parameters to customize the indent style and starting depth.
-
-```d
-class Tag
-{
-...
-	/// Treats 'this' as the root tag. Note that root tags cannot have
-	/// values or attributes, and cannot be part of a namespace.
-	/// If this isn't a valid root tag, 'SDLangValidationException' will be thrown.
-	string toSDLDocument()(string indent="\t", int indentLevel=0);
-	void toSDLDocument(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
-		if(isOutputRange!(Sink,char));
-	
-	/// Output this entire tag in SDL format. Does *not* treat 'this' as
-	/// a root tag. If you intend this to be the root of a standard SDL
-	/// document, use 'toSDLDocument' instead.
-	string toSDLString()(string indent="\t", int indentLevel=0);
-	void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
-		if(isOutputRange!(Sink,char));
-...
-}
-
-struct Attribute
-{
-...
-	string toSDLString()();
-	void toSDLString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char));
-...
-}
-
-string toSDLString(T)(T value) if(
-	is( T : Value  ) ||
-	is( T : bool   ) ||
-	is( T : string ) ||
-	/+...etc...+/
-);
-void toSDLString(Sink)(Value value, ref Sink sink) if(isOutputRange!(Sink,char));
-void toSDLString(Sink)(typeof(null) value, ref Sink sink) if(isOutputRange!(Sink,char));
-void toSDLString(Sink)(bool value, ref Sink sink) if(isOutputRange!(Sink,char));
-void toSDLString(Sink)(string value, ref Sink sink) if(isOutputRange!(Sink,char));
-//...etc...
-```
+Since this library is designed primarily for reading and writing SDLang files, it's optimized for building and navigating trees rather than manipulating them. Keep in mind that removing or renaming tags, attributes or namespaces may be slow. If you're concerned about speed, it might be best to minimize direct manipulations and prefer using use the SDLang-D data structures as pure input/output.
 
 Tag and Attribute Example
 -------------------------
 
-Consider the following SDL adapted from the [SDL Language Guide](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)]
+Consider the following SDLang adapted from the [SDL Language Guide](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)]
 
 ```
 person "Akiko" "Johnson" dimensions:height=68 {
@@ -302,7 +262,7 @@ Tag root = parseSource(theSdlExampleAbove);
 
 // Get the person tag:
 //
-// SDL supports multiple tags/attributes with the same name,
+// SDLang supports multiple tags/attributes with the same name,
 // therefore the [0] is needed.
 Tag akiko = root.tags["person"][0];
 assert( akiko.namespace == "" ); // Default namespace is ""
@@ -367,7 +327,7 @@ assert(daughter is akiko.namespaces[""].tags["daughter"][0]);
 assert(daughter is akiko.tags[1]);      // Second child of Akiko-san
 assert(daughter is akiko.all.tags[2]);  // Third if you include pets
 
-// Akiko-san's namespaces, in order of first appearance in the SDL file:
+// Akiko-san's namespaces, in order of first appearance in the SDLang file:
 assert(akiko.namespaces[0].name == "dimensions"); // First found in attribute "height"
 assert(akiko.namespaces[1].name == "");           // First found in child "son"
 assert(akiko.namespaces[2].name == "pet");        // First found in child "kitty"
@@ -405,7 +365,7 @@ hobbies.remove(); // Remove from daughter
 son.add(hobbies); // Ok
 
 /*
-Output the modified SDL document:
+Output the modified SDLang document:
 
 "This is an anonymous tag with two values" 123
 "Another anon tag"
@@ -431,8 +391,58 @@ root.add( new Attribute("attributeNamespace", "attributeName", Value(3)) );
 assertThrown!SDLangValidationException( root.toSDLDocument() );
 
 // But you can still convert such tags, or any other Tag, Attribute or Value,
-// to an SDL string with 'toSDLString':
+// to an SDLang string with 'toSDLString':
 // 
 // pet:cat "Neko"
 stdout.rawWrite( kitty.toSDLString() );
+```
+
+Outputting SDLang
+-----------------
+
+To output SDLang, simply call ```Tag.toSDLDocument()``` on whichever tag is your "root" tag. The root tag is simply used as a collection of tags. As such, its namespace must be blank and it cannot have any values or attributes. It can, however, have any name (which will be ignored), and it is allowed to have a parent (also ignored).
+
+Additionally, tags, attributes and values all have a ```toSDLString()``` function, to convert just one Tag (any tag, not just a root tag), Attribute or Value to an SDLang string.
+
+The ```Tag.toSDLDocument()``` function and ```toSDLString()``` functions can optionally take an OutputRange sink instead of allocating and returning a string. The Tag-based functions also have optional parameters to customize the indent style and starting depth.
+
+```d
+class Tag
+{
+...
+	/// Treats 'this' as the root tag. Note that root tags cannot have
+	/// values or attributes, and cannot be part of a namespace.
+	/// If this isn't a valid root tag, 'SDLangValidationException' will be thrown.
+	string toSDLDocument()(string indent="\t", int indentLevel=0);
+	void toSDLDocument(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
+		if(isOutputRange!(Sink,char));
+	
+	/// Output this entire tag in SDLang format. Does *not* treat 'this' as
+	/// a root tag. If you intend this to be the root of a standard SDLang
+	/// document, use 'toSDLDocument' instead.
+	string toSDLString()(string indent="\t", int indentLevel=0);
+	void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
+		if(isOutputRange!(Sink,char));
+...
+}
+
+struct Attribute
+{
+...
+	string toSDLString()();
+	void toSDLString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char));
+...
+}
+
+string toSDLString(T)(T value) if(
+	is( T : Value  ) ||
+	is( T : bool   ) ||
+	is( T : string ) ||
+	/+...etc...+/
+);
+void toSDLString(Sink)(Value value, ref Sink sink) if(isOutputRange!(Sink,char));
+void toSDLString(Sink)(typeof(null) value, ref Sink sink) if(isOutputRange!(Sink,char));
+void toSDLString(Sink)(bool value, ref Sink sink) if(isOutputRange!(Sink,char));
+void toSDLString(Sink)(string value, ref Sink sink) if(isOutputRange!(Sink,char));
+//...etc...
 ```
