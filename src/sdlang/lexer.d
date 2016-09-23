@@ -1854,7 +1854,7 @@ unittest
 
 	testLex( "2013/2/22 -34:65-GMT-05:30",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(34) - minutes(65) - seconds( 0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
 
-	// DateTime, with Java SDL's occasionally weird interpretation of some
+	// DateTime, with Java SDLang's occasionally weird interpretation of some
 	// "not quite ISO" variations of the "GMT with offset" timezone strings.
 	Token testTokenSimpleTimeZone(Duration d)
 	{

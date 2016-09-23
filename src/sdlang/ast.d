@@ -209,7 +209,7 @@ class Tag
 	/// its original SDLang file.
 	Location location;
 	
-	/// 
+	/// Access all this tag's values, as an array of type `sdlang.token.Value`.
 	Value[]  values;
 
 	private Tag _parent;
@@ -546,6 +546,7 @@ class Tag
 			frontIndex = 0;
 
 			if(
+				tag !is null &&
 				namespace in mixin("tag."~membersGrouped) &&
 				name in mixin("tag."~membersGrouped~"[namespace]")
 			)
@@ -564,7 +565,7 @@ class Tag
 
 		@property bool empty()
 		{
-			return frontIndex == endIndex;
+			return tag is null || frontIndex == endIndex;
 		}
 		
 		private size_t frontIndex;
@@ -653,14 +654,20 @@ class Tag
 			this.isMaybe   = isMaybe;
 			frontIndex = 0;
 
-			if(namespace == "*")
-				initialEndIndex = mixin("tag."~allMembers~".length");
-			else if(namespace in mixin("tag."~memberIndicies))
-				initialEndIndex = mixin("tag."~memberIndicies~"[namespace].length");
+			if(tag is null)
+				endIndex = 0;
 			else
-				initialEndIndex = 0;
+			{
+
+				if(namespace == "*")
+					initialEndIndex = mixin("tag."~allMembers~".length");
+				else if(namespace in mixin("tag."~memberIndicies))
+					initialEndIndex = mixin("tag."~memberIndicies~"[namespace].length");
+				else
+					initialEndIndex = 0;
 			
-			endIndex = initialEndIndex;
+				endIndex = initialEndIndex;
+			}
 		}
 		
 		invariant()
@@ -673,7 +680,7 @@ class Tag
 
 		@property bool empty()
 		{
-			return frontIndex == endIndex;
+			return tag is null || frontIndex == endIndex;
 		}
 		
 		private size_t frontIndex;
@@ -783,6 +790,9 @@ class Tag
 					"range and that you aren't using a slice of the range."
 				);
 			}
+			
+			if(tag is null)
+				return false;
 			
 			return
 				namespace in mixin("tag."~membersGrouped) &&
@@ -1802,6 +1812,49 @@ class Tag
 		assertThrown!TagNotFoundException( root.expectTagAttribute!int("doesnt-exist:bar", "attrNS:X") );
 	}
 
+	/++
+	Lookup a child tag by name, and retrieve all values from it.
+
+	This just like using `getTag()`.`values`, except if the tag isn't found,
+	it safely returns null (or an optional array of default values) instead of
+	a dereferencing null error.
+	
+	Note that, unlike `getValue`, this doesn't discriminate by the value's
+	type. It simply returns all values of a single tag as a `Value[]`.
+
+	If you'd prefer an exception thrown when the tag isn't found, use
+	`expectTag`.`values` instead.
+	+/
+	Value[] getTagValues(string fullTagName, Value[] defaultValues = null)
+	{
+		auto tag = getTag(fullTagName);
+		if(tag)
+			return tag.values;
+		else
+			return defaultValues;
+	}
+	
+	/++
+	Lookup a child tag by name, and retrieve all attributes from it.
+
+	This just like using `getTag()`.`attributes`, except if the tag isn't found,
+	it safely returns an empty range instead of a dereferencing null error.
+	
+	Note that, unlike `getAttributes`, this doesn't discriminate by the
+	value's type. It simply returns the usual `attributes` range.
+
+	If you'd prefer an exception thrown when the tag isn't found, use
+	`expectTag`.`attributes` instead.
+	+/
+	auto getTagAttributes(string fullTagName)
+	{
+		auto tag = getTag(fullTagName);
+		if(tag)
+			return tag.attributes;
+		else
+			return AttributeRange(null, null, false);
+	}
+	
 	@("*: Disallow wildcards for names")
 	unittest
 	{

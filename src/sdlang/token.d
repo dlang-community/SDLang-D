@@ -18,7 +18,7 @@ import sdlang.exception;
 import sdlang.symbol;
 import sdlang.util;
 
-/// DateTime doesn't support milliseconds, but SDL's "Date Time" type does.
+/// DateTime doesn't support milliseconds, but SDLang's "Date Time" type does.
 /// So this is needed for any SDL "Date Time" that doesn't include a time zone.
 struct DateTimeFrac
 {
@@ -64,9 +64,10 @@ struct DateTimeFracUnknownZone
 }
 
 /++
-SDL's datatypes map to D's datatypes as described below.
+SDLang's datatypes map to D's datatypes as described below.
 Most are straightforward, but take special note of the date/time-related types.
 
+---------------------------------------------------------------
 Boolean:                       bool
 Null:                          typeof(null)
 Unicode Character:             dchar
@@ -84,6 +85,7 @@ Date (with no time at all):           Date
 Date Time (no timezone):              DateTimeFrac
 Date Time (with a known timezone):    SysTime
 Date Time (with an unknown timezone): DateTimeFracUnknownZone
+---------------------------------------------------------------
 +/
 alias ValueTypes = TypeTuple!(
 	bool,
