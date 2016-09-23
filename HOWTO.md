@@ -176,6 +176,8 @@ DOM API Summary
 You can view the full API reference for [Tag](http://semitwist.com/sdlang-d/sdlang/ast/Tag.html) and [Attribute](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.html), but put simply, the Tag and Attribute APIs work as follows (where ```{...}``` means optional, and ```|``` means or):
 
 ```d
+// Attribute: ------------------------------------------------------------
+
 // Constructors:
 Attribute.this(string namespace, string name, Value value,
                Location location = Location(0, 0, 0))
@@ -184,10 +186,12 @@ Attribute.this(string name, Value value,
 
 Attribute.namespace  // string: "" if no namespace
 Attribute.name       // string: "" if anonymous
-Attribute.fullName   // string: Read-only, returns "namespace:name" if there's a namespace
 Attribute.location   // Location: filename, line, column and index in original SDLang file
 Attribute.value      // Value
 Attribute.parent     // Tag: Read-only
+Tag.getFullName().toString() // string: Returns "namespace:name" if there's a namespace
+
+// Tag: ------------------------------------------------------------------
 
 // Constructors:
 Tag.this(Tag parent = null)
@@ -197,16 +201,50 @@ Tag.this(Tag parent,
          string namespace, string name,
          Value[] values=null, Attribute[] attributes=null, Tag[] children=null)
 
-Tag.namespace  // string: "" if no namespace
-Tag.name       // string: "" if anonymous
-Tag.fullName   // string: Read-only, returns "namespace:name" if there's a namespace
-Tag.location   // Location: filename, line, column and index in original SDLang file
-Tag.values     // Value[]
-Tag.parent     // Tag: Read-only
+Tag.namespace // string: "" if no namespace
+Tag.name      // string: "" if anonymous
+Tag.location  // Location: filename, line, column and index in original SDLang file
+Tag.values    // Value[]
+Tag.parent    // Tag: Read-only
+Tag.getFullName().toString() // string: Returns "namespace:name" if there's a namespace
 
 Tag.remove()   // Removes this tag from its parent
 Tag.add(Tag   | Attribute   | Value  )   // Adds a member to this tag
 Tag.add(Tag[] | Attribute[] | Value[])   // Adds multiple members to this tag
+
+Tag.toSDLDocument  // Create a full SDLang document. Call on a root tag.
+Tag.toSDLString    // A fragment of an SDLang document. Just one tag.
+
+// Convenience functions: ------------------------------------------------
+
+// Accept "namespace:name" notation for all names.
+// 
+// If what you're searching for can't be found:
+//   "get" functions: Return an optional default value
+//   "expect" functions: Throw a subclass of DOMNotFoundException
+//
+// Functions returning one Value or Attribute are templates on value's actual
+// type, so you can just use 'int', 'string', etc, no need to use the 'Value'
+// algebraic type.
+Tag.getTag(name, [defaultVal])
+Tag.getValue!T([defaultVal])
+Tag.getTagValue!T(name, [defaultVal])
+Tag.getAttribute!T(name, [defaultVal])
+Tag.getTagAttribute!T(tagName, attrName, [defaultVal])
+
+Tag.expectTag(name)
+Tag.expectValue!T()
+Tag.expectTagValue!T(name)
+Tag.expectAttribute!T(name)
+Tag.expectTagAttribute!T(tagName, attrName)
+
+// Returns all values of a tag in a 'Value[]'
+Tag.getTagValues(string fullTagName, Value[] defaultValues = null)
+
+// Returns random-access range of all attributes of a tag (defaults to only attrs without a namespace)
+Tag.getTagAttributes(string fullTagName, string attributeNamespace = null)
+
+// Full-featured range interfaces: ---------------------------------------
 
 // Optional '.maybe' implies "If I lookup (by string) a name or namespace
 // that doesn't exist, then return an empty range instead of throwing."
@@ -238,8 +276,8 @@ Ranges will be invalidated if you add/remove/rename any child tags, attributes o
 
 Since this library is designed primarily for reading and writing SDLang files, it's optimized for building and navigating trees rather than manipulating them. Keep in mind that removing or renaming tags, attributes or namespaces may be slow. If you're concerned about speed, it might be best to minimize direct manipulations and prefer using use the SDLang-D data structures as pure input/output.
 
-Tag and Attribute Example
--------------------------
+DOM Example
+-----------
 
 Consider the following SDLang adapted from the [SDL Language Guide](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)]
 
