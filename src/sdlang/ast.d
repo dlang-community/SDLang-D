@@ -28,11 +28,20 @@ class Attribute
 	}
 
 	private string _namespace;
+	/++
+	This tag's namespace. Empty string if no namespace.
+	
+	Note that setting this value is O(n) because internal lookup structures 
+	need to be updated.
+	
+	Note also, that setting this may change where this tag is ordered among
+	its parent's list of tags.
+	+/
 	@property string namespace()
 	{
 		return _namespace;
 	}
-	/// Not particularly efficient, but it works.
+	///ditto
 	@property void namespace(string value)
 	{
 		if(_parent && _namespace != value)
@@ -54,12 +63,22 @@ class Attribute
 	}
 	
 	private string _name;
-	/// Not including namespace. Use `fullName` if you want the namespace included.
+	/++
+	This attribute's name, not including namespace.
+	
+	Use `getFullName().toString` if you want the namespace included.
+	
+	Note that setting this value is O(n) because internal lookup structures 
+	need to be updated.
+
+	Note also, that setting this may change where this attribute is ordered
+	among its parent's list of tags.
+	+/
 	@property string name()
 	{
 		return _name;
 	}
-	/// Not the most efficient, but it works.
+	///ditto
 	@property void name(string value)
 	{
 		if(_parent && _name != value)
@@ -270,7 +289,7 @@ class Tag
 	/++
 	This tag's name, not including namespace.
 	
-	Use `fullName` if you want the namespace included.
+	Use `getFullName().toString` if you want the namespace included.
 	
 	Note that setting this value is O(n) because internal lookup structures 
 	need to be updated.
@@ -1842,6 +1861,26 @@ class Tag
 			return defaultValues;
 	}
 	
+	///
+	@("getTagValues")
+	unittest
+	{
+		import std.exception;
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo 1 "a" 2 "b"
+			foo 3 "c" 4 "d"  // getTagValue considers this to override the first foo
+		`);
+		assert( root.getTagValues("foo") == [Value(3), Value("c"), Value(4), Value("d")] );
+
+		// Tag not found
+		// If you'd prefer an exception, use `expectTag.values` instead.
+		assert( root.getTagValues("doesnt-exist") is null );
+		assert( root.getTagValues("doesnt-exist", [ Value(999), Value("Not found") ]) ==
+			[ Value(999), Value("Not found") ] );
+	}
+	
 	/++
 	Lookup a child tag by name, and retrieve all attributes from it.
 
@@ -1863,6 +1902,29 @@ class Tag
 			return AttributeRange(null, null, false);
 	}
 	
+	///
+	@("getTagAttributes")
+	unittest
+	{
+		import std.exception;
+		import sdlang.parser;
+		
+		auto root = parseSource(`
+			foo X=1 X=2
+			foo X1=3 X2="c" X3=4 X4="d"  // getTagValue considers this to override the first foo
+		`);
+		auto fooAttrs = root.getTagAttributes("foo");
+		assert( !fooAttrs.empty );
+		assert( fooAttrs[0].name == "X1" && fooAttrs[0].value == Value(3)   );
+		assert( fooAttrs[1].name == "X2" && fooAttrs[1].value == Value("c") );
+		assert( fooAttrs[2].name == "X3" && fooAttrs[2].value == Value(4)   );
+		assert( fooAttrs[3].name == "X4" && fooAttrs[3].value == Value("d") );
+
+		// Tag not found
+		// If you'd prefer an exception, use `expectTag.attributes` instead.
+		assert( root.getTagValues("doesnt-exist").empty );
+	}
+
 	@("*: Disallow wildcards for names")
 	unittest
 	{
