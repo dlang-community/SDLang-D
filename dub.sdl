@@ -42,7 +42,7 @@ configuration "unittest" {
 
 	dependency "unit-threaded" version="~>0.6.28"
 
-	preBuildCommands "dub run unit-threaded-abscissa -c gen_ut_main -- -f bin/ut.d"
+	preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"
 	mainSourceFile "bin/ut.d"
 	versions "sdlangUsingUnitThreaded" "sdlangTrace"
 }
