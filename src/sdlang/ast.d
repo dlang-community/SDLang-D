@@ -89,9 +89,17 @@ class Attribute
 			_name = value;
 	}
 
+	/// This tag's name, including namespace if one exists.
+	deprecated("Use 'getFullName().toString()'")
 	@property string fullName()
 	{
-		return _namespace==""? _name : text(_namespace, ":", _name);
+		return getFullName().toString();
+	}
+	
+	/// This tag's name, including namespace if one exists.
+	FullName getFullName()
+	{
+		return FullName(_namespace, _name);
 	}
 
 	this(string namespace, string name, Value value, Location location = Location(0, 0, 0))
