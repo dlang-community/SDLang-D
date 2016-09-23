@@ -111,7 +111,7 @@ class Attribute
 	}
 	
 	/// Copy this Attribute.
-	/// The clone does NOT have a parent, even if the original does.
+	/// The clone does $(B $(I not)) have a parent, even if the original does.
 	Attribute clone()
 	{
 		return new Attribute(_namespace, _name, value, location);
@@ -191,7 +191,7 @@ class Attribute
 }
 
 /// Deep-copy an array of Tag or Attribute.
-/// The top-level clones are NOT attached to any parent, even if the originals are.
+/// The top-level clones are $(B $(I not)) attached to any parent, even if the originals are.
 T[] clone(T)(T[] arr) if(is(T==Tag) || is(T==Attribute))
 {
 	T[] newArr;
@@ -205,7 +205,11 @@ T[] clone(T)(T[] arr) if(is(T==Tag) || is(T==Attribute))
 
 class Tag
 {
+	/// File/Line/Column/Index information for where this tag was located in
+	/// its original SDLang file.
 	Location location;
+	
+	/// 
 	Value[]  values;
 
 	private Tag _parent;
@@ -218,13 +222,24 @@ class Tag
 	}
 
 	private string _namespace;
+	/++
+	This tag's namespace. Empty string if no namespace.
+	
+	Note that setting this value is O(n) because internal lookup structures 
+	need to be updated.
+	
+	Note also, that setting this may change where this tag is ordered among
+	its parent's list of tags.
+	+/
 	@property string namespace()
 	{
 		return _namespace;
 	}
-	/// Not particularly efficient, but it works.
+	///ditto
 	@property void namespace(string value)
 	{
+		//TODO: Can we do this in-place, without removing/adding and thus
+		//      modyfying the internal order?
 		if(_parent && _namespace != value)
 		{
 			// Remove
@@ -244,18 +259,31 @@ class Tag
 	}
 	
 	private string _name;
-	/// Not including namespace. Use 'fullName' if you want the namespace included.
+	/++
+	This tag's name, not including namespace.
+	
+	Use `fullName` if you want the namespace included.
+	
+	Note that setting this value is O(n) because internal lookup structures 
+	need to be updated.
+
+	Note also, that setting this may change where this tag is ordered among
+	its parent's list of tags.
+	+/
 	@property string name()
 	{
 		return _name;
 	}
-	/// Not the most efficient, but it works.
+	///ditto
 	@property void name(string value)
 	{
+		//TODO: Seriously? Can't we at least do the "*" modification *in-place*?
+		
 		if(_parent && _name != value)
 		{
 			_parent.updateId++;
 			
+			// Not the most efficient, but it works.
 			void removeFromGroupedLookup(string ns)
 			{
 				// Remove from _parent._tags[ns]
@@ -272,6 +300,7 @@ class Tag
 			_name = value;
 			
 			// Add to new locations in _parent._tags
+			//TODO: Can we re-insert while preserving the original order?
 			_parent._tags[_namespace][_name] ~= this;
 			_parent._tags["*"][_name] ~= this;
 		}
@@ -328,7 +357,7 @@ class Tag
 	}
 
 	/// Deep-copy this Tag.
-	/// The clone does NOT have a parent, even if the original does.
+	/// The clone does $(B $(I not)) have a parent, even if the original does.
 	Tag clone()
 	{
 		auto newTag = new Tag(_namespace, _name, values.dup, allAttributes.clone(), allTags.clone());
@@ -908,25 +937,66 @@ class Tag
 	static assert(isRandomAccessRange!TagRange);
 	static assert(isRandomAccessRange!NamespaceRange);
 
-	/// Access all attributes that don't have a namespace
+	/++
+	Access all attributes that don't have a namespace
+
+	Returns a random access range of `Attribute` objects that supports
+	numeric-indexing, string-indexing, slicing and length.
+	
+	Since SDLang allows multiple attributes with the same name,
+	string-indexing returns a random access range of all attributes
+	with the given name.
+	
+	The string-indexing does $(B $(I not)) support namespace prefixes.
+	Use `namespace[string]`.`attributes` or `all`.`attributes` for that.
+	
+	See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
+	for a high-level overview (and examples) of how to use this.
+	+/
 	@property AttributeRange attributes()
 	{
 		return AttributeRange(this, "", false);
 	}
 
-	/// Access all direct-child tags that don't have a namespace
+	/++
+	Access all direct-child tags that don't have a namespace.
+	
+	Returns a random access range of `Tag` objects that supports
+	numeric-indexing, string-indexing, slicing and length.
+	
+	Since SDLang allows multiple tags with the same name, string-indexing
+	returns a random access range of all immediate child tags with the
+	given name.
+	
+	The string-indexing does $(B $(I not)) support namespace prefixes.
+	Use `namespace[string]`.`attributes` or `all`.`attributes` for that.
+	
+	See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
+	for a high-level overview (and examples) of how to use this.
+	+/
 	@property TagRange tags()
 	{
 		return TagRange(this, "", false);
 	}
 	
-	/// Access all namespaces in this tag, and the attributes/tags within them.
+	/++
+	Access all namespaces in this tag, and the attributes/tags within them.
+	
+	Returns a random access range of `NamespaceAccess` elements that supports
+	numeric-indexing, string-indexing, slicing and length.
+	
+	See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
+	for a high-level overview (and examples) of how to use this.
+	+/
 	@property NamespaceRange namespaces()
 	{
 		return NamespaceRange(this, false);
 	}
 
 	/// Access all attributes and tags regardless of namespace.
+	///
+	/// See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
+	/// for a better understanding (and examples) of how to use this.
 	@property NamespaceAccess all()
 	{
 		// "*" isn't a valid namespace name, so we can use it to indicate "all namespaces"
@@ -975,6 +1045,9 @@ class Tag
 	/// except that looking up a non-existant name/namespace with
 	/// opIndex(string) results in an empty array instead of
 	/// a thrown `sdlang.exception.DOMRangeException`.
+	///
+	/// See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
+	/// for a more information (and examples) of how to use this.
 	@property MaybeAccess maybe()
 	{
 		return MaybeAccess(this);
@@ -1079,11 +1152,14 @@ class Tag
 	Useful if you only expect one, and only one, child tag of a given name.
 	Only looks for immediate child tags of `this`, doesn't search recursively.
 	
+	If you expect multiple tags by the same name and want to get them all,
+	use `maybe`.`tags[string]` instead.
+	
 	The name can optionally include a namespace, as in `"namespace:name"`.
 	Or, you can search all namespaces using `"*:name"`. Use an empty string
 	to search for anonymous tags, or `"namespace:"` for anonymous tags inside
 	a namespace. Wildcard searching is only supported for namespaces, not names.
-	Use `tags[0]` if you don't care about the name.
+	Use `maybe`.`tags[0]` if you don't care about the name.
 	
 	If there are multiple tags by the chosen name, the $(B $(I last tag)) will
 	always be chosen. That is, this function considers later tags with the
@@ -1137,6 +1213,9 @@ class Tag
 	Useful if you only expect one, and only one, child tag of a given name.
 	Only looks for immediate child tags of `this`, doesn't search recursively.
 	
+	If you expect multiple tags by the same name and want to get them all,
+	use `tags[string]` instead.
+
 	The name can optionally include a namespace, as in `"namespace:name"`.
 	Or, you can search all namespaces using `"*:name"`. Use an empty string
 	to search for anonymous tags, or `"namespace:"` for anonymous tags inside
@@ -1192,6 +1271,8 @@ class Tag
 	for a value in a child tag (for example, if this current tag is a root tag),
 	try `getTagValue`.
 
+	If you want to get more than one value from this tag, use `values` instead.
+
 	If this tag has multiple values, the $(B $(I first)) value matching the
 	requested type will be returned. Ie, Extra values in the tag are ignored.
 	
@@ -1242,6 +1323,8 @@ class Tag
 	for values of `this` tag, it does not search child tags. If you wish to
 	search for a value in a child tag (for example, if this current tag is a
 	root tag), try `expectTagValue`.
+
+	If you want to get more than one value from this tag, use `values` instead.
 
 	If this tag has multiple values, the $(B $(I first)) value matching the
 	requested type will be returned. Ie, Extra values in the tag are ignored.
@@ -1417,11 +1500,14 @@ class Tag
 	If you wish to search for a value in a child tag (for example, if this
 	current tag is a root tag), try `getTagAttribute`.
 	
+	If you expect multiple attributes by the same name and want to get them all,
+	use `maybe`.`attributes[string]` instead.
+
 	The attribute name can optionally include a namespace, as in
 	`"namespace:name"`. Or, you can search all namespaces using `"*:name"`.
 	(Note that unlike tags. attributes can't be anonymous - that's what
 	values are.) Wildcard searching is only supported for namespaces, not names.
-	Use `attributes[0]` if you don't care about the name.
+	Use `maybe`.`attributes[0]` if you don't care about the name.
 
 	If this tag has multiple attributes, the $(B $(I first)) attribute
 	matching the requested name and type will be returned. Ie, Extra
@@ -1502,6 +1588,9 @@ class Tag
 	Only looks for attributes of `this` tag, it does not search child tags.
 	If you wish to search for a value in a child tag (for example, if this
 	current tag is a root tag), try `expectTagAttribute`.
+
+	If you expect multiple attributes by the same name and want to get them all,
+	use `attributes[string]` instead.
 
 	The attribute name can optionally include a namespace, as in
 	`"namespace:name"`. Or, you can search all namespaces using `"*:name"`.

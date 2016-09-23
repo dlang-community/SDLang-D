@@ -5,7 +5,7 @@ SDLang-D - ChangeLog
 
 v0.10.0 - TBD
 ---------------------
-Big enhancements to DOM interface, an improved pull parser interface, and a few bugfixes.
+Big convenience enhancements to DOM interface. An improved pull parser interface. Documentation improvements. And a few bugfixes.
 
 - **New:** SDLangException and subclasses now take the standard file and line parameters.
 - **New:** Add a simple struct [FullName](http://semitwist.com/sdlang-d/sdlang/util/FullName.html) to split and combine namespace/name combinations.

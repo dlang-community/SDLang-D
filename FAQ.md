@@ -1,6 +1,16 @@
 SDLang-D FAQ
 ============
 
+Q: What is "SDLang" vs "SDLang-D"?
+---------
+
+A: "SDLang" and "SDLang-D" are not synonymous.
+
+"SDLang" refers to the data lanugage itself. It stands for "Simple Declarative Language". It was originally designed by Daniel Leuck and [implemented in Java](https://github.com/ikayzo/SDL). Implementations for other languages followed (such as [Ruby](http://sdl4r.rubyforge.org/) ([source](https://github.com/ikayzo/SDL.rb)), and [.NET](https://github.com/ikayzo/SDL.NET)). It and was originally abbreviated "SDL", although "SDLang" mey be better to avoud confusion with the other "SDL": [Simple DirectMedia Layer](https://www.libsdl.org/).
+
+"SDLang-D" refers to this specific project: An implementation of the SDLang language in [D](http://dlang.org).
+
+
 Q: Why are anonymous tags required to have at least one value? Regular tags don't require a value.
 ---------
 
