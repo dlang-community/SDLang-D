@@ -108,7 +108,7 @@ class Lexer
 	// found after it needs to be saved for the the lexer's next iteration.
 	// 
 	// It's a slight kludge, and could instead be implemented as a slightly
-	// kludgey parser hack, but it's the only situation where SDL's lexing
+	// kludgey parser hack, but it's the only situation where SDLang's lexing
 	// needs to lookahead more than one character, so this is good enough.
 	private struct LookaheadTokenInfo
 	{

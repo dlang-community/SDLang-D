@@ -20,7 +20,7 @@ class Attribute
 	
 	private Tag _parent;
 	/// Get parent tag. To set a parent, attach this Attribute to its intended
-	/// parent tag by calling 'Tag.add(...)', or by passing it to
+	/// parent tag by calling `Tag.add(...)`, or by passing it to
 	/// the parent tag's constructor.
 	@property Tag parent()
 	{
@@ -54,7 +54,7 @@ class Attribute
 	}
 	
 	private string _name;
-	/// Not including namespace. Use 'fullName' if you want the namespace included.
+	/// Not including namespace. Use `fullName` if you want the namespace included.
 	@property string name()
 	{
 		return _name;
@@ -214,7 +214,7 @@ class Tag
 
 	private Tag _parent;
 	/// Get parent tag. To set a parent, attach this Tag to its intended
-	/// parent tag by calling 'Tag.add(...)', or by passing it to
+	/// parent tag by calling `Tag.add(...)`, or by passing it to
 	/// the parent tag's constructor.
 	@property Tag parent()
 	{
@@ -1974,7 +1974,8 @@ class Tag
 	
 	/// Treats `this` as the root tag. Note that root tags cannot have
 	/// values or attributes, and cannot be part of a namespace.
-	/// If this isn't a valid root tag, 'ValidationException' will be thrown.
+	/// If this isn't a valid root tag, `sdlang.exception.ValidationException`
+	/// will be thrown.
 	string toSDLDocument()(string indent="\t", int indentLevel=0)
 	{
 		Appender!string sink;

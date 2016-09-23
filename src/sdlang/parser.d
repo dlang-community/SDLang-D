@@ -22,8 +22,8 @@ Tag parseFile(string filename)
 	return parseSource(source, filename);
 }
 
-/// Returns root tag. The optional 'filename' parameter can be included
-/// so that the SDL document's filename (if any) can be displayed with
+/// Returns root tag. The optional `filename` parameter can be included
+/// so that the SDLang document's filename (if any) can be displayed with
 /// any syntax error messages.
 Tag parseSource(string source, string filename=null)
 {
@@ -37,8 +37,8 @@ Parses an SDL document using StAX/Pull-style. Returns an InputRange with
 element type ParserEvent.
 
 The pullParseFile version reads a file and parses it, while pullParseSource
-parses a string passed in. The optional 'filename' parameter in pullParseSource
-can be included so that the SDL document's filename (if any) can be displayed
+parses a string passed in. The optional `filename` parameter in pullParseSource
+can be included so that the SDLang document's filename (if any) can be displayed
 with any syntax error messages.
 
 Note: The old FileStartEvent and FileEndEvent events

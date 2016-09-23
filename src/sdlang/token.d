@@ -33,11 +33,11 @@ struct DateTimeFrac
 /++
 If a "Date Time" literal in the SDL file has a time zone that's not found in
 your system, you get one of these instead of a SysTime. (Because it's
-impossible to indicate "unknown time zone" with 'std.datetime.TimeZone'.)
+impossible to indicate "unknown time zone" with `std.datetime.TimeZone`.)
 
-The difference between this and 'DateTimeFrac' is that 'DateTimeFrac'
+The difference between this and `DateTimeFrac` is that `DateTimeFrac`
 indicates that no time zone was specified in the SDL at all, whereas
-'DateTimeFracUnknownZone' indicates that a time zone was specified but
+`DateTimeFracUnknownZone` indicates that a time zone was specified but
 data for it could not be found on your system.
 +/
 struct DateTimeFracUnknownZone
@@ -387,7 +387,7 @@ struct Token
 {
 	Symbol symbol = sdlang.symbol.symbol!"Error"; /// The "type" of this token
 	Location location;
-	Value value; /// Only valid when 'symbol' is symbol!"Value", otherwise null
+	Value value; /// Only valid when `symbol` is `symbol!"Value"`, otherwise null
 	string data; /// Original text from source
 
 	@disable this();
@@ -402,8 +402,8 @@ struct Token
 	/// Tokens with differing symbols are always unequal.
 	/// Tokens with differing values are always unequal.
 	/// Tokens with differing Value types are always unequal.
-	/// Member 'location' is always ignored for comparison.
-	/// Member 'data' is ignored for comparison *EXCEPT* when the symbol is Ident.
+	/// Member `location` is always ignored for comparison.
+	/// Member `data` is ignored for comparison *EXCEPT* when the symbol is Ident.
 	bool opEquals(Token b)
 	{
 		return opEquals(b);
