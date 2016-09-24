@@ -61,8 +61,8 @@ void main()
 	assert( akikoHeight.parent is akiko );
 	
 	// She has no "weight" attribute:
-	assertThrown!SDLangRangeException( akiko.attributes["weight"] );
-	assertThrown!SDLangRangeException( akiko.all.attributes["weight"] );
+	assertThrown!DOMRangeException( akiko.attributes["weight"] );
+	assertThrown!DOMRangeException( akiko.all.attributes["weight"] );
 	
 	// Use 'maybe' to get an empty range instead of an exception.
 	// This works on tags and namespaces, too.
@@ -128,7 +128,7 @@ void main()
 	Tag son = akiko.tags["son"][0];
 	Tag hobbies = daughter.tags["hobbies"][0];
 	// 'hobbies' is already attached to a parent tag.
-	assertThrown!SDLangValidationException( son.add(hobbies) );
+	assertThrown!ValidationException( son.add(hobbies) );
 	hobbies.remove(); // Remove from daughter
 	son.add(hobbies); // Ok
 	
@@ -152,11 +152,11 @@ void main()
 	writeln("--------------");
 	
 	// Root tags cannot be part of a namespace or contain any values or attributes
-	assertThrown!SDLangValidationException( daughter.toSDLDocument() );
-	assertThrown!SDLangValidationException( kitty.toSDLDocument() );
+	assertThrown!ValidationException( daughter.toSDLDocument() );
+	assertThrown!ValidationException( kitty.toSDLDocument() );
 
 	root.add( new Attribute("attributeNamespace", "attributeName", Value(3)) );
-	assertThrown!SDLangValidationException( root.toSDLDocument() );
+	assertThrown!ValidationException( root.toSDLDocument() );
 	
 	// But you can still convert such tags, or any other Tag, Attribute or Value,
 	// to an SDLang string with 'toSDLString':
