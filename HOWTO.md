@@ -201,13 +201,58 @@ int main(string[] args)
 Compile and run:
 ```console
 > dub example.d
-Hello world
-Name: Joe Coder
-Age: 36
+Person's Name: Joe Coder
+Id: 7
+Birthday: 1970-Dec-06
+Yum!
+------------------------
+All top-level tags:
+name
+welcome
+misc-values
+misc-attrs
+ip-address
+myNamespace:person
+------------------------
+First misc-values int:    11
+First misc-values string: Up
+All misc-values values:
+  11
+  Up
+  3.14
+  null
+  On the roof
+  22
+Found null?: true
+All misc-values integer values:
+11
+22
+------------------------
+First misc-attrs A= int:    11
+First misc-attrs A= string: Up
+Num attributes in default namespace: 3
+Num attributes in foo namespace: 1
+All misc-attrs attributes:
+A: 11
+A: Up
+foo:A: 22
+bar:A: 33
+B: 44
+------------------------
 The full SDLang:
+------------------------
+name "Frank"
 welcome "Hello world"
-myNamespace:person name="Joe Coder" {
-	age 36
+misc-values 11 "Up" 3.14000000000000012434497875802D null "On the roof" 22
+misc-attrs A=11 A="Up" foo:A=22 bar:A=33 B=44
+ip-address "192.168.1.100" port=8080
+myNamespace:person "Joe Coder" id=7 {
+        birthday 1970/12/6
+        has-cake true
+        homepage "http://sdlang.org"
+        dir "foo" {
+                file "bar.txt"
+        }
 }
 ```
 
