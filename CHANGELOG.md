@@ -10,7 +10,7 @@ Big convenience enhancements to DOM interface and an improved pull parser interf
 - **New:** [`SDLangException`](http://semitwist.com/sdlang-d/sdlang/exception/SDLangException.html) and subclasses now take the standard file and line parameters.
 - **New:** New exceptions: [`DOMException`](http://semitwist.com/sdlang-d/sdlang/exception/DOMException.html), [`DOMNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/DOMNotFoundException.html), [`TagNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/TagNotFoundException.html), [`ValueNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/ValueNotFoundException.html), [`AttributeNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/AttributeNotFoundException.html) and [`ArgumentException`](http://semitwist.com/sdlang-d/sdlang/exception/ArgumentException.html), 
 - **New:** Add a simple struct [FullName](http://semitwist.com/sdlang-d/sdlang/util/FullName.html) to split and combine namespace/name combinations.
-- **New:** 
+- **New:** [`Location.toString`](http://semitwist.com/sdlang-d/sdlang/util/Location.toString.html) takes optional output range as a sink.
 - **New:** [#6](https://github.com/Abscissa/SDLang-D/issues/6): Added [Tag.getValue](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getValue.html) and [Tag.getAttribute](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getAttribute.html) to more easily obtain values and attributes when only one value is expected for a given tag name.
 - **New:** [#38](https://github.com/Abscissa/SDLang-D/issues/38): Add Tag.clone/Attribute.clone to deep clone a tag (and all its children)
 - **Change:** Minimum DMDFE bumped to 2.069.

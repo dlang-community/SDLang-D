@@ -3,7 +3,9 @@
 
 module sdlang.exception;
 
+import std.array;
 import std.exception;
+import std.range;
 import std.stdio;
 import std.string;
 
@@ -88,14 +90,29 @@ abstract class DOMException : SDLangException
 		super(msg, file, line);
 	}
 
-	//TODO: Support OutputRange sink
-	/// Prefixes a message with file/line information from the tag (if tag exists)
+	/// Prefixes a message with file/line information from the tag (if tag exists).
+	/// Optionally takes output range as a sink.
 	string customMsg(string msg)
 	{
-		if(base)
-			return "%s: %s".format(base.location.toString(), msg);
-		else
+		if(!base)
 			return msg;
+
+		Appender!string sink;
+		this.customMsg(sink, msg);
+		return sink.data;
+	}
+
+	///ditto
+	void customMsg(Sink)(ref Sink sink, string msg) if(isOutputRange!(Sink,char))
+	{
+		if(base)
+		{
+			sink.put(base.location.toString());
+			sink.put(": ");
+			sink.put(msg);
+		}
+		else
+			sink.put(msg);
 	}
 
 	/// Outputs a message to stderr, prefixed with file/line information

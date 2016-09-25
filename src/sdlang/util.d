@@ -4,8 +4,10 @@
 module sdlang.util;
 
 import std.algorithm;
+import std.array;
 import std.conv;
 import std.datetime;
+import std.range;
 import std.stdio;
 import std.string;
 
@@ -44,10 +46,23 @@ struct Location
 		this.index = index;
 	}
 
-	//TODO: Support OutputRange sink
+	/// Convert to string. Optionally takes output range as a sink.
 	string toString()
 	{
-		return "%s(%s:%s)".format(file, line+1, col+1);
+		Appender!string sink;
+		this.toString(sink);
+		return sink.data;
+	}
+
+	///ditto
+	void toString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char))
+	{
+		sink.put(file);
+		sink.put("(");
+		sink.put(to!string(line+1));
+		sink.put(":");
+		sink.put(to!string(col+1));
+		sink.put(")");
 	}
 }
 
@@ -56,13 +71,27 @@ struct FullName
 	string namespace;
 	string name;
 
-	//TODO: Support OutputRange sink
+	/// Convert to string. Optionally takes output range as a sink.
 	string toString()
 	{
 		if(namespace == "")
 			return name;
-		else
-			return text(namespace, ":", name);
+
+		Appender!string sink;
+		this.toString(sink);
+		return sink.data;
+	}
+
+	///ditto
+	void toString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char))
+	{
+		if(namespace != "")
+		{
+			sink.put(namespace);
+			sink.put(":");
+		}
+
+		sink.put(name);
 	}
 
 	///

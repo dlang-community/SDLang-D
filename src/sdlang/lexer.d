@@ -171,6 +171,7 @@ class Lexer
 		error(location, msg);
 	}
 
+	//TODO: Take varargs and use output range sink.
 	private void error(Location loc, string msg)
 	{
 		throw new ParseException(loc, "Error: "~msg);
