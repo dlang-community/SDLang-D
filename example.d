@@ -56,8 +56,8 @@ int main(string[] args)
 	string welcome = root.getTagValue!string("welcome");
 	
 	// Get address
-	string ipAddress = root.getTagValue!string("address", "127.0.0.1");
-	int port = root.getTagAttribute!int("address", "port", 80);
+	string ipAddress = root.getTagValue!string("ip-address", "127.0.0.1");
+	int port = root.getTagAttribute!int("ip-address", "port", 80);
 	
 	// Optional tag: Could have said "myNamespace:person",
 	//               but let's allow any namespace.
@@ -71,7 +71,7 @@ int main(string[] args)
 		{
 			// Custom errors with file/line info:
 			stderr.writeln(person.location,
-				": Error: 'person' tag requires a string attribute 'name'");
+				": Error: 'person' tag requires a string value");
 		}
 
 		// Attribute: Id
