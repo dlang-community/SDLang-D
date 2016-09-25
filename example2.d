@@ -3,6 +3,10 @@
 	dependency "sdlang-d" version="~>0.9.6"
 +/
 
+/// To build and run: dub example2.d
+///
+/// NOTE: The integer-based indexing shown here might get removed in a later
+/// version of SDLang-D. See $(LINK2 https://github.com/Abscissa/SDLang-D/issues/47, #47)
 import std.algorithm;
 import std.array;
 import std.exception;

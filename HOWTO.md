@@ -1,9 +1,9 @@
 How to use SDLang-D (Tutorial / API Overview)
 =============================================
 
-SDLang-D offers two ways to work with SDLang: DOM style and StAX/Pull style. DOM style is easier and more convenient and can both read and write SDLang. StAX/Pull style is faster and more efficient, although it's only used for reading SDLang, not writing it.
+SDLang-D offers two ways to work with SDLang: DOM style and pull (aka StAX) style. DOM style is easier and more convenient and can both read and write SDLang. Pull style is faster and more efficient, although it's only used for reading SDLang, not writing it.
 
-This document explains how to use SDLang-D in the DOM style. If you're familiar with StAX/Pull style parsing for other languages, such as XML, then SDLang-D's StAX/Pull parser should be fairly straightforward to understand. See [pullParseFile](http://semitwist.com/sdlang-d/sdlang/parser/pullParseFile.html) and [pullParseSource](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html) in the [API reference](http://semitwist.com/sdlang-d/sdlang.html) for details. You can also see SDLang-D's source as a real-world example, as the DOM parser is built directly on top of the StAX/Pull parser (just search ```parser.d``` for ```DOMParser```).
+This document explains how to use SDLang-D in the DOM style. If you're familiar with pull/StAX style parsing for other languages, such as XML, then SDLang-D's pull parser should be straightforward to understand. See [pullParseFile](http://semitwist.com/sdlang-d/sdlang/parser/pullParseFile.html) and [pullParseSource](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html) in the [API reference](http://semitwist.com/sdlang-d/sdlang.html) for details and a simple example. You can also see SDLang-D's source as a real-world example, as the DOM tree itself is built using the pull parser, in less than 50 lines of code (just search [`parser.d`](https://github.com/Abscissa/SDLang-D/blob/master/src/sdlang/parser.d) for ```DOMParser```).
 
 **Contents**
 - [Installation](#installation)
@@ -186,6 +186,8 @@ devs:person "Joe Coder" 1.5D id=7 extras:has-kid=true {
         }
 }
 ```
+
+Another example, using the more powerful range-based DOM interfaces instead of the get/expect convenience functions, is in [`example2.d`](). Be aware however, the integer-based indexing (might get removed)[https://github.com/Abscissa/SDLang-D/issues/47] in a later version of SDLang-D.
 
 Main Interface: Parsing SDLang
 ------------------------------
