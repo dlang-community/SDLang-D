@@ -603,7 +603,7 @@ class Tag
 		void popFront()
 		{
 			if(empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 
 			frontIndex++;
 		}
@@ -616,7 +616,7 @@ class Tag
 		void popBack()
 		{
 			if(empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 
 			endIndex--;
 		}
@@ -651,7 +651,7 @@ class Tag
 				r.endIndex > this.endIndex ||
 				r.frontIndex > r.endIndex
 			)
-				throw new DOMRangeException("Slice out of range");
+				throw new DOMRangeException(tag, "Slice out of range");
 			
 			return r;
 		}
@@ -659,7 +659,7 @@ class Tag
 		T opIndex(size_t index)
 		{
 			if(empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 
 			return mixin("tag."~membersGrouped~"[namespace][name][frontIndex+index]");
 		}
@@ -718,7 +718,7 @@ class Tag
 		void popFront()
 		{
 			if(empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 
 			frontIndex++;
 		}
@@ -731,7 +731,7 @@ class Tag
 		void popBack()
 		{
 			if(empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 
 			endIndex--;
 		}
@@ -768,7 +768,7 @@ class Tag
 				r.endIndex > this.endIndex ||
 				r.frontIndex > r.endIndex
 			)
-				throw new DOMRangeException("Slice out of range");
+				throw new DOMRangeException(tag, "Slice out of range");
 			
 			return r;
 		}
@@ -776,7 +776,7 @@ class Tag
 		T opIndex(size_t index)
 		{
 			if(empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 
 			if(namespace == "*")
 				return mixin("tag."~allMembers~"[ frontIndex+index ]");
@@ -789,7 +789,7 @@ class Tag
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
 			{
-				throw new DOMRangeException(
+				throw new DOMRangeException(tag,
 					"Cannot lookup tags/attributes by name on a subset of a range, "~
 					"only across the entire tag. "~
 					"Please make sure you haven't called popFront or popBack on this "~
@@ -798,10 +798,10 @@ class Tag
 			}
 			
 			if(!isMaybe && empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 			
 			if(!isMaybe && name !in this)
-				throw new DOMRangeException(`No such `~T.stringof~` named: "`~name~`"`);
+				throw new DOMRangeException(tag, `No such `~T.stringof~` named: "`~name~`"`);
 
 			return ThisNamedMemberRange(tag, namespace, name, updateId);
 		}
@@ -810,7 +810,7 @@ class Tag
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
 			{
-				throw new DOMRangeException(
+				throw new DOMRangeException(tag,
 					"Cannot lookup tags/attributes by name on a subset of a range, "~
 					"only across the entire tag. "~
 					"Please make sure you haven't called popFront or popBack on this "~
@@ -864,7 +864,7 @@ class Tag
 		void popFront()
 		{
 			if(empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 			
 			frontIndex++;
 		}
@@ -877,7 +877,7 @@ class Tag
 		void popBack()
 		{
 			if(empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 			
 			endIndex--;
 		}
@@ -913,7 +913,7 @@ class Tag
 				r.endIndex > this.endIndex ||
 				r.frontIndex > r.endIndex
 			)
-				throw new DOMRangeException("Slice out of range");
+				throw new DOMRangeException(tag, "Slice out of range");
 			
 			return r;
 		}
@@ -921,7 +921,7 @@ class Tag
 		NamespaceAccess opIndex(size_t index)
 		{
 			if(empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 
 			auto namespace = tag.allNamespaces[frontIndex+index];
 			return NamespaceAccess(
@@ -934,10 +934,10 @@ class Tag
 		NamespaceAccess opIndex(string namespace)
 		{
 			if(!isMaybe && empty)
-				throw new DOMRangeException("Range is empty");
+				throw new DOMRangeException(tag, "Range is empty");
 			
 			if(!isMaybe && namespace !in this)
-				throw new DOMRangeException(`No such namespace: "`~namespace~`"`);
+				throw new DOMRangeException(tag, `No such namespace: "`~namespace~`"`);
 			
 			return NamespaceAccess(
 				namespace,
@@ -1103,7 +1103,7 @@ class Tag
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new TagNotFoundException(tagFullName, "No tags found in namespace '"~namespace~"'");
+				throw new TagNotFoundException(this, tagFullName, "No tags found in namespace '"~namespace~"'");
 		}
 
 		// Can find tag in namespace?
@@ -1112,7 +1112,7 @@ class Tag
 			if(useDefaultValue)
 				return defaultValue;
 			else
-				throw new TagNotFoundException(tagFullName, "Can't find tag '"~tagFullName.toString()~"'");
+				throw new TagNotFoundException(this, tagFullName, "Can't find tag '"~tagFullName.toString()~"'");
 		}
 
 		// Return last matching tag found
@@ -1135,6 +1135,7 @@ class Tag
 		else
 		{
 			throw new ValueNotFoundException(
+				this,
 				FullName(this.namespace, this.name),
 				typeid(T),
 				"No value of type "~T.stringof~" found."
@@ -1156,7 +1157,7 @@ class Tag
 			else
 			{
 				throw new AttributeNotFoundException(
-					this.getFullName(), attrFullName, typeid(T),
+					this, this.getFullName(), attrFullName, typeid(T),
 					"Can't find attribute '"~FullName.combine(attrNS, attrName)~"'"
 				);
 			}
@@ -1175,7 +1176,7 @@ class Tag
 		else
 		{
 			throw new AttributeNotFoundException(
-				this.getFullName(), attrFullName, typeid(T),
+				this, this.getFullName(), attrFullName, typeid(T),
 				"Can't find attribute '"~FullName.combine(attrNS, attrName)~"' of type "~T.stringof
 			);
 		}

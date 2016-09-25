@@ -4,8 +4,10 @@
 module sdlang.exception;
 
 import std.exception;
+import std.stdio;
 import std.string;
 
+import sdlang.ast;
 import sdlang.util;
 
 /// Abstract parent class of all SDLang-D defined exceptions.
@@ -76,11 +78,39 @@ class ArgumentException : SDLangException
 }
 
 /// Thrown by the DOM on empty range and out-of-range conditions.
-class DOMRangeException : SDLangException
+abstract class DOMException : SDLangException
 {
-	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	Tag base; /// The tag searched from
+
+	this(Tag base, string msg, string file = __FILE__, size_t line = __LINE__)
 	{
+		this.base = base;
 		super(msg, file, line);
+	}
+
+	//TODO: Support OutputRange sink
+	/// Prefixes a message with file/line information from the tag (if tag exists)
+	string customMsg(string msg)
+	{
+		if(base)
+			return "%s: %s".format(base.location.toString(), msg);
+		else
+			return msg;
+	}
+
+	/// Outputs a message to stderr, prefixed with file/line information
+	void writeCustomMsg(string msg)
+	{
+		stderr.writeln( customMsg(msg) );
+	}
+}
+
+/// Thrown by the DOM on empty range and out-of-range conditions.
+class DOMRangeException : DOMException
+{
+	this(Tag base, string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		super(base, msg, file, line);
 	}
 }
 
@@ -92,23 +122,23 @@ alias SDLangRangeException = DOMRangeException;
 /// and `AttributeNotFoundException`.
 ///
 /// Thrown by the DOM's `sdlang.ast.Tag.expectTag`, etc. functions if a matching element isn't found.
-abstract class DOMNotFoundException : SDLangException
+abstract class DOMNotFoundException : DOMException
 {
-	FullName tagName;
+	FullName tagName; /// The tag searched for
 
-	this(FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__)
+	this(Tag base, FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__)
 	{
 		this.tagName = tagName;
-		super(msg, file, line);
+		super(base, msg, file, line);
 	}
 }
 
 /// Thrown by the DOM's `sdlang.ast.Tag.expectTag`, etc. functions if a Tag isn't found.
 class TagNotFoundException : DOMNotFoundException
 {
-	this(FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__)
+	this(Tag base, FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__)
 	{
-		super(tagName, msg, file, line);
+		super(base, tagName, msg, file, line);
 	}
 }
 
@@ -118,26 +148,26 @@ class ValueNotFoundException : DOMNotFoundException
 	/// Expected type for the not-found value.
 	TypeInfo valueType;
 
-	this(FullName tagName, TypeInfo valueType, string msg, string file = __FILE__, size_t line = __LINE__)
+	this(Tag base, FullName tagName, TypeInfo valueType, string msg, string file = __FILE__, size_t line = __LINE__)
 	{
 		this.valueType = valueType;
-		super(tagName, msg, file, line);
+		super(base, tagName, msg, file, line);
 	}
 }
 
 /// Thrown by the DOM's `sdlang.ast.Tag.expectAttribute`, etc. functions if an Attribute isn't found.
 class AttributeNotFoundException : DOMNotFoundException
 {
-	FullName attributeName;
+	FullName attributeName; /// The attribute searched for
 
 	/// Expected type for the not-found attribute's value.
 	TypeInfo valueType;
 
-	this(FullName tagName, FullName attributeName, TypeInfo valueType, string msg,
+	this(Tag base, FullName tagName, FullName attributeName, TypeInfo valueType, string msg,
 		string file = __FILE__, size_t line = __LINE__)
 	{
 		this.valueType = valueType;
 		this.attributeName = attributeName;
-		super(tagName, msg, file, line);
+		super(base, tagName, msg, file, line);
 	}
 }

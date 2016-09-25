@@ -44,6 +44,7 @@ struct Location
 		this.index = index;
 	}
 
+	//TODO: Support OutputRange sink
 	string toString()
 	{
 		return "%s(%s:%s)".format(file, line+1, col+1);
@@ -55,6 +56,7 @@ struct FullName
 	string namespace;
 	string name;
 
+	//TODO: Support OutputRange sink
 	string toString()
 	{
 		if(namespace == "")

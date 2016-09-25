@@ -55,8 +55,8 @@ int main()
 	{
 		try
 			writeln("Person's Name: ", person.expectValue!string());
-		catch(AttributeNotFoundException e)
-			stderr.writeln(person.location, ": Error: 'person' requires a string value");
+		catch(ValueNotFoundException e)
+			e.writeCustomMsg("Error: 'person' requires a string value");
 
 		int id = person.getAttribute!int("id", 99999);
 		writeln("Id: ", id);
