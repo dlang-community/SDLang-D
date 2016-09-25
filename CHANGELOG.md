@@ -12,6 +12,7 @@ Big convenience enhancements to DOM interface. An improved pull parser interface
 - **New:** [#6](https://github.com/Abscissa/SDLang-D/issues/6): Added [Tag.getValue](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getValue.html) and [Tag.getAttribute](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getAttribute.html) to more easily obtain values and attributes when only one value is expected for a given tag name.
 - **New:** [#38](https://github.com/Abscissa/SDLang-D/issues/38): Add Tag.clone/Attribute.clone to deep clone a tag (and all its children)
 - **Improved:** Various documentation improvements.
+- **Improved:** Improved some lexer/parser error messages.
 - **Change:** Minimum DMDFE bumped to 2.069.
 - **Change:** Cleaned up the names of the [exceptions](http://semitwist.com/sdlang-d/sdlang/exception.html).
 - **Change:** Deprecated `Tag.fullName` and `Attribute.fullName`. Use `Tag.getFullName().toString()` and `Attribute.getFullName().toString()` instead.

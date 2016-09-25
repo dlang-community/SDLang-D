@@ -5,11 +5,13 @@ module sdlang.lexer;
 
 import std.algorithm;
 import std.array;
+static import std.ascii;
 import std.base64;
 import std.bigint;
 import std.conv;
 import std.datetime;
 import std.file;
+import std.format;
 import std.traits;
 import std.typecons;
 import std.uni;
@@ -439,8 +441,14 @@ class Lexer
 
 		else
 		{
+			if(ch == ',')
+				error("Unexpected comma: SDLang is not a comma-separated format.");
+			else if(std.ascii.isPrintable(ch))
+				error(text("Unexpected: ", ch));
+			else
+				error("Unexpected character code 0x%02X".format(ch));
+
 			advanceChar(ErrorOnEOF.No);
-			error("Syntax error");
 		}
 	}
 

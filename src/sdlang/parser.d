@@ -297,7 +297,7 @@ private struct PullParser
 			}
 		}
 		else if(!token.matches!"EOF"())
-			error("Expected end-of-file or the start of a new tag, not " ~ token.symbol.name);
+			error("Expected a tag or end-of-file, not " ~ token.symbol.name);
 	}
 
 	/// <Tags> ::= <Tag> <Tags>  (Lookaheads: Ident Value)
@@ -323,7 +323,8 @@ private struct PullParser
 			}
 			else if(token.matches!"{"())
 			{
-				error("Anonymous tags must have at least one value. They cannot have just children only.");
+				error("Found start of child block, but no tag name. If you intended an anonymous "~
+				"tag, you must have at least one value before any attributes or child tags.");
 			}
 			else
 			{
@@ -356,7 +357,8 @@ private struct PullParser
 			error("Expected tag name or value, not " ~ token.symbol.name);
 
 		if(lexer.front.matches!"="())
-			error("Anonymous tags must have at least one value. They cannot have just attributes and children only.");
+			error("Found attribute, but no tag name. If you intended an anonymous "~
+			"tag, you must have at least one value before any attributes.");
 
 		parseValues();
 		parseAttributes();
