@@ -51,8 +51,10 @@ Also:
 * Line comments start with either ```#```, ```//``` or ```--```.
 * Block comments start with ```/*``` and end with the first occurrence of ```*/``` (ie, they do *not* nest).
 * Values always come before the attributes.
-* All the data types and syntax details are [described here](http://semitwist.com/sdl-mirror/Language+Guide.html).
+* All the data types and syntax details are described in the [Language Guide](https://github.com/Abscissa/SDLang-D/wiki/Language-Guide).
 * Note that, unlike C-based languages, opening curly braces must be on the *same* line, not the next line. [Why?](https://github.com/Abscissa/SDLang-D/blob/master/FAQ.md).
+
+For more details on the langauge, see the [Language Guide](https://github.com/Abscissa/SDLang-D/wiki/Language-Guide).
 
 Differences from original Java implementation
 ---------------------------------------------
