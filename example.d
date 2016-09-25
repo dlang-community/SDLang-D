@@ -4,112 +4,76 @@
 +/
 
 import std.algorithm;
-import std.array;
-import std.datetime;
 import std.stdio;
 import sdlang;
 
-// Try running: dub example.d
-// Or:          dub example.d -- yourData.sdl
-int main(string[] args)
+/// To run: dub basicExample.d
+int main()
 {
 	Tag root;
-	
 	try
 	{
-		if(args.length > 1)
-			root = parseFile(args[1]);
-		else
-		{
-			root = parseSource(`
-				name    "Frank"        // Required
-				welcome "Hello world"  // Optional
+		// Or: parseSource("path/to/somefile.sdl");
+		root = parseSource(`
+			message "Hello world!"   // Required
 
-				// Uncomment this for an error:
-				//badSuffix 12Q
+			// Optional, default is "127.0.0.1" port=80
+			ip-address "192.168.1.100" port=8080
 
-				misc-values 11 "Up" 3.14 null "On the roof" 22
-				misc-attrs  A=11 A="Up" foo:A=22 bar:A=33 B=44
+			// Uncomment this for an error:
+			//badSuffix 12Q
 
-				// Default: "127.0.0.1" port=80
-				ip-address "192.168.1.100" port=8080
+			misc-values 11 "Up" 3.14 null "On the roof" 22
+			misc-attrs  a=11 a="Up" foo:a=22 flag=true
 
-				myNamespace:person "Joe Coder" id=7 {
-					birthday 1970/12/06
-					has-cake true
-				}
-			`);
-		}
+			// Name is required
+			devs:person "Joe Coder" id=7 {
+				has-cake true
+			}
+		`); 
 	}
 	catch(ParseException e)
 	{
-		// Messages will look like:
-		// myFile.sdl(6:17): Error: Invalid integer suffix.
+		// Sample error:
+		// myFile.sdl(8:16): Error: Invalid integer suffix.
 		stderr.writeln(e.msg);
 		return 1;
 	}
 	
-	// Required tag: Throws ValueNotFoundException if not found
-	string name = root.expectTagValue!string("name");
+	// Basics
+	auto ipAddress = root.getTagValue!string("ip-address", "127.0.0.1");
+	auto port      = root.getTagAttribute!int("ip-address", "port", 80);
+	auto message   = root.expectTagValue!string("message"); // Throws if not found
+	writeln(message, " Address is ", ipAddress, ":", port);
 
-	// Optional tag: Returns string.init is not found
-	string welcome = root.getTagValue!string("welcome");
-	
-	// Get address
-	string ipAddress = root.getTagValue!string("ip-address", "127.0.0.1");
-	int port = root.getTagAttribute!int("ip-address", "port", 80);
-	
-	// Optional tag: Could have said "myNamespace:person",
-	//               but let's allow any namespace.
-	Tag person = root.getTag("*:person");
+	// Person tag
+	Tag person = root.getTag("devs:person"); 
+	assert(person.name == "person");
+	assert(person.namespace == "devs"); // Default namespace is ""
+	assert(person.getFullName.toString == "devs:person");
 	if(person !is null)
 	{
-		// Required Name
 		try
 			writeln("Person's Name: ", person.expectValue!string());
 		catch(AttributeNotFoundException e)
-		{
-			// Custom errors with file/line info:
-			stderr.writeln(person.location,
-				": Error: 'person' tag requires a string value");
-		}
+			stderr.writeln(person.location, ": Error: 'person' requires a string value");
 
-		// Attribute: Id
 		int id = person.getAttribute!int("id", 99999);
 		writeln("Id: ", id);
 
-		// Tag: Birthday
-		Date birthday = person.getTagValue!Date("birthday");
-		if(birthday != Date.init)
-			writeln("Birthday: ", birthday);
-
-		// Tag: Cake?
 		if(person.getTagValue!bool("has-cake"))
 			writeln("Yum!");
 	}
 
-	// All top-level tags:
+	// List top-level tags in all namespaces
+	// (omit "all" to only search in default namespace)
 	writeln("------------------------");
-	writeln("All top-level tags:");
-	root.all.tags.each!( (Tag tag) => writeln(tag.getFullName) );
+	root.all.tags.each!( (Tag t) => writeln(t.getFullName) );
 	
-	// Misc values and range support
+	// Get values and their types
 	Tag miscValues = root.getTag("misc-values");
 	writeln("------------------------");
-	writeln("First misc-values int:    ", miscValues.expectValue!int());
-	writeln("First misc-values string: ", miscValues.expectValue!string());
-	writeln("All misc-values values:");
-	bool foundNull;
-	foreach(Value value; miscValues.values)
-	{
-		if(value.type == typeid(null))
-			foundNull = true;
-
-		writeln("  ", value);
-	}
-	writeln("Found null?: ", foundNull);
-	
-	writeln("All misc-values integer values:");
+	writeln("All integer values in misc-values:");
 	miscValues.values
 		.filter!((Value v) => v.type == typeid(int))
 		.map!((Value v) => v.get!int)
@@ -118,31 +82,20 @@ int main(string[] args)
 	// Misc attributes and range support
 	Tag miscAttrs = root.getTag("misc-attrs");
 	writeln("------------------------");
-	writeln("First misc-attrs A= int:    ", miscAttrs.expectAttribute!int("A"));
-	writeln("First misc-attrs A= string: ", miscAttrs.expectAttribute!string("A"));
-
-	auto attrsDefaultNamespace = miscAttrs.attributes;
-	auto attrsFooNamespace     = miscAttrs.namespaces["foo"].attributes;
-	auto allAttrs              = miscAttrs.all.attributes;
-	writeln("Num attributes in default namespace: ", attrsDefaultNamespace.length);
-	writeln("Num attributes in foo namespace: ", attrsFooNamespace.length);
+	auto allAttrs = miscAttrs.all.attributes;
 	writeln("All misc-attrs attributes:");
 	allAttrs.each!(
-		(Attribute a) => writeln(a.getFullName, ": ", a.value)
+		(Attribute a) => writeln(a.value.type, " ", a.getFullName, "=", a.value)
 	);
 
-	// Add new children tags to person tag
-	auto newSDLangRoot = parseSource(`
-		homepage "http://sdlang.org"
-		dir "foo" {
-			file "bar.txt"
-		}
-	`);
-	newSDLangRoot.all.tags.each!( (Tag t) => person.add(t.clone) );
+	// Add new data to person tag
+	person.values ~= Value(1.5); // Values is an array
+	person.add( new Attribute("extras", "has-kid", Value(true)) );
+	auto childId = new Attribute(null, "id", Value(12));
+	auto messageCopy = root.getTag("message").clone;
+	person.add( new Tag("namespace", "person", [Value("Sam Coder")], [childId], [messageCopy]) );
 
 	// Output back to SDLang
-	writeln("------------------------");
-	writeln("The full SDLang:");
 	writeln("------------------------");
 	writeln(root.toSDLDocument());
 	
