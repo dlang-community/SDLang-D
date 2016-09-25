@@ -5,20 +5,19 @@ SDLang-D - ChangeLog
 
 v0.10.0 - TBD
 ---------------------
-Big convenience enhancements to DOM interface and an improved pull parser interface. Plus documentation improvements and a bugfixes.
+Big convenience enhancements to DOM interface and an improved pull parser interface. Plus documentation improvements and a couple bugfixes.
 
 - **New:** [`SDLangException`](http://semitwist.com/sdlang-d/sdlang/exception/SDLangException.html) and subclasses now take the standard file and line parameters.
-- **New:** New exceptions: [`DOMException`](http://semitwist.com/sdlang-d/sdlang/exception/DOMException.html), [`DOMNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/DOMNotFoundException.html), [`TagNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/TagNotFoundException.html), [`ValueNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/ValueNotFoundException.html), [`AttributeNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/AttributeNotFoundException.html) and [`ArgumentException`](http://semitwist.com/sdlang-d/sdlang/exception/ArgumentException.html), 
-- **New:** Add a simple struct [FullName](http://semitwist.com/sdlang-d/sdlang/util/FullName.html) to split and combine namespace/name combinations.
+- **New:** New exceptions: [`DOMException`](http://semitwist.com/sdlang-d/sdlang/exception/DOMException.html), [`DOMNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/DOMNotFoundException.html), [`TagNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/TagNotFoundException.html), [`ValueNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/ValueNotFoundException.html), [`AttributeNotFoundException`](http://semitwist.com/sdlang-d/sdlang/exception/AttributeNotFoundException.html) and [`ArgumentException`](http://semitwist.com/sdlang-d/sdlang/exception/ArgumentException.html).
+- **New:** Add a simple struct [`FullName`](http://semitwist.com/sdlang-d/sdlang/util/FullName.html) to split and combine namespace/name combinations.
 - **New:** [`Location.toString`](http://semitwist.com/sdlang-d/sdlang/util/Location.toString.html) takes optional output range as a sink.
-- **New:** [#6](https://github.com/Abscissa/SDLang-D/issues/6): Added [Tag.getValue](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getValue.html) and [Tag.getAttribute](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getAttribute.html) to more easily obtain values and attributes when only one value is expected for a given tag name.
+- **New:** [#6](https://github.com/Abscissa/SDLang-D/issues/6): Added [`Tag.getValue`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getValue.html) and [`Tag.getAttribute`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.getAttribute.html) to more easily obtain values and attributes when only one value is expected for a given tag name.
 - **New:** [#38](https://github.com/Abscissa/SDLang-D/issues/38): Add Tag.clone/Attribute.clone to deep clone a tag (and all its children)
 - **Change:** Minimum DMDFE bumped to 2.069.
 - **Change:** Cleaned up the names of the [exceptions](http://semitwist.com/sdlang-d/sdlang/exception.html).
 - **Change:** Deprecated `Tag.fullName` and `Attribute.fullName`. Use `Tag.getFullName().toString()` and `Attribute.getFullName().toString()` instead.
-- **Change:** Various changes/enhancements to the [exception](http://semitwist.com/sdlang-d/sdlang/exception.html) hierarchy.
 - **Change:** [#17](https://github.com/Abscissa/SDLang-D/issues/17): Remove unnecessary FileStart and FileEnd events.
-- **Change:** Pull parser: [ParserEvent](http://semitwist.com/sdlang-d/sdlang/parser/ParserEvent.html) is now a [TaggedAlgebraic](https://github.com/s-ludwig/taggedalgebraic), instead of a [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html#.Algebraic). This enables use of `final switch` and provides simpler syntax.
+- **Change:** Pull parser: [`ParserEvent`](http://semitwist.com/sdlang-d/sdlang/parser/ParserEvent.html) is now a [`TaggedAlgebraic`](https://github.com/s-ludwig/taggedalgebraic), instead of a [`std.variant.Algebraic`](http://dlang.org/phobos/std_variant.html#.Algebraic). This enables use of `final switch` and provides simpler syntax.
 - **Improved:** Various documentation improvements.
 - **Improved:** Improved some lexer/parser error messages.
 - **Fixed:** Fixed building the CLI tool via dub.
