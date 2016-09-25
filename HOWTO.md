@@ -319,7 +319,7 @@ Since this library is designed primarily for reading and writing SDLang files, i
 Outputting SDLang
 -----------------
 
-To generate SDLang, first build up a DOM using [`Tag.this`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.this.html), [`Attribute.this`](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.this.html), [`Tag.add`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.add.html), [`Attribute.add`](http://semitwist.com/sdlang-d/ast/Attribute.add.html), [`Tag.values`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.values.html), and [`Attribute.value`](http://semitwist.com/sdlang-d/ast/Attribute.value.html):
+To generate SDLang, first build up a DOM using [`Tag.this`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.this.html), [`Attribute.this`](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.this.html), [`Tag.add`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.add.html), [`Tag.values`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.values.html), and [`Attribute.value`](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.value.html):
 
 ```d
 auto nameTag = new Tag(null, "name", [Value("my-cool-project")]);
@@ -341,6 +341,6 @@ import std.file;
 std.file.write("dub.sdl", root.toSDLDocument());
 ```
 
-Additionally, you can generate just a portion of SDLang, instead of a full ducument, via [`Tag.toSDLString()`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.toSDLString.html), [`Attribute.toSDLString()`](http://semitwist.com/sdlang-d/ast/Attribute.toSDLString.html) and [`toSDLString(Value)`](http://semitwist.com/sdlang-d/sdlang/token/toSDLString.html).
+Additionally, you can generate just a portion of SDLang, instead of a full ducument, via [`Tag.toSDLString()`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.toSDLString.html), [`Attribute.toSDLString()`](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.toSDLString.html) and [`toSDLString(Value)`](http://semitwist.com/sdlang-d/sdlang/token/toSDLString.html).
 
 The [`Tag.toSDLDocument()`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.toSDLDocument.html) function and [`toSDLString()`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.toSDLString.html) functions can optionally take an OutputRange sink instead of allocating and returning a string. The Tag-based functions also have optional parameters to customize the indent style and starting depth.
