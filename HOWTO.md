@@ -65,7 +65,7 @@ DOM Example
 ```d
 /+ dub.sdl:
 	name "example"
-	dependency "sdlang-d" version="~>0.9.6"
+	dependency "sdlang-d" version="~>0.10.0"
 +/
 
 import std.algorithm;
