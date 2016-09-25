@@ -10,7 +10,6 @@ This document explains how to use SDLang-D in the DOM style. If you're familiar 
 - [Importing](#importing)
 - [Main Interface: Parsing SDLang](#main-interface-parsing-sdlang)
 - [DOM Example](#dom-example)
-- [Value](#value)
 - [DOM API Summary](#dom-api-summary)
 - [Outputting SDLang](#outputting-sdlang)
 
@@ -28,7 +27,7 @@ Note that prior to DMD 2.071.0, ```-inline``` causes some problems. It causes SD
 Importing
 ---------
 
-To use SDLang-D, first import the module ```sdlang```:
+To use SDLang-D, first import the module `sdlang`:
 
 ```d
 import sdlang;
@@ -42,7 +41,9 @@ rdmd --build-only -I{path to sdlang-d}/src -I{path to libInputVisitor} -I{path t
 Main Interface: Parsing SDLang
 ------------------------------
 
-The main interface for SDLang-D is the two parse functions:
+If doing your own pull parsing, follow the documentation and example for [pullParseFile](semitwist.com/sdlang-d/sdlang/parser/pullParseFile.html) and [pullParseSource](semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html).
+
+If using DOM mode instead of the pull parser, the main interface for SDLang-D is the two parse functions:
 
 ```d
 /// Returns root tag.
@@ -54,8 +55,8 @@ Tag parseFile(string filename);
 Tag parseSource(string source, string filename=null);
 ```
 
-Beyond that, your interactions with SDLang-D will be via ```class Tag```,
-```struct Attribute``` and ```alias Value``` (an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html)).
+Beyond that, your interactions with SDLang-D will be via `class Tag`,
+`struct Attribute` and [`alias Value`](semitwist.com/sdlang-d/sdlang/token/Value.html) (an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html)).
 
 DOM Example
 -----------
@@ -203,51 +204,16 @@ devs:person "Joe Coder" 1.5D id=7 extras:has-kid=true {
 }
 ```
 
-Another example, using the more powerful range-based DOM interfaces instead of the get/expect convenience functions, is in [`example2.d`](). Be aware however, the integer-based indexing (might get removed)[https://github.com/Abscissa/SDLang-D/issues/47] in a later version of SDLang-D.
-
-Value
------
-
-The type ```Value``` is an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html). It's defined like this:
-
-```
-SDLang's datatypes map to D's datatypes as described below.
-Most are straightforward, but take special note of the date/time-related types.
-
-Boolean:                       bool
-Null:                          typeof(null)
-Unicode Character:             dchar
-Double-Quote Unicode String:   string
-Raw Backtick Unicode String:   string
-Integer (32 bits signed):      int
-Long Integer (64 bits signed): long
-Float (32 bits signed):        float
-Double Float (64 bits signed): double
-Decimal (128+ bits signed):    real
-Binary (standard Base64):      ubyte[]
-Time Span:                     Duration
-
-Date (with no time at all):           Date
-Date Time (no timezone):              DateTimeFrac
-Date Time (with a known timezone):    SysTime
-Date Time (with an unknown timezone): DateTimeFracUnknownZone
-```
-```d
-alias Algebraic!(
-    bool,
-    string, dchar,
-    int, long,
-    float, double, real,
-    Date, DateTimeFrac, SysTime, DateTimeFracUnknownZone, Duration,
-    ubyte[],
-    typeof(null),
-) Value;
-```
+Another example, using the more powerful range-based DOM interfaces instead of the get/expect convenience functions, is in [`example2.d`](https://github.com/Abscissa/SDLang-D/blob/master/example2.d). Be aware however, the integer-based indexing [might get removed](https://github.com/Abscissa/SDLang-D/issues/47) in a later version of SDLang-D.
 
 DOM API Summary
 ---------------
 
-You can view the full API reference for [Tag](http://semitwist.com/sdlang-d/sdlang/ast/Tag.html) and [Attribute](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.html), but put simply, the Tag and Attribute APIs work as follows (where ```{...}``` means optional, and ```|``` means or):
+You can view the full API reference for [`Tag`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.html) and [`Attribute`](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.html), but put simply:
+
+Value is an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html), See the [summary of `Value`](semitwist.com/sdlang-d/sdlang/token/Value.html).
+
+The `Tag` and `Attribute` APIs work as follows (where ```{...}``` means optional, and ```|``` means or):
 
 ```d
 // Attribute: ------------------------------------------------------------
