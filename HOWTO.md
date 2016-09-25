@@ -8,11 +8,10 @@ This document explains how to use SDLang-D in the DOM style. If you're familiar 
 **Contents**
 - [Installation](#installation)
 - [Importing](#importing)
-- [Example](#example)
 - [Main Interface: Parsing SDLang](#main-interface-parsing-sdlang)
+- [DOM Example](#dom-example)
 - [Value](#value)
 - [DOM API Summary](#dom-api-summary)
-- [DOM Example](#dom-example)
 - [Outputting SDLang](#outputting-sdlang)
 
 Installation
@@ -40,9 +39,26 @@ If you're not using DUB, then you must also include the paths to the sources of 
 ```
 rdmd --build-only -I{path to sdlang-d}/src -I{path to libInputVisitor} -I{path to TaggedAlgebraic}/source {other flags} yourProgram.d
 ```
+Main Interface: Parsing SDLang
+------------------------------
 
-Example
--------
+The main interface for SDLang-D is the two parse functions:
+
+```d
+/// Returns root tag.
+Tag parseFile(string filename);
+
+/// Returns root tag. The optional 'filename' parameter can be included
+/// so that the SDLang document's filename (if any) can be displayed with
+/// any syntax error messages.
+Tag parseSource(string source, string filename=null);
+```
+
+Beyond that, your interactions with SDLang-D will be via ```class Tag```,
+```struct Attribute``` and ```alias Value``` (an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html)).
+
+DOM Example
+-----------
 
 [example.d](https://github.com/Abscissa/SDLang-D/blob/master/example.d):
 ```d
@@ -189,24 +205,6 @@ devs:person "Joe Coder" 1.5D id=7 extras:has-kid=true {
 
 Another example, using the more powerful range-based DOM interfaces instead of the get/expect convenience functions, is in [`example2.d`](). Be aware however, the integer-based indexing (might get removed)[https://github.com/Abscissa/SDLang-D/issues/47] in a later version of SDLang-D.
 
-Main Interface: Parsing SDLang
-------------------------------
-
-The main interface for SDLang-D is the two parse functions:
-
-```d
-/// Returns root tag.
-Tag parseFile(string filename);
-
-/// Returns root tag. The optional 'filename' parameter can be included
-/// so that the SDLang document's filename (if any) can be displayed with
-/// any syntax error messages.
-Tag parseSource(string source, string filename=null);
-```
-
-Beyond that, your interactions with SDLang-D will be via ```class Tag```,
-```struct Attribute``` and ```alias Value``` (an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html)).
-
 Value
 -----
 
@@ -352,164 +350,7 @@ Ranges will be invalidated if you add/remove/rename any child tags, attributes o
 
 Since this library is designed primarily for reading and writing SDLang files, it's optimized for building and navigating trees rather than manipulating them. Keep in mind that removing or renaming tags, attributes or namespaces may be slow. If you're concerned about speed, it might be best to minimize direct manipulations and prefer using use the SDLang-D data structures as pure input/output.
 
-DOM Example
------------
 
-Consider the following SDLang adapted from the [SDL Language Guide](http://sdl.ikayzo.org/display/SDL/Language+Guide) [[mirror](http://semitwist.com/sdl-mirror/Language+Guide.html)]
-
-```
-person "Akiko" "Johnson" dimensions:height=68 {
-    son "Nouhiro" "Johnson"
-    daughter "Sabrina" "Johnson" location="Italy" {
-        info:hobbies "swimming" "surfing"
-        info:languages "English" "Italian"
-        info:smoker false
-    }
-}
-```
-
-That can be navigated like this:
-
-[example2.d](https://github.com/Abscissa/SDLang-D/blob/master/example2.d):
-```d
-Tag root = parseSource(theSdlExampleAbove);
-
-// Get the person tag:
-//
-// SDLang supports multiple tags/attributes with the same name,
-// therefore the [0] is needed.
-Tag akiko = root.tags["person"][0];
-assert( akiko.namespace == "" ); // Default namespace is ""
-assert( akiko.name == "person" );
-assert( akiko.values.length == 2 );
-assert( akiko.values[0] == Value("Akiko") );
-assert( akiko.values[1] == Value("Johnson") );
-
-// Anonymous tags are named "": (Note: This is different from the Java SDL
-// where anonymous tags are named "content".)
-assert( root.tags[""][0].values[0].get!string().startsWith("This is ") );
-assert( root.tags[""][0].values[1] == Value(123) );
-assert( root.tags[""][1].values[0] == Value("Another anon tag") );
-
-// Get Akiko-san's height attribute:
-//
-// Her attribute "height" is in the namespace "dimensions",
-// so it must be accessed that way:
-assert( "height" !in akiko.attributes );
-assert( "height" in akiko.namespaces["dimensions"].attributes );
-assert( "height" in akiko.all.attributes );  // 'all' looks in all namespaces
-assert( akiko.all.attributes["height"].length == 1 );
-
-Attribute akikoHeight = akiko.all.attributes["height"][0];
-assert( akikoHeight.namespace == "dimensions" );
-assert( akikoHeight.name == "height" );
-assert( akikoHeight.value == Value(68) );
-assert( akikoHeight.parent is akiko );
-
-// She has no "weight" attribute:
-assertThrown!SDLangRangeException( akiko.attributes["weight"] );
-assertThrown!SDLangRangeException( akiko.all.attributes["weight"] );
-
-// Use 'maybe' to get an empty range instead of an exception.
-// This works on tags and namespaces, too.
-assert( akiko.maybe.attributes["weight"].empty );
-assert( akiko.maybe.all.attributes["weight"].empty );
-assert( akiko.maybe.attributes["height"].empty );
-assert( akiko.maybe.all.attributes["height"].length == 1 );
-assert( akiko.maybe.namespaces["foo"].attributes["bar"].empty );
-assert( akiko.maybe.namespaces["foo"].tags["bar"].empty );
-
-// Show Akiko-san's child tags:
-foreach(Tag child; akiko.tags)
-	writeln(child.name); // Output: son daughter
-writeln("--------------");
-
-foreach(Tag child; akiko.namespaces["pet"].tags)
-	writeln(child.name); // Output: kitty
-writeln("--------------");
-
-foreach(Tag child; akiko.all.tags)
-	writeln(child.name); // Output: son kitty daughter
-writeln("--------------");
-
-// Get Akiko-san's daughter:
-Tag daughter = akiko.tags["daughter"][0];
-
-// You can also manually specify "default namepace",
-// or lookup by index insetad of name. This works on attributes, too:
-assert(daughter is akiko.namespaces[""].tags["daughter"][0]);
-assert(daughter is akiko.tags[1]);      // Second child of Akiko-san
-assert(daughter is akiko.all.tags[2]);  // Third if you include pets
-
-// Akiko-san's namespaces, in order of first appearance in the SDLang file:
-assert(akiko.namespaces[0].name == "dimensions"); // First found in attribute "height"
-assert(akiko.namespaces[1].name == "");           // First found in child "son"
-assert(akiko.namespaces[2].name == "pet");        // First found in child "kitty"
-
-// Everything is a random-access range:
-// (Although 'Tag.values' is currently just a plain-old array)
-auto allDaughters = akiko.all.tags.filter!(c => c.name == "daughter")();
-assert( array(allDaughters).length == 1 );
-assert( allDaughters.front is daughter );
-
-// Everything can be safely modified. If assertions and struct invariants
-// are enabled, any already-existing ranges will automatically detect when
-// they've been potentially invalidated and throw an assertion failure.
-//
-// Keep in mind, the library is optimized for lookups, so removing and
-// renaming tags, attributes or namespaces may be slow.
-daughter.attributes["location"][0].value = Value("England");
-
-auto kitty = akiko.all.tags["kitty"][0];
-kitty.name = "cat";
-assert( "kitty" !in akiko.all.tags );
-assert( kitty is akiko.all.tags["cat"][0] );
-
-akikoHeight.namespace = "stats";
-assert( "dimensions" !in akiko.namespaces );
-assert( "stats" in akiko.namespaces );
-assert( akikoHeight == akiko.namespaces["stats"].attributes["height"][0] );
-
-// Add/remove child tag. Also works with attributes.
-Tag son = akiko.tags["son"][0];
-Tag hobbies = daughter.tags["hobbies"][0];
-// 'hobbies' is already attached to a parent tag.
-assertThrown!SDLangValidationException( son.add(hobbies) );
-hobbies.remove(); // Remove from daughter
-son.add(hobbies); // Ok
-
-/*
-Output the modified SDLang document:
-
-"This is an anonymous tag with two values" 123
-"Another anon tag"
-person "Akiko" "Johnson" stats:height=68 {
-	son "Nouhiro" "Johnson" {
-		hobbies "swimming" "surfing"
-	}
-	pet:cat "Neko"
-	daughter "Sabrina" "Johnson" location="England" {
-		languages "English" "Italian"
-		smoker false
-	}
-}
-*/
-stdout.rawWrite( root.toSDLDocument() );
-writeln("--------------");
-
-// Root tags cannot be part of a namespace or contain any values or attributes
-assertThrown!SDLangValidationException( daughter.toSDLDocument() );
-assertThrown!SDLangValidationException( kitty.toSDLDocument() );
-
-root.add( new Attribute("attributeNamespace", "attributeName", Value(3)) );
-assertThrown!SDLangValidationException( root.toSDLDocument() );
-
-// But you can still convert such tags, or any other Tag, Attribute or Value,
-// to an SDLang string with 'toSDLString':
-// 
-// pet:cat "Neko"
-stdout.rawWrite( kitty.toSDLString() );
-```
 
 Outputting SDLang
 -----------------
