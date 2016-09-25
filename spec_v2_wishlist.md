@@ -12,3 +12,5 @@ There has been talk, some including the original designer of the SDLang language
 - A simpler, more disciplined and well-defined grammar for dates and times. Currently, they are very lax and permissive, and not defined anywhere. As far as I can tell, the rules currently amount to "Whatever Java's date/time tools allow".
 
 - Nested `/+ +/` block comments. I *hate* non-nesting block comments with a passion. In any language, it completely breaks commenting-out a block of code *every* time the block just happens to *already* have a block comment, which is just, so...stoopid. Nesting is trivial to implement and should be everywhere block comments exist.
+
+- \uXXXX style unicode escapes for string and character literals. Contrary to what the [original langauge guide](http://semitwist.com/sdl-mirror/Language+Guide.html) claims, such escapes are useful for non-printing codes, combining characters, and any code points that aren't easily viewed.

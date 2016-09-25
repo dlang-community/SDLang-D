@@ -65,11 +65,14 @@ Differences from original Java implementation
 Documentation
 -------------
 
+* [Language Guide](https://github.com/Abscissa/SDLang-D/wiki/Language-Guide)
 * [How to use SDLang-D (Tutorial / DOM API Overview)](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md)
 * [Pull Parse SDLang](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html)
 * [API Reference](http://semitwist.com/sdlang-d/sdlang.html)
 * [Changelog](https://github.com/Abscissa/SDLang-D/blob/master/CHANGELOG.md)
-* [FAQ](https://github.com/Abscissa/SDLang-D/blob/master/FAQ.md)
+* [SDLang Wiki](https://github.com/Abscissa/SDLang-D/wiki)
+* [SDLang-D FAQ](https://github.com/Abscissa/SDLang-D/blob/master/FAQ.md)
+* [SDLang Language FAQ](https://github.com/Abscissa/SDLang-D/wiki/FAQ)
 * [Included tools and scripts](https://github.com/Abscissa/SDLang-D/blob/master/TOOLS.md)
 * [License](https://github.com/Abscissa/SDLang-D/blob/master/LICENSE.txt) (zlib/libpng)
 * [Old Official SDL Site](http://sdl.ikayzo.org/display/SDL/Home) [[mirror](http://semitwist.com/sdl-mirror/Home.html)]
