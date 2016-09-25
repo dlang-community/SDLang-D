@@ -1,6 +1,6 @@
 /+ dub.sdl:
 	name "example"
-	dependency "sdlang-d" version="~>0.9.6"
+	dependency "sdlang-d" version="~>0.10.0"
 +/
 
 /// To build and run: dub example2.d
