@@ -1,7 +1,7 @@
 How to use SDLang-D (Tutorial / API Overview)
 =============================================
 
-SDLang-D offers two ways to work with SDLang: DOM style and pull (aka StAX) style. DOM style is easier and more convenient and can both read and write SDLang. Pull style is faster and more efficient, although it's only used for reading SDLang, not writing it.
+SDLang-D offers two ways to work with SDLang: DOM style and pull (aka "StAX") style. DOM style is easier and more convenient and can both read and write SDLang. Pull style is faster and more efficient, although it's only used for reading SDLang, not writing it.
 
 This document explains how to use SDLang-D in the DOM style. If you're familiar with pull/StAX style parsing for other languages, such as XML, then SDLang-D's pull parser should be straightforward to understand. See [pullParseFile](http://semitwist.com/sdlang-d/sdlang/parser/pullParseFile.html) and [pullParseSource](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html) in the [API reference](http://semitwist.com/sdlang-d/sdlang.html) for details and a simple example. You can also see SDLang-D's source as a real-world example, as the DOM tree itself is built using the pull parser, in less than 50 lines of code (just search [`parser.d`](https://github.com/Abscissa/SDLang-D/blob/master/src/sdlang/parser.d) for ```DOMParser```).
 
@@ -211,7 +211,7 @@ DOM API Summary
 
 You can view the full API reference for [`Tag`](http://semitwist.com/sdlang-d/sdlang/ast/Tag.html) and [`Attribute`](http://semitwist.com/sdlang-d/sdlang/ast/Attribute.html), but put simply:
 
-Value is an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html), See the [summary of `Value`](semitwist.com/sdlang-d/sdlang/token/Value.html).
+Value is an instantiation of [std.variant.Algebraic](http://dlang.org/phobos/std_variant.html). See the [summary of `Value`](semitwist.com/sdlang-d/sdlang/token/Value.html).
 
 The `Tag` and `Attribute` APIs work as follows (where ```{...}``` means optional, and ```|``` means or):
 
@@ -316,54 +316,31 @@ Ranges will be invalidated if you add/remove/rename any child tags, attributes o
 
 Since this library is designed primarily for reading and writing SDLang files, it's optimized for building and navigating trees rather than manipulating them. Keep in mind that removing or renaming tags, attributes or namespaces may be slow. If you're concerned about speed, it might be best to minimize direct manipulations and prefer using use the SDLang-D data structures as pure input/output.
 
-
-
 Outputting SDLang
 -----------------
 
-To output SDLang, simply call ```Tag.toSDLDocument()``` on whichever tag is your "root" tag. The root tag is simply used as a collection of tags. As such, its namespace must be blank and it cannot have any values or attributes. It can, however, have any name (which will be ignored), and it is allowed to have a parent (also ignored).
-
-Additionally, tags, attributes and values all have a ```toSDLString()``` function, to convert just one Tag (any tag, not just a root tag), Attribute or Value to an SDLang string.
-
-The ```Tag.toSDLDocument()``` function and ```toSDLString()``` functions can optionally take an OutputRange sink instead of allocating and returning a string. The Tag-based functions also have optional parameters to customize the indent style and starting depth.
+To generate SDLang, first build up a DOM using `Tag.this`, `Attribute.this`, `Tag.add`, `Attribute.add`, `Tag.values` and `Attribute.value`:
 
 ```d
-class Tag
-{
-...
-	/// Treats 'this' as the root tag. Note that root tags cannot have
-	/// values or attributes, and cannot be part of a namespace.
-	/// If this isn't a valid root tag, 'SDLangValidationException' will be thrown.
-	string toSDLDocument()(string indent="\t", int indentLevel=0);
-	void toSDLDocument(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
-		if(isOutputRange!(Sink,char));
-	
-	/// Output this entire tag in SDLang format. Does *not* treat 'this' as
-	/// a root tag. If you intend this to be the root of a standard SDLang
-	/// document, use 'toSDLDocument' instead.
-	string toSDLString()(string indent="\t", int indentLevel=0);
-	void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
-		if(isOutputRange!(Sink,char));
-...
-}
+auto nameTag = new Tag(null, "name", [Value("my-cool-project")]);
+auto root = new Tag(null, null, null, null, [nameTag]);
 
-struct Attribute
-{
-...
-	string toSDLString()();
-	void toSDLString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char));
-...
-}
+auto sdlangDependencyTag = new Tag(null, "dependency", [Value("sdlang-d")]);
+auto sdlangVersionAttr = new Attribute(null, "version", [Value("~>0.10.0")]);
+sdlangDependencyTag.add(sdlangVersionAttr);
 
-string toSDLString(T)(T value) if(
-	is( T : Value  ) ||
-	is( T : bool   ) ||
-	is( T : string ) ||
-	/+...etc...+/
-);
-void toSDLString(Sink)(Value value, ref Sink sink) if(isOutputRange!(Sink,char));
-void toSDLString(Sink)(typeof(null) value, ref Sink sink) if(isOutputRange!(Sink,char));
-void toSDLString(Sink)(bool value, ref Sink sink) if(isOutputRange!(Sink,char));
-void toSDLString(Sink)(string value, ref Sink sink) if(isOutputRange!(Sink,char));
-//...etc...
+root.add(sdlangDependencyTag);
 ```
+
+Remember, the root tag is simply used as a collection of tags. As such, its namespace must be blank and it cannot have any values or attributes. It can, however, have any name (which will be ignored), and it is allowed to have a parent (also ignored).
+
+Then, simply call `Tag.toSDLDocument()` on your root tag:
+
+```d
+import std.file;
+std.file.write("dub.sdl", root.toSDLDocument());
+```
+
+Additionally, you can generate just a portion of SDLang, instead of a full ducument, via `TagtoSDLString()`, `Attribute.toSDLString()` and `toSDLString(Value)`.
+
+The `Tag.toSDLDocument()` function and `toSDLString()` functions can optionally take an OutputRange sink instead of allocating and returning a string. The Tag-based functions also have optional parameters to customize the indent style and starting depth.
