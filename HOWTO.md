@@ -65,7 +65,7 @@ DOM Example
 ```d
 /+ dub.sdl:
 	name "example"
-	dependency "sdlang-d" version="~>0.10.0"
+	dependency "sdlang-d" version="~>0.10.1"
 +/
 
 import std.algorithm;
@@ -326,7 +326,7 @@ auto nameTag = new Tag(null, "name", [Value("my-cool-project")]);
 auto root = new Tag(null, null, null, null, [nameTag]);
 
 auto sdlangDependencyTag = new Tag(null, "dependency", [Value("sdlang-d")]);
-auto sdlangVersionAttr = new Attribute(null, "version", [Value("~>0.10.0")]);
+auto sdlangVersionAttr = new Attribute(null, "version", [Value("~>0.10.1")]);
 sdlangDependencyTag.add(sdlangVersionAttr);
 
 root.add(sdlangDependencyTag);

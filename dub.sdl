@@ -32,6 +32,7 @@ configuration "unittest-builtin" {
 	targetPath "bin/"
 	targetName "sdlang-unittest-builtin"
 	versions "sdlangUsingBuiltinTestRunner" "sdlangTrace"
+	buildOptions "unittests"  // DUB Issue #950
 }
 
 // Run with: dub test
@@ -39,6 +40,7 @@ configuration "unittest" {
 	targetType "executable"
 	targetPath "bin/"
 	targetName "sdlang-unittest"
+	buildOptions "unittests"  // DUB Issue #950
 
 	dependency "unit-threaded" version="~>0.6.28"
 

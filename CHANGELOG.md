@@ -3,6 +3,10 @@ SDLang-D - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
+v0.10.1 - 2016-10-04
+---------------------
+- **Fixed:** [#50](https://github.com/Abscissa/SDLang-D/issues/50): Outputs certain floating point numbers in unsupported scientific notation.
+
 v0.10.0 - 2016-09-25
 ---------------------
 Big convenience enhancements to DOM interface and an improved pull parser interface. Plus documentation improvements and a couple bugfixes.

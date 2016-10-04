@@ -244,22 +244,102 @@ private void checkUnsupportedFloatingPoint(T)(T value) if(isFloatingPoint!T)
 	);
 }
 
+private string trimmedDecimal(string str)
+{
+	Appender!string sink;
+	trimmedDecimal(str, sink);
+	return sink.data;
+}
+
+private void trimmedDecimal(Sink)(string str, ref Sink sink) if(isOutputRange!(Sink,char))
+{
+	// Special case
+	if(str == ".")
+	{
+		sink.put("0");
+		return;
+	}
+
+	for(auto i=str.length-1; i>0; i--)
+	{
+		if(str[i] == '.')
+		{
+			// Trim up to here, PLUS trim trailing '.'
+			sink.put(str[0..i]);
+			return;
+		}
+		else if(str[i] != '0')
+		{
+			// Trim up to here
+			sink.put(str[0..i+1]);
+			return;
+		}
+	}
+	
+	// Nothing to trim
+	sink.put(str);
+}
+
+@("trimmedDecimal")
+unittest
+{
+	assert(trimmedDecimal("123.456000") == "123.456");
+	assert(trimmedDecimal("123.456")    == "123.456");
+	assert(trimmedDecimal("123.000")    == "123");
+	assert(trimmedDecimal("123.0")      == "123");
+	assert(trimmedDecimal("123.")       == "123");
+	assert(trimmedDecimal("123")        == "123");
+	assert(trimmedDecimal("1.")         == "1");
+	assert(trimmedDecimal("1")          == "1");
+	assert(trimmedDecimal("0")          == "0");
+	assert(trimmedDecimal(".")          == "0");
+}
+
 void toSDLString(Sink)(float value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
 	checkUnsupportedFloatingPoint(value);
-	sink.put( "%.10sF".format(value) );
+	"%.10f".format(value).trimmedDecimal(sink);
+	sink.put("F");
 }
 
 void toSDLString(Sink)(double value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
 	checkUnsupportedFloatingPoint(value);
-	sink.put( "%.30sD".format(value) );
+	"%.30f".format(value).trimmedDecimal(sink);
+	sink.put("D");
 }
 
 void toSDLString(Sink)(real value, ref Sink sink) if(isOutputRange!(Sink,char))
 {
 	checkUnsupportedFloatingPoint(value);
-	sink.put( "%.30sBD".format(value) );
+	"%.90f".format(value).trimmedDecimal(sink);
+	sink.put("BD");
+}
+
+// Regression test: Issue #50
+@("toSDLString: No scientific notation")
+unittest
+{
+	import std.algorithm, sdlang.parser;
+	auto tag = parseSource(`
+	foo \
+		420000000000000000000f \
+		42000000000000000000000000000000000000d \
+		420000000000000000000000000000000000000000000000000000000000000bd \
+	`).getTag("foo");
+	import std.stdio;
+	writeln(tag.values[0].toSDLString);
+	writeln(tag.values[1].toSDLString);
+	writeln(tag.values[2].toSDLString);
+	
+	assert(!tag.values[0].toSDLString.canFind("+"));
+	assert(!tag.values[0].toSDLString.canFind("-"));
+	
+	assert(!tag.values[1].toSDLString.canFind("+"));
+	assert(!tag.values[1].toSDLString.canFind("-"));
+	
+	assert(!tag.values[2].toSDLString.canFind("+"));
+	assert(!tag.values[2].toSDLString.canFind("-"));
 }
 
 void toSDLString(Sink)(Date value, ref Sink sink) if(isOutputRange!(Sink,char))
@@ -480,17 +560,23 @@ unittest
 	assert(Value(cast(long) 0).toSDLString() ==  "0L");
 
 	// Floating point
+	import std.stdio;
+	writeln(1.5f);
+	writeln(Value(cast(float) 1.5).toSDLString());
 	assert(Value(cast(float) 1.5).toSDLString() ==  "1.5F");
 	assert(Value(cast(float)-1.5).toSDLString() == "-1.5F");
 	assert(Value(cast(float)   0).toSDLString() ==    "0F");
+	assert(Value(cast(float)0.25).toSDLString() == "0.25F");
 
 	assert(Value(cast(double) 1.5).toSDLString() ==  "1.5D");
 	assert(Value(cast(double)-1.5).toSDLString() == "-1.5D");
 	assert(Value(cast(double)   0).toSDLString() ==    "0D");
+	assert(Value(cast(double)0.25).toSDLString() == "0.25D");
 
 	assert(Value(cast(real) 1.5).toSDLString() ==  "1.5BD");
 	assert(Value(cast(real)-1.5).toSDLString() == "-1.5BD");
 	assert(Value(cast(real)   0).toSDLString() ==    "0BD");
+	assert(Value(cast(real)0.25).toSDLString() == "0.25BD");
 
 	// String
 	assert(Value("hello"  ).toSDLString() == `"hello"`);
