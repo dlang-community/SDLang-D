@@ -78,7 +78,7 @@ int main()
 	Tag root;
 	try
 	{
-		// Or: parseSource("path/to/somefile.sdl");
+		// Or: parseFile("path/to/somefile.sdl");
 		root = parseSource(`
 			message "Hello world!"   // Required
 
