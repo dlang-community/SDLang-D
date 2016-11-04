@@ -1,5 +1,5 @@
 name "sdlang-d"
-description "An SDL (Simple Declarative Language) library for D."
+description "Parse/Generate SDLang (Simple Declarative Language - cleaner than JSON/XML)"
 homepage "http://github.com/Abscissa/SDLang-D"
 authors "Nick Sabalausky"
 license "zlib/libpng"
