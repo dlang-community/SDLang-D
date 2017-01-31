@@ -677,7 +677,6 @@ class Tag
 		{
 			this.tag       = tag;
 			this.namespace = namespace;
-			this.updateId  = tag.updateId;
 			this.isMaybe   = isMaybe;
 			frontIndex = 0;
 
@@ -685,6 +684,7 @@ class Tag
 				endIndex = 0;
 			else
 			{
+				this.updateId = tag.updateId;
 
 				if(namespace == "*")
 					initialEndIndex = mixin("tag."~allMembers~".length");
@@ -836,9 +836,10 @@ class Tag
 
 		this(Tag tag, bool isMaybe)
 		{
-			this.tag      = tag;
-			this.isMaybe  = isMaybe;
-			this.updateId = tag.updateId;
+			this.tag     = tag;
+			this.isMaybe = isMaybe;
+			if(tag !is null)
+				this.updateId = tag.updateId;
 			frontIndex = 0;
 			endIndex = tag.allNamespaces.length;
 		}
