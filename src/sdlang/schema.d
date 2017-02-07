@@ -260,7 +260,40 @@ import std.stdio;
 		return;
 
 	case ParserEvent.Kind.value:
+		auto e = cast(ValueEvent) event;
 		
+		// Tag has member "value" which is marked with @Value?
+		static if(hasMember!(SchemaTag, "value") && hasUDA!(tag.value, sdlang.schema.Value))
+		{
+			//TODO: Merge this with corresponding section in ParserEvent.Kind.attribute:
+			//      They're identical aside from exception message
+			static if(is(typeof(tag.value) == sdlang.token.Value))
+			{
+				tag.value = e.value;
+			}
+			else static if(is(typeof(tag.value) == sdlang.token.Value[]))
+			{
+				tag.value ~= e.value;
+			}
+			else if(typeid(typeof(tag.value)) == e.value.type)
+			{
+				tag.value = e.value.get!(typeof(tag.value));
+			}
+			else if(isDynamicArray!(typeof(tag.value)) &&
+				typeid(ElementType!(typeof(tag.value))) == e.value.type)
+			{
+				tag.value ~= e.value.get!(ElementType!(typeof(tag.value)));
+			}
+			else
+			{
+				//TODO: Fix this message to use ElementType!T if tag.value is an AcceptsMultiple
+				throw new ParseException(e.location,
+					"Wrong type for value. "~
+					"Should be '"~typeof(tag.value).stringof~"', not '"~e.value.type.toString~"'");
+			}
+		}
+		else
+			throw new ParseException(e.location, "This tag doesn't accept any values");
 		break;
 
 	case ParserEvent.Kind.attribute:
@@ -283,6 +316,8 @@ import std.stdio;
 				else
 					auto member = __traits(getMember, tag, memberName);
 
+				//TODO: Merge this with corresponding section in ParserEvent.Kind.value:
+				//      They're identical aside from exception message
 				static if(is(typeof(member) == sdlang.token.Value))
 				{
 					member = e.value;
@@ -309,6 +344,8 @@ import std.stdio;
 				}
 			}
 		}
+
+		//TODO: Error if no such attribute name exists for the tag
 
 		// Add to allAttributes, if available
 		static if(hasMember!(SchemaTag, "allAttributes"))

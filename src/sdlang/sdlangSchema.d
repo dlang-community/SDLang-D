@@ -1344,6 +1344,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		{
 			/// Name of a tag or partial
 			@(sdlang.schema.Desc("Name of a tag or partial"))
+			@(sdlang.schema.Value)
 			string value;
 		}
 	}
@@ -1507,6 +1508,7 @@ final class Root(string name) if(name=="sdlangSchema")
 	{
 		/// Name of a tag or partial
 		@(sdlang.schema.Desc("Name of a tag or partial"))
+		@(sdlang.schema.Value)
 		string value;
 	}
 
@@ -1674,6 +1676,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		//TagCommon.Mixin[] mixin_;
 		// END mixin TagCommon_Mixin;
 
+		//TODO: Adapt this pattern to handle disambiguating a Value vs a tag/attr named "value" 
 		@(sdlang.schema.Name("mixin"))
 		@(sdlang.schema.Attribute)
 		@(sdlang.schema.Tag)
