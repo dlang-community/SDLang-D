@@ -212,6 +212,7 @@ struct TagStartEvent
 	Location location;
 	string namespace;
 	string name;
+	//TODO: Include a sdlang.util.FullName
 }
 
 /// Event: End of tag
@@ -234,6 +235,7 @@ struct AttributeEvent
 	string namespace;
 	string name;
 	Value value;
+	//TODO: Include a sdlang.util.FullName
 }
 
 // The actual pull parser

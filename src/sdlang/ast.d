@@ -13,6 +13,7 @@ import sdlang.exception;
 import sdlang.token;
 import sdlang.util;
 
+//TODO: Should this be final class?
 class Attribute
 {
 	Value    value;

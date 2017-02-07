@@ -1,0 +1,82 @@
+// SDLang Schema Format Definition (as an SDLang Schema)
+
+partial "allow-basic-types" \
+	allow="*" \
+	allow="null" \
+	allow="bool" \
+	allow="string" \
+	allow="numeric" \
+	allow="int" \
+	allow="int32" \
+	allow="int64" \
+	allow="float" \
+	allow="float32" \
+	allow="float64" \
+	allow="float128" \
+	allow="date" \
+	allow="datetime" \
+	allow="timespan" \
+	allow="binary"
+
+partial "val-common" {
+	attr-opt  "mixin"     type="string" desc="Name of a value, attribute or partial"
+	attrs-opt "type"      type="string" mixin="allow-basic-types" default="*"
+	attrs-opt "allow"     type="*" // Should this imply "type" or agree with "type"?
+	attr-opt  "allow-any" type="string" mixin="allow-basic-types" // Implies "type"
+	attr-opt  "desc"      type="string" desc="Description of value (helpful since values don't have names)"
+}
+
+partial "attr-common" {
+	val type="string" desc="Attribute's name"
+	mixin "val-common"
+	attr-opt "desc" type="string" desc="Description of attribute"
+}
+
+partial "opt-common" {
+	attr-opt "default" type="*"
+}
+
+partial "tag-variations" {
+	tags-opt "tag"      mixin="tag-common" desc="Required tag"
+	tags-opt "tags"     mixin="tag-common" desc="Required tag, allow multiples"
+	tags-opt "tag-opt"  mixin="tag-common" desc="Optional tag"
+	tags-opt "tags-opt" mixin="tag-common" desc="Optional tag, allow multiples"
+}
+
+partial "tag-common" {
+	val type="string" desc="Tag's name"
+	attr-opt "desc" type="string" desc="Description of tag"
+
+	// Tags/Attributes can appear in any order.
+	// Values must appear in the order defined by schema.
+	// Optional values must come after required values?
+	
+	tags-opt "val"      mixin="val-common" desc="Required value"
+	tags-opt "vals"     mixin="val-common" desc="Required value, allow multiples"
+	tags-opt "val-opt"  mixin="val-common" mixin="opt-common" desc="Optional value"
+	tags-opt "vals-opt" mixin="val-common" mixin="opt-common" desc="Optional value, allow multiples"
+
+	tags-opt "attr"      mixin="attr-common" desc="Required attribute"
+	tags-opt "attrs"     mixin="attr-common" desc="Required attribute, allow multiples"
+	tags-opt "attr-opt"  mixin="attr-common" mixin="opt-common" desc="Optional attribute"
+	tags-opt "attrs-opt" mixin="attr-common" mixin="opt-common" desc="Optional attribute, allow multiples"
+
+	mixin "tag-variations"
+	
+	tags-opt "mixin" {
+		val type="string" desc="Name of a tag or partial"
+	}
+}
+
+mixin "tag-variations"
+
+tags-opt "mixin" {
+	val type="string" desc="Name of a tag or partial"
+}
+
+tags-opt "partial" {
+	val type="string" desc="Partial's name"
+	mixin "val-common"
+	mixin "opt-common"
+	mixin "tag-common"
+}

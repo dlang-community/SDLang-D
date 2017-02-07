@@ -39,6 +39,7 @@ import sdlang.ast;
 import sdlang.exception;
 import sdlang.lexer;
 import sdlang.parser;
+import sdlang.sdlangSchema;
 import sdlang.symbol;
 import sdlang.token;
 import sdlang.util;
@@ -47,11 +48,12 @@ import sdlang.util;
 public import sdlang.ast       : Attribute, Tag;
 public import sdlang.exception;
 public import sdlang.parser    : parseFile, parseSource;
+public import sdlang.schema;
 public import sdlang.token     : Value, Token, DateTimeFrac, DateTimeFracUnknownZone;
 public import sdlang.util      : sdlangVersion, Location;
 
-version(sdlangUsingBuiltinTestRunner)
-	void main() {}
+//version(sdlangUsingBuiltinTestRunner)
+	//void main() {}
 
 version(sdlangCliApp)
 {
