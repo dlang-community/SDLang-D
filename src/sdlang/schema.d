@@ -264,34 +264,7 @@ import std.stdio;
 		
 		// Tag has member "value" which is marked with @Value?
 		static if(hasMember!(SchemaTag, "value") && hasUDA!(tag.value, sdlang.schema.Value))
-		{
-			//TODO: Merge this with corresponding section in ParserEvent.Kind.attribute:
-			//      They're identical aside from exception message
-			static if(is(typeof(tag.value) == sdlang.token.Value))
-			{
-				tag.value = e.value;
-			}
-			else static if(is(typeof(tag.value) == sdlang.token.Value[]))
-			{
-				tag.value ~= e.value;
-			}
-			else if(typeid(typeof(tag.value)) == e.value.type)
-			{
-				tag.value = e.value.get!(typeof(tag.value));
-			}
-			else if(isDynamicArray!(typeof(tag.value)) &&
-				typeid(ElementType!(typeof(tag.value))) == e.value.type)
-			{
-				tag.value ~= e.value.get!(ElementType!(typeof(tag.value)));
-			}
-			else
-			{
-				//TODO: Fix this message to use ElementType!T if tag.value is an AcceptsMultiple
-				throw new ParseException(e.location,
-					"Wrong type for value. "~
-					"Should be '"~typeof(tag.value).stringof~"', not '"~e.value.type.toString~"'");
-			}
-		}
+			storeValue(tag.value, e.value, null, e.location);
 		else
 			throw new ParseException(e.location, "This tag doesn't accept any values");
 		break;
@@ -310,38 +283,10 @@ import std.stdio;
 		{
 			static if(hasUDA!(__traits(getMember, tag, memberName), sdlang.schema.Attribute))
 			{
-				
 				static if(hasUDA!(__traits(getMember, tag, memberName), sdlang.schema.TagOrAttr))
-					auto member = __traits(getMember, tag, memberName).attr;
+					storeValue(__traits(getMember, tag, memberName).attr, e.value, attrFullName, e.location);
 				else
-					auto member = __traits(getMember, tag, memberName);
-
-				//TODO: Merge this with corresponding section in ParserEvent.Kind.value:
-				//      They're identical aside from exception message
-				static if(is(typeof(member) == sdlang.token.Value))
-				{
-					member = e.value;
-				}
-				else static if(is(typeof(member) == sdlang.token.Value[]))
-				{
-					member ~= e.value;
-				}
-				else if(typeid(typeof(member)) == e.value.type)
-				{
-					member = e.value.get!(typeof(member));
-				}
-				else if(isDynamicArray!(typeof(member)) &&
-					typeid(ElementType!(typeof(member))) == e.value.type)
-				{
-					member ~= e.value.get!(ElementType!(typeof(member)));
-				}
-				else
-				{
-					//TODO: Fix this message to use ElementType!T if member is an AcceptsMultiple
-					throw new ParseException(e.location,
-						"Wrong type for attribute '"~attrFullName~"'. "~
-						"Should be '"~typeof(member).stringof~"', not '"~e.value.type.toString~"'");
-				}
+					storeValue(__traits(getMember, tag, memberName), e.value, attrFullName, e.location);
 			}
 		}
 
@@ -354,6 +299,38 @@ import std.stdio;
 				new sdlang.ast.Attribute(e.namespace, e.name, e.value, e.location);
 		}
 		break;
+	}
+}
+
+// attrFullName is null if this is just a value instead of an attribute
+void storeValue(T)(ref T tagMember, sdlang.token.Value value, string attrFullName, Location location)
+{
+	static if(is(typeof(tagMember) == sdlang.token.Value))
+	{
+		tagMember = value;
+	}
+	else static if(is(typeof(tagMember) == sdlang.token.Value[]))
+	{
+		tagMember ~= value;
+	}
+	else if(typeid(typeof(tagMember)) == value.type)
+	{
+		tagMember = value.get!(typeof(tagMember));
+	}
+	else if(isDynamicArray!(typeof(tagMember)) &&
+		typeid(ElementType!(typeof(tagMember))) == value.type)
+	{
+		tagMember ~= value.get!(ElementType!(typeof(tagMember)));
+	}
+	else
+	{
+		auto msg = (attrFullName is null)?
+			"Wrong type for value. " :
+			"Wrong type for attribute '"~attrFullName~"'. ";
+			
+		//TODO: Fix this message to use ElementType!T if tagMember is an AcceptsMultiple
+		throw new ParseException(location,
+			msg~"Should be '"~typeof(tagMember).stringof~"', not '"~value.type.toString~"'");
 	}
 }
 
