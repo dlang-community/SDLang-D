@@ -23,6 +23,7 @@ struct TagOrAttr(TTag, TAttr)
 }
 
 // UDAs
+//TODO: For funcs that take a schema tag, check SchemaTag has @TagClass
 
 struct Name { string name; }
 struct Desc { string desc; }
@@ -32,7 +33,10 @@ struct PartialMixin { }
 struct Attribute { }
 struct Value {}
 struct Tag {}
+struct TagClass {}
+struct AnyTag {}
 struct Opt { }
+struct Root { }
 struct Allow
 {
 	import std.datetime;
@@ -335,10 +339,101 @@ void storeValue(T)(ref T tagMember, sdlang.token.Value value, string attrFullNam
 	}
 }
 
+// Output
+
+alias toSDLString = sdlang.token.toSDLString;
+
+string toSDLString(SchemaTag)(SchemaTag tag)
+	if(is(SchemaTag==class) && hasUDA!(SchemaTag, sdlang.schema.TagClass))
+{
+	Appender!string sink;
+	toSDLString(tag, sink);
+	return sink.data;
+}
+
+//TODO: Validate (Or just leave it up to "Integrety check" functions)
+void toSDLString(SchemaTag, Sink)(SchemaTag tag, ref Sink sink, string indent="\t", string fullIndent=null)
+	if(is(SchemaTag==class) && hasUDA!(SchemaTag, sdlang.schema.TagClass) && isOutputRange!(Sink, char))
+{
+	enum isRoot = hasUDA!(SchemaTag, sdlang.schema.Root);
+	static if(isRoot)
+	{
+		static if(hasMember!(SchemaTag, "allTags"))
+			toSDLString(tag.allTags, sink, indent, fullIndent);
+	}
+	else
+	{
+		// Name
+		sink.put(fullIndent);
+		sink.put(getUDAs!(SchemaTag, sdlang.schema.Name)[0].name);
+		sink.put(" ");
+
+		// Values
+		static if(hasMember!(SchemaTag, "value"))
+		{
+			//TODO: Ensure not root
+			// I don't know WhyTF this FQN is needed even with the "alias toSDLString =..." up above. WTF?!?!
+			sdlang.token.toSDLString(tag.value, sink);
+
+			bool hasValues = false;
+			static if(isDynamicArray!(typeof(tag.value)))
+			if(tag.value.length > 0)
+				hasValues = true;
+
+			if(hasValues)
+				sink.put(" ");
+		}
+
+		// Attributes
+		static if(hasMember!(SchemaTag, "allAttributes"))
+		if(tag.allAttributes.length > 0)
+		{
+			//TODO: Ensure not root
+			sdlang.token.toSDLString(tag.allAttributes, sink);
+			sink.put(" ");
+		}
+
+		// Children
+		static if(hasMember!(SchemaTag, "allTags"))
+		if(tag.allTags.length > 0)
+		{
+			// Open
+			sink.put("{\n");
+
+			// Tags
+			auto newIndent = fullIndent ~ indent;
+			toSDLString(tag.allTags, sink, indent, newIndent);
+
+			// Close
+			sink.put(fullIndent);
+			sink.put("}");
+		}	
+	
+		sink.put("\n");
+	}
+}
+
+void toSDLString(TAnyTag, Sink)(TAnyTag[] tags, ref Sink sink, string indent="\t", string fullIndent=null)
+	if(is(TAnyTag==struct) && isInstanceOf!(TaggedAlgebraic, TAnyTag) /+hasUDA!(TAnyTag, sdlang.schema.AnyTag)+/ && isOutputRange!(Sink, char))
+{
+	foreach(childTag; tags)
+	foreach(i, T; Fields!(TAnyTag.Union))
+	if(cast(int) childTag.kind == i)
+		toSDLString(cast(T) childTag, sink, indent, fullIndent);
+}
+
+// Integrety check
+//TODO: Validate root doesn't have values/attributes
+//TODO: Validate it's valid SDL
+//TODO: Validate it's valid schema
+//TODO: Ensure allAttributes and allTags agree with other member vars
+
+
 // Util
 
 TypeInfo typeInfo(TA)(TA tagged) if(isInstanceOf!(TaggedAlgebraic, TA))
 {
+
 	auto kind = tagged.kind;
 	return Fields!(TA.Union)[cast(int)kind].typeinfo;
 	//foreach(i, memberName; TypeEnum!(TA.Union))
@@ -466,4 +561,8 @@ unittest
 	writeln("root.tagsOpt[1].value: ", root.tagsOpt[1].value);
 	writeArray("root.tagsOpt[1].val", root.tagsOpt[1].val);
 	writeArray("root.tagsOpt[1].mixin_", root.tagsOpt[1].mixin_);
+
+	writeln("---------------------------------");
+	
+	writeln(toSDLString(root));
 }

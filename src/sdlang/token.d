@@ -461,6 +461,32 @@ void toSDLString(Sink)(ubyte[] value, ref Sink sink) if(isOutputRange!(Sink,char
 	sink.put(']');
 }
 
+//TODO: Unittest this
+void toSDLString(T, Sink)(T[] arr, ref Sink sink)
+	if(
+		(is(t==sdlang.token.Value) || is(T==sdlang.ast.Attribute)) &&
+		isOutputRange!(Sink, char)
+	)
+{
+	bool isFirst = true;
+	foreach(elem; arr)
+	{
+		if(isFirst)
+			isFirst = false;
+		else
+			sink.put(" ");
+
+		toSDLString(elem, sink);
+	}
+}
+
+//TODO: Just move Attribute.toSDLString out into being a non-member function, instead of this
+void toSDLString(Sink)(sdlang.ast.Attribute attr, ref Sink sink)
+	if(isOutputRange!(Sink, char))
+{
+	attr.toSDLString(sink);
+}
+
 /// This only represents terminals. Nonterminals aren't
 /// constructed since the AST is directly built during parsing.
 struct Token

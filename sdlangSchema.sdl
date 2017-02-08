@@ -18,6 +18,8 @@ partial "allow-basic-types" \
 	allow="timespan" \
 	allow="binary"
 
+//TODO: Don't inherit "desc", it's technically wrong
+//TODO: mixin should be attrs-opt
 partial "val-common" {
 	attr-opt  "mixin"     type="string" desc="Name of a value, attribute or partial"
 	attrs-opt "type"      type="string" mixin="allow-basic-types" default="*"
@@ -26,6 +28,7 @@ partial "val-common" {
 	attr-opt  "desc"      type="string" desc="Description of value (helpful since values don't have names)"
 }
 
+//TODO: Don't inherit value for "name", it's technically wrong
 partial "attr-common" {
 	val type="string" desc="Attribute's name"
 	mixin "val-common"

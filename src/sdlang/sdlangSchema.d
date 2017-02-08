@@ -99,6 +99,8 @@ Root!"sdlangSchema" parseSource(string name)(string source, string filename=null
 private alias ps = parseSource!"sdlangSchema";
 private alias pf = parseFile!"sdlangSchema";
 
+@(sdlang.schema.Root)
+@(sdlang.schema.TagClass)
 final class Root(string name) if(name=="sdlangSchema")
 {
 	/++
@@ -321,6 +323,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Name("tag"))
 		@(sdlang.schema.Desc("Required tag"))
 		@(sdlang.schema.Mixin("tag-common"))
+		@(sdlang.schema.TagClass)
 		static final class Tag
 		{
 			// START mixin TagCommon_Mixin;
@@ -448,6 +451,7 @@ final class Root(string name) if(name=="sdlangSchema")
 				TagVariations.TagsOpt tagsOpt;
 				TagCommon.Mixin mixin_;
 			}
+			@(sdlang.schema.AnyTag)
 			alias AnyTag = taggedalgebraic.TaggedAlgebraic!AnyTagBase;
 			AnyTag[] allTags;
 
@@ -461,6 +465,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Name("tags"))
 		@(sdlang.schema.Desc("Required tag, allow multiples"))
 		@(sdlang.schema.Mixin("tag-common"))
+		@(sdlang.schema.TagClass)
 		static final class Tags
 		{
 			// START mixin TagCommon_Mixin;
@@ -588,6 +593,7 @@ final class Root(string name) if(name=="sdlangSchema")
 				TagVariations.TagsOpt tagsOpt;
 				TagCommon.Mixin mixin_;
 			}
+			@(sdlang.schema.AnyTag)
 			alias AnyTag = taggedalgebraic.TaggedAlgebraic!AnyTagBase;
 			AnyTag[] allTags;
 
@@ -601,6 +607,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Name("tag-opt"))
 		@(sdlang.schema.Desc("Optional tag"))
 		@(sdlang.schema.Mixin("tag-common"))
+		@(sdlang.schema.TagClass)
 		static final class TagOpt
 		{
 			// START mixin TagCommon_Mixin;
@@ -728,6 +735,7 @@ final class Root(string name) if(name=="sdlangSchema")
 				TagVariations.TagsOpt tagsOpt;
 				TagCommon.Mixin mixin_;
 			}
+			@(sdlang.schema.AnyTag)
 			alias AnyTag = taggedalgebraic.TaggedAlgebraic!AnyTagBase;
 			AnyTag[] allTags;
 
@@ -741,6 +749,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Name("tags-opt"))
 		@(sdlang.schema.Desc("Optional tag, allow multiples"))
 		@(sdlang.schema.Mixin("tag-common"))
+		@(sdlang.schema.TagClass)
 		static final class TagsOpt
 		{
 			// START mixin TagCommon_Mixin;
@@ -868,6 +877,7 @@ final class Root(string name) if(name=="sdlangSchema")
 				TagVariations.TagsOpt tagsOpt;
 				TagCommon.Mixin mixin_;
 			}
+			@(sdlang.schema.AnyTag)
 			alias AnyTag = taggedalgebraic.TaggedAlgebraic!AnyTagBase;
 			AnyTag[] allTags;
 
@@ -951,6 +961,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Name("val"))
 		@(sdlang.schema.Desc("Required value"))
 		@(sdlang.schema.Mixin("val-common"))
+		@(sdlang.schema.TagClass)
 		static final class Val
 		{
 			// START mixin ValCommon_Mixin;
@@ -989,6 +1000,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Name("vals"))
 		@(sdlang.schema.Desc("Required value, allow multiples"))
 		@(sdlang.schema.Mixin("val-common"))
+		@(sdlang.schema.TagClass)
 		static final class Vals
 		{
 			// START mixin ValCommon_Mixin;
@@ -1028,6 +1040,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Desc("Optional value"))
 		@(sdlang.schema.Mixin("val-common"))
 		@(sdlang.schema.Mixin("opt-common"))
+		@(sdlang.schema.TagClass)
 		static final class ValOpt
 		{
 			// START mixin ValCommon_Mixin;
@@ -1074,6 +1087,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Desc("Optional value, allow multiples"))
 		@(sdlang.schema.Mixin("val-common"))
 		@(sdlang.schema.Mixin("opt-common"))
+		@(sdlang.schema.TagClass)
 		static final class ValsOpt
 		{
 			// START mixin ValCommon_Mixin;
@@ -1119,6 +1133,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Name("attr"))
 		@(sdlang.schema.Desc("Required attribute"))
 		@(sdlang.schema.Mixin("attr-common"))
+		@(sdlang.schema.TagClass)
 		static final class Attr
 		{
 			// START mixin AttrCommon_Mixin;
@@ -1171,6 +1186,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Name("attrs"))
 		@(sdlang.schema.Desc("Required attribute, allow multiples"))
 		@(sdlang.schema.Mixin("attr-common"))
+		@(sdlang.schema.TagClass)
 		static final class Attrs
 		{
 			// START mixin AttrCommon_Mixin;
@@ -1224,6 +1240,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Desc("Optional attribute"))
 		@(sdlang.schema.Mixin("attr-common"))
 		@(sdlang.schema.Mixin("opt-common"))
+		@(sdlang.schema.TagClass)
 		static final class AttrOpt
 		{
 			// START mixin AttrCommon_Mixin;
@@ -1284,6 +1301,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		@(sdlang.schema.Desc("Optional attribute, allow multiples"))
 		@(sdlang.schema.Mixin("attr-common"))
 		@(sdlang.schema.Mixin("opt-common"))
+		@(sdlang.schema.TagClass)
 		static final class AttrsOpt
 		{
 			// START mixin AttrCommon_Mixin;
@@ -1340,7 +1358,8 @@ final class Root(string name) if(name=="sdlangSchema")
 		}
 
 		@(sdlang.schema.Name("mixin"))
-		final class Mixin
+		@(sdlang.schema.TagClass)
+		static final class Mixin
 		{
 			/// Name of a tag or partial
 			@(sdlang.schema.Desc("Name of a tag or partial"))
@@ -1504,7 +1523,8 @@ final class Root(string name) if(name=="sdlangSchema")
 	@(sdlang.schema.Tag)
 	TagCommon.Mixin[] mixin_;
 	@(sdlang.schema.Name("mixin"))
-	final class Mixin
+	@(sdlang.schema.TagClass)
+	static final class Mixin
 	{
 		/// Name of a tag or partial
 		@(sdlang.schema.Desc("Name of a tag or partial"))
@@ -1524,6 +1544,7 @@ final class Root(string name) if(name=="sdlangSchema")
 	--------
 	+/
 	@(sdlang.schema.Name("partial"))
+	@(sdlang.schema.TagClass)
 	static final class Partial
 	{
 		/// Partial's name
@@ -1710,6 +1731,7 @@ final class Root(string name) if(name=="sdlangSchema")
 			TagVariations.TagsOpt tagsOpt;
 			TagCommon.Mixin mixin_;
 		}
+		@(sdlang.schema.AnyTag)
 		alias AnyTag = taggedalgebraic.TaggedAlgebraic!AnyTagBase;
 		AnyTag[] allTags;
 
@@ -1731,6 +1753,7 @@ final class Root(string name) if(name=="sdlangSchema")
 		TagCommon.Mixin mixin_;
 		Partial partial;
 	}
+	@(sdlang.schema.AnyTag)
 	alias AnyTag = taggedalgebraic.TaggedAlgebraic!AnyTagBase;
 	AnyTag[] allTags;
 
