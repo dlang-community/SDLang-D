@@ -210,8 +210,7 @@ import std.stdio;
 		writeln("tag safeName: ", safeName);
 		// Set matching member variable
 		bool found=false;
-		foreach(memberName; __traits(allMembers, SchemaTag)) {
-		//writeln("memberName: ", memberName);
+		foreach(memberName; __traits(allMembers, SchemaTag))
 		if(memberName == safeName)
 		{
 			static if(hasUDA!(__traits(getMember, tag, memberName), sdlang.schema.Tag))
@@ -247,9 +246,11 @@ import std.stdio;
 				}
 				parseEvents.popFront();
 				parseSource(newTag, parseEvents, filename);
+				
+				// Add to allTags
+				tag.allTags ~= SchemaTag.AnyTag(newTag);
 			}
-			
-		}}
+		}
 		if(!found)
 			throw new ParseException(e.location,
 				"Unexpected tag '"~tagFullName~"'");
@@ -413,30 +414,56 @@ string sanitizeMemberName(string name)
 @("parse schema")
 unittest
 {
+	import std.conv;
 	import std.stdio;
 	import sdlang.sdlangSchema;
-	auto root = sdlang.sdlangSchema.parseFile!"sdlangSchema"("sdlangSchema.sdl");
-	writeln("root: ", root);
-	writeln("__traits(allMembers, root): \n");
-	foreach(name; __traits(allMembers, typeof(root)))
-		writeln("  ", name);
 
-	string makeStr(T)(T t)
+	bool[string] membersOfObject;
+	foreach(member; __traits(allMembers, Object))
+		membersOfObject[member] = true;
+
+	void writeTagMembers(TagType)(string varName, TagType tag)
 	{
-		import std.conv;
-		string str = text("len=", t.length);
-		foreach(elem; t)
-		{
-			str ~= "\n  ";
-			str ~= elem.value;
-		}
-		return str;
+		writeln(TagType.stringof, " ", varName, ": ");
+		foreach(name; __traits(allMembers, TagType))
+		if(name !in membersOfObject)
+			writeln("  ", name);
 	}
 
-	writeln("root.mixin_: ", makeStr(root.mixin_));
-	writeln("root.partial: ", makeStr(root.partial));
-	writeln("root.tag: ", makeStr(root.tag));
-	writeln("root.tags: ", makeStr(root.tags));
-	writeln("root.tagOpt: ", makeStr(root.tagOpt));
-	writeln("root.tagsOpt: ", makeStr(root.tagsOpt));
+	void writeArray(T)(string varName, T t)
+	{
+		import std.conv;
+		write(varName);
+		write(text(": len=", t.length));
+		foreach(elem; t)
+		{
+			static if(hasMember!(typeof(elem), "value"))
+				write("\n  ", elem.value);
+			else static if(hasMember!(typeof(elem), "allAttributes"))
+				write("\n  attrs: ", elem.allAttributes);
+			else
+				write("\n  NUTHIN");
+		}
+		writeln();
+	}
+
+	auto root = sdlang.sdlangSchema.parseFile!"sdlangSchema"("sdlangSchema.sdl");
+	writeTagMembers("root", root);
+
+	writeArray("root.mixin_", root.mixin_);
+	writeArray("root.partial", root.partial);
+	writeArray("root.tag", root.tag);
+	writeArray("root.tags", root.tags);
+	writeArray("root.tagOpt", root.tagOpt);
+	writeArray("root.tagsOpt", root.tagsOpt);
+
+	writeTagMembers("root.mixin_[0]", root.mixin_[0]);
+	writeTagMembers("root.tagsOpt[0]", root.tagsOpt[0]);
+	writeTagMembers("root.partial[0]", root.partial[0]);
+
+	writeln("root.tagsOpt[0].value: ", root.tagsOpt[0].value);
+	writeArray("root.tagsOpt[0].val", root.tagsOpt[0].val);
+	writeln("root.tagsOpt[1].value: ", root.tagsOpt[1].value);
+	writeArray("root.tagsOpt[1].val", root.tagsOpt[1].val);
+	writeArray("root.tagsOpt[1].mixin_", root.tagsOpt[1].mixin_);
 }

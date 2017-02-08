@@ -1728,6 +1728,8 @@ final class Root(string name) if(name=="sdlangSchema")
 		TagVariations.Tags tags;
 		TagVariations.TagOpt tagOpt;
 		TagVariations.TagsOpt tagsOpt;
+		TagCommon.Mixin mixin_;
+		Partial partial;
 	}
 	alias AnyTag = taggedalgebraic.TaggedAlgebraic!AnyTagBase;
 	AnyTag[] allTags;
