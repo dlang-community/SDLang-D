@@ -1,16 +1,22 @@
 SDLang-D [![Build Status](https://travis-ci.org/Abscissa/SDLang-D.svg?branch=master)](https://travis-ci.org/Abscissa/SDLang-D/branches)
 ========
 
-An [SDLang (Simple Declarative Language)](http://sdlang.org/) library for [D](http://dlang.org), to read and write SDLang. Both a [DOM](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md) and a [Pull Parser](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html) are provided.
+An [SDLang (Simple Declarative Language)](http://sdlang.org/) library for
+[D](http://dlang.org), to read and write SDLang. Both a
+[DOM](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md) and a
+[Pull Parser](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html)
+are provided.
 
-Officially supported compiler versions are shown in [.travis.yml](https://github.com/Abscissa/SDLang-D/blob/master/.travis.yml).
+Officially supported compiler versions are shown in
+[.travis.yml](https://github.com/Abscissa/SDLang-D/blob/master/.travis.yml).
 
 SDL is a data language like JSON, XML or YAML, except it's:
 * Less verbose than JSON and XML.
 * [Type](http://semitwist.com/sdl-mirror/Language+Guide.html#LanguageGuide-literals)-aware.
 * Easier to learn and read than YAML.
 
-This is what SDL looks like (some of these examples, and more, are from [the original SDL site](http://semitwist.com/sdl-mirror/Language+Guide.html):
+This is what SDL looks like (some of these examples, and more, are from
+[the original SDL site](http://semitwist.com/sdl-mirror/Language+Guide.html):
 ```
 // A couple basic values
 first "Joe"
@@ -42,27 +48,37 @@ Tags are of this form:
 
 Attributes are simply values with names.
 
-Tag and attribute names can optionally include a namespace prefix (ie, ```namespace:name```). All parts are optional, the only exception being that an anonymous (ie, no name) tag must have at least one value.
+Tag and attribute names can optionally include a namespace prefix (ie,
+```namespace:name```). All parts are optional, the only exception being
+that an anonymous (ie, no name) tag must have at least one value.
 
 Also:
 * Tags are separated by either newline or semicolon.
 * Whitespace and indentation is not significant (other than newlines).
-* The line-continuation operator is ```\``` (backslash). This can be used to split a tag across multiple lines.
+* The line-continuation operator is ```\``` (backslash). This can be used
+to split a tag across multiple lines.
 * Line comments start with either ```#```, ```//``` or ```--```.
-* Block comments start with ```/*``` and end with the first occurrence of ```*/``` (ie, they do *not* nest).
+* Block comments start with ```/*``` and end with the first occurrence
+of ```*/``` (ie, they do *not* nest).
 * Values always come before the attributes.
-* All the data types and syntax details are described in the [Language Guide](https://github.com/Abscissa/SDLang-D/wiki/Language-Guide).
-* Note that, unlike C-based languages, opening curly braces must be on the *same* line, not the next line. [Why?](https://github.com/Abscissa/SDLang-D/blob/master/FAQ.md).
+* All the data types and syntax details are described in the
+[Language Guide](https://github.com/Abscissa/SDLang-D/wiki/Language-Guide).
+* Note that, unlike C-based languages, opening curly braces must be on the
+*same* line, not the next line. [Why?](https://github.com/Abscissa/SDLang-D/blob/master/FAQ.md).
 
-For more details on the langauge, see the [Language Guide](https://github.com/Abscissa/SDLang-D/wiki/Language-Guide).
+For more details on the langauge, see the
+[Language Guide](https://github.com/Abscissa/SDLang-D/wiki/Language-Guide).
 
 Differences from original Java implementation
 ---------------------------------------------
 
-* License is zlib/libpng, not LGPL. (No source from the Java or Ruby implementations was used or looked at. The libraries were *used* to test compatibility, but the actual source code was not viewed.)
+* License is zlib/libpng, not LGPL. (No source from the Java or Ruby
+implementations was used or looked at. The libraries were *used* to
+test compatibility, but the actual source code was not viewed.)
 * [API](http://semitwist.com/sdlang-d/sdlang.html) is completely redesigned for D.
 * Anonymous tags are named ```""``` (empty string) not ```"content"```.
-* Dates with unknown or invalid time zones use a special type indicating "unknown time zone" (```DateTimeFracUnknownZone```) instead of assuming GMT.
+* Dates with unknown or invalid time zones use a special type indicating
+"unknown time zone" (```DateTimeFracUnknownZone```) instead of assuming GMT.
 
 Documentation
 -------------
