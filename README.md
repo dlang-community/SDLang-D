@@ -1,4 +1,4 @@
-SDLang-D [![Build Status](https://travis-ci.org/Abscissa/SDLang-D.svg)](https://travis-ci.org/Abscissa/SDLang-D)
+SDLang-D [![Build Status](https://travis-ci.org/Abscissa/SDLang-D.svg?branch=master)](https://travis-ci.org/Abscissa/SDLang-D/branches)
 ========
 
 An [SDLang (Simple Declarative Language)](http://sdlang.org/) library for [D](http://dlang.org), to read and write SDLang. Both a [DOM](https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md) and a [Pull Parser](http://semitwist.com/sdlang-d/sdlang/parser/pullParseSource.html) are provided.
