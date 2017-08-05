@@ -1270,7 +1270,11 @@ class Lexer
 			
 			try
 			{
-				auto timezone = TimeZone.getTimeZone(timezoneStr);
+				version(Windows){
+					auto timezone = WindowsTimeZone.getTimeZone(timezoneStr);
+				}else{
+					auto timezone = PosixTimeZone.getTimeZone(timezoneStr);
+				}
 				if(timezone)
 					mixin(accept!("Value", "SysTime(dateTimeFrac.dateTime, dateTimeFrac.fracSecs, timezone)"));
 			}
