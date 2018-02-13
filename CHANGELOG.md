@@ -3,6 +3,12 @@ SDLang-D - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
+v0.10.2 - 2018-02-13
+---------------------
+- **Fixed:** Null reference issue in DOM (been fixed in ~master for ages).
+- **Docs:** Minor doc improvements.
+- **Tests:** Updated compiler list.
+
 v0.10.1 - 2016-10-04
 ---------------------
 - **Fixed:** [#50](https://github.com/Abscissa/SDLang-D/issues/50): Outputs certain
