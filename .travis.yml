@@ -20,8 +20,15 @@ matrix:
         - d: dmd-2.069.2
         - d: dmd-2.069.0
         - d: ldc
+        - d: ldc-1.7.0
+        - d: ldc-1.6.0
+        - d: ldc-1.5.0
+        - d: ldc-1.4.0
+        - d: ldc-1.3.0
+        - d: ldc-1.2.0
+        - d: ldc-1.1.1
         - d: ldc-1.0.0
-        # Latest GDC (v5.2.0) uses a too-old DMDFE (2.066), so
+        # Latest GDC (v4.8.5) uses a too-old DMDFE (2.068), so
         # it won't work on current SDLang-D. So it's set as
         # an allowed failure for travis.
         - d: gdc
