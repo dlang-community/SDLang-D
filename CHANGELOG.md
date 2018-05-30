@@ -3,6 +3,12 @@ SDLang-D - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
+v0.10.3 - 2018-05-30
+---------------------
+- **Fixed:** [#58](https://github.com/Abscissa/SDLang-D/issues/58):
+	Can't build without hacking the version of unit-threaded being used.
+	(Workaround for [DUB #1217](https://github.com/dlang/dub/issues/1217))
+
 v0.10.2 - 2018-02-13
 ---------------------
 - **Fixed:** Null reference issue in DOM (been fixed in ~master for ages).

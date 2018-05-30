@@ -3,7 +3,7 @@ description "Parse/Generate SDLang (Simple Declarative Language - cleaner than J
 homepage "http://github.com/Abscissa/SDLang-D"
 authors "Nick Sabalausky"
 license "zlib/libpng"
-copyright "©2012-2016 Nick Sabalausky"
+copyright "©2012-2018 Nick Sabalausky"
 
 sourcePaths "src"
 importPaths "src"
@@ -42,7 +42,7 @@ configuration "unittest" {
 	targetName "sdlang-unittest"
 	buildOptions "unittests"  // DUB Issue #950
 
-	dependency "unit-threaded" version="~>0.6.28"
+	dependency "unit-threaded" version=">=0.6.28 <0.8.0-0"
 
 	preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"
 	mainSourceFile "bin/ut.d"
