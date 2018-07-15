@@ -8,6 +8,7 @@ v0.10.4 - TBD
 - **Fixed:** [#55](https://github.com/Abscissa/SDLang-D/issues/55):
 	TimeZone.getTimeZone deprecation hotfix (@ZILtoid1991)
 - **Tests:** Updated compiler list.
+- **Tests:** Fix tests on DMD 2.081 by updating unit-threaded.
 
 v0.10.3 - 2018-05-30
 ---------------------
