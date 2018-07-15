@@ -36,5 +36,20 @@ matrix:
         # an allowed failure for travis.
         - d: gdc-4.8.5
 
+        # on Mac just test latest & oldest supported dmd and ldc
+        - d: dmd-2.081.1
+        os: osx
+        osx_image: xcode9 # use OSX 10.13
+
+        - d: ldc-1.9.0
+        os: osx
+        osx_image: xcode9 # use OSX 10.13
+
+        - d: dmd-2.069.0
+        os: osx
+
+        - d: ldc-1.0.0
+        os: osx
+
     allow_failures:
         - d: gdc-4.8.5
