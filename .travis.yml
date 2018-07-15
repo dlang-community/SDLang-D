@@ -3,7 +3,8 @@ sudo: false
 
 matrix:
     include:
-        - d: dmd-2.080.0
+        - d: dmd-2.081.1
+        - d: dmd-2.080.1
         - d: dmd-2.079.1
         - d: dmd-2.078.2
         - d: dmd-2.077.1
@@ -34,5 +35,6 @@ matrix:
         # it won't work on current SDLang-D. So it's set as
         # an allowed failure for travis.
         - d: gdc-4.8.5
+
     allow_failures:
         - d: gdc-4.8.5
