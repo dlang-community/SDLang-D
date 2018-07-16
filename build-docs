@@ -1,6 +1,6 @@
 #!/bin/sh
-rdmd --build-only -c -Isrc -I../libInputVisitor -I../taggedalgebraic/source -Dddocs_tmp -X -Xfdocs/docs.json --force src/sdlang/package.d
+rdmd --build-only -c -Isrc -I../taggedalgebraic/source -Dddocs_tmp -X -Xfdocs/docs.json --force src/sdlang/package.d
 rm -rf docs_tmp
 rm src/sdlang/package
-ddox filter docs/docs.json --ex sdlang.lexer --ex sdlang.symbol --ex libInputVisitor --ex taggedalgebraic --min-protection Public
+ddox filter docs/docs.json --ex sdlang.lexer --ex sdlang.symbol --ex taggedalgebraic --min-protection Public
 ddox generate-html docs/docs.json docs/public --navigation-type=ModuleTree --override-macros=ddoc/macros.ddoc
