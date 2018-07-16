@@ -24,6 +24,7 @@ matrix:
         - d: dmd-2.070.0
         - d: dmd-2.069.2
         - d: dmd-2.069.0
+        - d: ldc-1.10.0
         - d: ldc-1.9.0
         - d: ldc-1.8.0
         - d: ldc-1.7.0
@@ -34,6 +35,8 @@ matrix:
         - d: ldc-1.2.0
         - d: ldc-1.1.1
         - d: ldc-1.0.0
+        - d: dmd
+        - d: ldc
         # Latest GDC (v4.8.5) uses a too-old DMDFE (2.068), so
         # it won't work on current SDLang-D. So it's set as
         # an allowed failure for travis.
@@ -57,3 +60,10 @@ matrix:
 
     allow_failures:
         - d: gdc-4.8.5
+        # Latest-available. Cutting-edge and becomes non-reproducable
+        # whenever latest-avail changes, so these must be allowed to fail.
+        # They're only included in the tests to help give a heads-up on
+        # any issues with new compilers not yet explicitly included in the
+        # list above.
+        - d: dmd
+        - d: ldc

@@ -47,6 +47,9 @@ environment:
     DVersion: 2.069.0
     arch: x64
   - DC: ldc
+    DVersion: 1.10.0
+    arch: x64
+  - DC: ldc
     DVersion: 1.9.0
     arch: x64
   - DC: ldc
@@ -72,6 +75,24 @@ environment:
     arch: x64
   - DC: ldc
     DVersion: 1.2.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.1.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.0.0
+    arch: x64
+matrix:
+ allow_failures:
+  # These are getting strange failures on AppVeyor/Windows. No idea why.
+  - DC: dmd
+    DVersion: 2.070.2
+    arch: x64
+  - DC: dmd
+    DVersion: 2.069.2
+    arch: x64
+  - DC: dmd
+    DVersion: 2.069.0
     arch: x64
   - DC: ldc
     DVersion: 1.1.0
