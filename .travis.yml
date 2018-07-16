@@ -36,7 +36,9 @@ matrix:
         - d: ldc-1.1.1
         - d: ldc-1.0.0
         - d: dmd
+          env: DUB_SELECT=ut-0.7.46
         - d: ldc
+          env: DUB_SELECT=ut-0.7.46
         # Latest GDC (v4.8.5) uses a too-old DMDFE (2.068), so
         # it won't work on current SDLang-D. So it's set as
         # an allowed failure for travis.
