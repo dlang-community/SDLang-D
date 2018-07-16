@@ -54,6 +54,7 @@ matrix:
 
         - d: ldc-1.0.0
           os: osx
+          osx_image: xcode9 # use OSX 10.13
 
     allow_failures:
         - d: gdc-4.8.5
