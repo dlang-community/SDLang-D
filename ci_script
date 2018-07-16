@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Compile using $DMD if it exists, otherwise use dmd
+if [ -z "$DMD" ]; then
+	DMD=dmd
+fi
+
+echo "DMD=$DMD"
+$DMD -ofci_script_bin ci_script.d && ./ci_script_bin "$@"

@@ -1,9 +1,12 @@
 language: d
 sudo: false
 
+script: ./ci_script
+
 matrix:
     include:
         - d: dmd-2.081.1
+          env: DUB_SELECT=ut-0.7.45
         - d: dmd-2.080.1
         - d: dmd-2.079.1
         - d: dmd-2.078.2
@@ -38,18 +41,19 @@ matrix:
 
         # on Mac just test latest & oldest supported dmd and ldc
         - d: dmd-2.081.1
-        os: osx
-        osx_image: xcode9 # use OSX 10.13
+          env: DUB_SELECT=ut-0.7.45
+          os: osx
+          osx_image: xcode9 # use OSX 10.13
 
         - d: ldc-1.9.0
-        os: osx
-        osx_image: xcode9 # use OSX 10.13
+          os: osx
+          osx_image: xcode9 # use OSX 10.13
 
         - d: dmd-2.069.0
-        os: osx
+          os: osx
 
         - d: ldc-1.0.0
-        os: osx
+          os: osx
 
     allow_failures:
         - d: gdc-4.8.5
