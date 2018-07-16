@@ -3,17 +3,19 @@ environment:
  matrix:
   - DC: dmd
     DVersion: 2.081.1
-    DUB_SELECT: ut-0.7.45
+    DUB_SELECT: ut-0.7.46
     arch: x64
   - DC: dmd
     DVersion: 2.081.1
-    DUB_SELECT: ut-0.7.45
+    DUB_SELECT: ut-0.7.46
     arch: x86
   - DC: dmd
     DVersion: 2.080.1
+    DUB_SELECT: ut-0.7.46
     arch: x64
   - DC: dmd
     DVersion: 2.079.1
+    DUB_SELECT: ut-0.7.46
     arch: x64
   - DC: dmd
     DVersion: 2.078.3
