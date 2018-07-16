@@ -1,4 +1,4 @@
-SDLang-D [![Build Status](https://travis-ci.org/Abscissa/SDLang-D.svg?branch=master)](https://travis-ci.org/Abscissa/SDLang-D/branches)
+SDLang-D [![Build Status](https://travis-ci.org/Abscissa/SDLang-D.svg?branch=master)](https://travis-ci.org/Abscissa/SDLang-D/branches) [![Build status](https://ci.appveyor.com/api/projects/status/ffwp6rlabawodmup/branch/master?svg=true)](https://ci.appveyor.com/project/Abscissa/sdlang-d/branch/master)
 ========
 
 An [SDLang (Simple Declarative Language)](http://sdlang.org/) library for
