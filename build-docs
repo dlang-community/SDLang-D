@@ -1,5 +1,6 @@
 #!/bin/sh
-rdmd --build-only -c -Isrc -I../taggedalgebraic/source -Dddocs_tmp -X -Xfdocs/docs.json --force src/sdlang/package.d
+IMPORT_PATHS=`dub describe --data=import-paths`
+rdmd --build-only -c -Isrc $IMPORT_PATHS -Dddocs_tmp -X -Xfdocs/docs.json --force src/sdlang/package.d
 rm -rf docs_tmp
 rm src/sdlang/package
 ddox filter docs/docs.json --ex sdlang.lexer --ex sdlang.symbol --ex taggedalgebraic --min-protection Public
