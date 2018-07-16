@@ -1,7 +1,6 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"libinputvisitor": "1.2.2",
 		"taggedalgebraic": "0.10.2",
 		"unit-threaded": "0.6.28"
 	}

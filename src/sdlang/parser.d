@@ -3,9 +3,9 @@
 
 module sdlang.parser;
 
+import std.concurrency;
 import std.file;
 
-import libInputVisitor;
 import taggedalgebraic;
 
 import sdlang.ast;
@@ -88,7 +88,7 @@ auto pullParseSource(string source, string filename=null)
 {
 	auto lexer = new Lexer(source, filename);
 	auto parser = PullParser(lexer);
-	return inputVisitor!ParserEvent( parser );
+	return new Generator!ParserEvent({ parser.parseRoot; });
 }
 
 ///
@@ -257,17 +257,9 @@ private struct PullParser
 		throw new ParseException(loc, "Error: "~msg);
 	}
 	
-	private InputVisitor!(PullParser, ParserEvent) v;
-	
-	void visit(InputVisitor!(PullParser, ParserEvent) v)
-	{
-		this.v = v;
-		parseRoot();
-	}
-	
 	private void emit(Event)(Event event)
 	{
-		v.yield( ParserEvent(event) );
+		yield( ParserEvent(event) );
 	}
 	
 	/// <Root> ::= <Tags> EOF  (Lookaheads: Anything)
@@ -560,7 +552,7 @@ private struct DOMParser
 		currTag.location = Location(lexer.filename, 0, 0, 0);
 		
 		auto parser = PullParser(lexer);
-		auto eventRange = inputVisitor!ParserEvent( parser );
+		auto eventRange = new Generator!ParserEvent({ parser.parseRoot; });
 		
 		foreach(event; eventRange)
 		final switch(event.kind)

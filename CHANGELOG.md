@@ -3,6 +3,10 @@ SDLang-D - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
+v0.10.5 - TBD
+---------------------
+- **New:**: Eliminate libInputVisitor dependency, use Phobos Generator instead.
+
 v0.10.4 - 2018-07-15
 ---------------------
 - **Fixed:** [#55](https://github.com/Abscissa/SDLang-D/issues/55):
