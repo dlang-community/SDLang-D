@@ -47,15 +47,6 @@ int main(string[] args)
 	// GDC doesn't autocreate the dir (and git doesn't beleive in empty dirs)
 	tryMkdir("bin");
 
-	// Setup RDMD (if necessary)
-	auto haveRdmd = executeShell("rdmd --help").status == 0;
-	if(!haveRdmd)
-	{
-		auto dmdZip = "dmd.2.076.0."~environment["TRAVIS_OS_NAME"]~".zip";
-		spawnShell("wget http://downloads.dlang.org/releases/2017/"~dmdZip).wait;
-		spawnShell("unzip -q -d local-dmd "~dmdZip).wait;
-	}
-
 	// If an alternate dub.selections.json was requested, use it.
 	copyIfExists("dub.selections."~envGet("DUB_SELECT")~".json", "dub.selections.json");
 
@@ -77,5 +68,8 @@ int main(string[] args)
 		spawnShell("dub upgrade --missing-only").wait;
 	}
 
-	return run("dub test");
+	if(envBool("NO_UT"))
+		return run("dub run -c unittest-builtin");
+	else
+		return run("dub test");
 }
