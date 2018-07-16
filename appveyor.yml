@@ -206,7 +206,5 @@ test_script:
  - echo %DC%
  - echo %DMD%
  - echo %PATH%
- - dir
- - dir bin
  - '%DC% --help'
  - ci_script.bat

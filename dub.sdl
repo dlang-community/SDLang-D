@@ -44,7 +44,9 @@ configuration "unittest" {
 
 	dependency "unit-threaded" version=">=0.6.28 <0.8.0-0"
 
-	preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"
+	preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d" platform="posix"
+	preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d && dir && dir bin" platform="windows"
+
 	mainSourceFile "bin/ut.d"
 	versions "sdlangUsingUnitThreaded" "sdlangTrace"
 }
