@@ -3,7 +3,7 @@ SDLang-D - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
-v0.10.4 - TBD
+v0.10.4 - 2018-07-15
 ---------------------
 - **Fixed:** [#55](https://github.com/Abscissa/SDLang-D/issues/55):
 	TimeZone.getTimeZone deprecation hotfix (@ZILtoid1991)
