@@ -9,7 +9,7 @@ v0.10.4 - TBD
 	TimeZone.getTimeZone deprecation hotfix (@ZILtoid1991)
 - **Tests:** Updated compiler list.
 - **Tests:** Fix tests on DMD 2.081 by using an updated unit-threaded.
-- **Tests:** Test on OSX.
+- **Tests:** Test on OSX and Windows.
 
 v0.10.3 - 2018-05-30
 ---------------------

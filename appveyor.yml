@@ -1,0 +1,209 @@
+platform: x64
+environment:
+ matrix:
+  - DC: dmd
+    DVersion: 2.081.1
+    DUB_SELECT: ut-0.7.45
+    arch: x64
+  - DC: dmd
+    DVersion: 2.081.1
+    arch: x86
+  - DC: dmd
+    DVersion: 2.080.1
+    arch: x64
+  - DC: dmd
+    DVersion: 2.079.1
+    arch: x64
+  - DC: dmd
+    DVersion: 2.078.3
+    arch: x64
+  - DC: dmd
+    DVersion: 2.077.1
+    arch: x64
+  - DC: dmd
+    DVersion: 2.076.1
+    arch: x64
+  - DC: dmd
+    DVersion: 2.075.1
+    arch: x64
+  - DC: dmd
+    DVersion: 2.074.1
+    arch: x64
+  - DC: dmd
+    DVersion: 2.073.2
+    arch: x64
+  - DC: dmd
+    DVersion: 2.072.2
+    arch: x64
+  - DC: dmd
+    DVersion: 2.071.2
+    arch: x64
+  - DC: dmd
+    DVersion: 2.070.2
+    arch: x64
+  - DC: dmd
+    DVersion: 2.069.2
+    arch: x64
+  - DC: dmd
+    DVersion: 2.069.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.9.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.9.0
+    arch: x86
+  - DC: ldc
+    DVersion: 1.8.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.7.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.6.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.5.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.4.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.3.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.2.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.1.0
+    arch: x64
+  - DC: ldc
+    DVersion: 1.0.0
+    arch: x64
+
+skip_tags: true
+
+install:
+  - ps: function ResolveDMD
+        {
+            $version = $env:DVersion;
+            if($version -eq "stable") {
+                $latest = (Invoke-WebRequest "http://downloads.dlang.org/releases/LATEST").toString();
+                $urls = @("http://downloads.dlang.org/releases/2.x/$($latest)/dmd.$($latest).windows.7z",
+                          "http://ftp.digitalmars.com/dmd.$($latest).windows.7z");
+            }elseif($version -eq "beta") {
+                $latest = (Invoke-WebRequest "http://downloads.dlang.org/pre-releases/LATEST").toString();
+                $latestVersion = $latest.split("-")[0].split("~")[0];
+                $urls = @("http://downloads.dlang.org/pre-releases/2.x/$($latestVersion)/dmd.$($latest).windows.7z",
+                          "http://ftp.digitalmars.com/dmd.$($latest).windows.7z");
+            }elseif($version -eq "nightly") {
+                $latest = (Invoke-WebRequest "http://nightlies.dlang.org/$($version)/LATEST").toString();
+                $urls = @("http://nightlies.dlang.org/dmd-$($latest)/dmd.master.windows.7z");
+            }else {
+                $urls = @("http://downloads.dlang.org/releases/2.x/$($version)/dmd.$($version).windows.7z",
+                          "http://ftp.digitalmars.com/dmd.$($version).windows.7z");
+            }
+            $env:PATH += ";C:\dmd2\windows\bin;";
+            return $urls;
+        }
+  - ps: function ResolveLDC
+        {
+            if($env:arch -eq "x86"){
+                $archBits = "32";
+            }
+            elseif($env:arch -eq "x64"){
+                $archBits = "64";
+            }
+            $version = $env:DVersion;
+            $arch = $env:arch;
+            if($version -eq "stable") {
+                $latest = (Invoke-WebRequest "https://ldc-developers.github.io/LATEST").toString().replace("`n","").replace("`r","");
+                $urls = @("https://github.com/ldc-developers/ldc/releases/download/v$($latest)/ldc2-$($latest)-windows-$($arch).7z");
+            }elseif($version -eq "beta") {
+                $latest = (Invoke-WebRequest "https://ldc-developers.github.io/LATEST_BETA").toString().replace("`n","").replace("`r","");
+                $urls = @("https://github.com/ldc-developers/ldc/releases/download/v$($latest)/ldc2-$($latest)-windows-$($arch).7z");
+            } else {
+                $latest = $version;
+                $urls = @("https://github.com/ldc-developers/ldc/releases/download/v$($version)/ldc2-$($version)-windows-$($arch).7z");
+                $urls += "https://github.com/ldc-developers/ldc/releases/download/v$($version)/ldc2-$($version)-win$($archBits)-msvc.zip";
+            }
+            $env:PATH += ";C:\ldc2-$($latest)-windows-$($arch)\bin;C:\ldc2-$($latest)-win$($archBits)-msvc\bin";
+            $env:DC = "ldc2";
+            return $urls;
+        }
+  - ps: function SetUpDCompiler
+        {
+            $env:toolchain = "msvc";
+            if($env:DC -eq "dmd"){
+                $env:DMD = "dmd";
+                $urls = ResolveDMD;
+            }
+            elseif($env:DC -eq "ldc"){
+                $env:DC = "ldmd2";
+                $env:DMD = "ldmd2";
+                $urls = ResolveLDC;
+            }
+            echo "downloading...";
+            echo urls=$urls;
+            foreach($tryUrl in $urls){
+                $dloadOk = $true;
+                echo Trying $tryUrl;
+                try{
+                    Invoke-WebRequest $tryUrl -OutFile "c:\compiler.archive";
+                }
+                catch [Net.WebException]{
+                    $dloadOk = $false;
+                }
+                if($dloadOk -eq $true){
+                    break;
+                }
+            }
+            echo "extracting...";
+            pushd c:\\;
+            7z x compiler.archive > $null;
+            popd;
+            echo "finished.";
+        }
+  - ps: SetUpDCompiler
+  - powershell -Command Invoke-WebRequest https://code.dlang.org/files/dub-1.9.0-windows-x86.zip -OutFile dub.zip
+  - 7z x dub.zip -odub > nul
+  - set PATH=%CD%\%binpath%;%CD%\dub;%PATH%
+  - dub --version
+  # Some older LDC/GDC compilers don't come with rdmd
+  - ps: function SetUpRDMD
+        {
+            if((Get-Command "rdmd.exe" -ErrorAction SilentlyContinue) -eq $null)
+            {
+                Invoke-WebRequest "http://downloads.dlang.org/releases/2.x/2.080.0/dmd.2.080.0.windows.7z" -OutFile "c:\rdmd-dmd.7z";
+                pushd c:\\;
+                7z x -ordmd-dmd rdmd-dmd.7z > $null;
+                popd;
+            }
+        }
+  - ps: SetUpRDMD
+  - set PATH=%PATH%;c:\rdmd-dmd\dmd2\windows\bin
+
+before_build:
+  - ps: if($env:arch -eq "x86"){
+            $env:compilersetupargs = "x86";
+            $env:Darch = "x86";
+            $env:DConf = "m32";
+        }elseif($env:arch -eq "x64"){
+            $env:compilersetupargs = "amd64";
+            $env:Darch = "x86_64";
+            $env:DConf = "m64";
+        }
+  - ps: $env:compilersetup = "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall";
+  - '"%compilersetup%" %compilersetupargs%'
+
+build_script:
+ - echo dummy build script - dont remove me
+
+test_script:
+ - echo %PLATFORM%
+ - echo %Darch%
+ - echo %DC%
+ - echo %DMD%
+ - echo %PATH%
+ - '%DC% --help'
+ - ci_script.bat
