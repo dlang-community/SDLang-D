@@ -42,7 +42,7 @@ configuration "unittest" {
 	targetName "sdlang-unittest"
 	buildOptions "unittests"  // DUB Issue #950
 
-	dependency "unit-threaded" version="~>0.7.45"
+	dependency "unit-threaded" version=">=0.6.28 <0.8.0-0"
 
 	preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f bin/ut.d"
 	mainSourceFile "bin/ut.d"

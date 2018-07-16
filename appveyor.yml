@@ -7,6 +7,7 @@ environment:
     arch: x64
   - DC: dmd
     DVersion: 2.081.1
+    DUB_SELECT: ut-0.7.45
     arch: x86
   - DC: dmd
     DVersion: 2.080.1
@@ -205,5 +206,7 @@ test_script:
  - echo %DC%
  - echo %DMD%
  - echo %PATH%
+ - dir
+ - dir bin
  - '%DC% --help'
  - ci_script.bat
