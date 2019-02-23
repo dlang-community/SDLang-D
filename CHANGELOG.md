@@ -3,9 +3,11 @@ SDLang-D - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
-v0.10.5 - TBD
+v0.10.5 - 2019-02-23
 ---------------------
 - **New:**: Eliminate libInputVisitor dependency, use Phobos Generator instead.
+- **Fixed:** [#64](https://github.com/Abscissa/SDLang-D/issues/64):
+	Allow taggedalgebraic 0.11.x (@s-ludwig)
 - **Fixed:** [#40](https://github.com/Abscissa/SDLang-D/issues/40):
 	The build-docs script shouldn't rely on specific dir layout for deps.
 - **Tests:** Add test for latest supported dependencies and also update compiler lists to DMDFE v2.084.1.
