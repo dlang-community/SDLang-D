@@ -10,7 +10,7 @@ importPaths "src"
 
 buildRequirements "allowWarnings"
 
-dependency "taggedalgebraic" version="~>0.10.2"
+dependency "taggedalgebraic" version=">=0.10.2 <0.12.0-0"
 
 // Run with: dub
 // Or with:  dub build && bin/sdlang
