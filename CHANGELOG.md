@@ -8,6 +8,7 @@ v0.10.5 - TBD
 - **New:**: Eliminate libInputVisitor dependency, use Phobos Generator instead.
 - **Fixed:** [#40](https://github.com/Abscissa/SDLang-D/issues/40):
 	The build-docs script shouldn't rely on specific dir layout for deps.
+- **Tests:** Add test for latest supported dependencies and also update compiler lists to DMDFE v2.084.1.
 
 v0.10.4 - 2018-07-15
 ---------------------
