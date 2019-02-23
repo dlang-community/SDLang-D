@@ -5,7 +5,15 @@ script: ./ci_script
 
 matrix:
     include:
-        - d: dmd-2.081.1
+        - d: dmd-2.084.1
+          env: DUB_UPGRADE=true   # Test with latest supported dependencies
+        - d: dmd-2.084.1
+          env: DUB_SELECT=ut-0.7.46
+        - d: dmd-2.083.1
+          env: DUB_SELECT=ut-0.7.46
+        - d: dmd-2.082.1
+          env: DUB_SELECT=ut-0.7.46
+        - d: dmd-2.081.2
           env: DUB_SELECT=ut-0.7.46
         - d: dmd-2.080.1
         - d: dmd-2.079.1
@@ -24,6 +32,14 @@ matrix:
         - d: dmd-2.070.0
         - d: dmd-2.069.2
         - d: dmd-2.069.0
+        - d: ldc-1.14.0
+          env: DUB_SELECT=ut-0.7.46
+        - d: ldc-1.13.0
+          env: DUB_SELECT=ut-0.7.46
+        - d: ldc-1.12.0
+          env: DUB_SELECT=ut-0.7.46
+        - d: ldc-1.11.0
+          env: DUB_SELECT=ut-0.7.46
         - d: ldc-1.10.0
         - d: ldc-1.9.0
         - d: ldc-1.8.0
