@@ -51,8 +51,9 @@ public import sdlang.token     : Value, Token, DateTimeFrac, DateTimeFracUnknown
 public import sdlang.util      : sdlangVersion, Location;
 
 version(sdlangUsingBuiltinTestRunner)
-	void main() {}
-
+{
+	//void main() {}
+}
 version(sdlangCliApp)
 {
 	int main(string[] args)

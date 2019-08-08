@@ -16,7 +16,7 @@ import sdlang.token;
 import sdlang.util;
 
 /// Returns root tag.
-Tag parseFile(string filename)
+Tag parseFile(string filename) @trusted
 {
 	auto source = cast(string)read(filename);
 	return parseSource(source, filename);
@@ -25,7 +25,7 @@ Tag parseFile(string filename)
 /// Returns root tag. The optional `filename` parameter can be included
 /// so that the SDLang document's filename (if any) can be displayed with
 /// any syntax error messages.
-Tag parseSource(string source, string filename=null)
+Tag parseSource(string source, string filename=null) @trusted
 {
 	auto lexer = new Lexer(source, filename);
 	auto parser = DOMParser(lexer);
@@ -77,14 +77,14 @@ TagStartEvent (lastTag)
 TagEndEvent
 ------------------
 +/
-auto pullParseFile(string filename)
+auto pullParseFile(string filename) @trusted
 {
 	auto source = cast(string)read(filename);
 	return parseSource(source, filename);
 }
 
 ///ditto
-auto pullParseSource(string source, string filename=null)
+auto pullParseSource(string source, string filename=null) @trusted
 {
 	auto lexer = new Lexer(source, filename);
 	auto parser = PullParser(lexer);
@@ -247,23 +247,23 @@ private struct PullParser
 		string name;
 	}
 	
-	private void error(string msg)
+	private void error(string msg) @safe pure
 	{
 		error(lexer.front.location, msg);
 	}
 
-	private void error(Location loc, string msg)
+	private void error(Location loc, string msg) @safe pure
 	{
 		throw new ParseException(loc, "Error: "~msg);
 	}
 	
-	private void emit(Event)(Event event)
+	private void emit(Event)(Event event) @trusted
 	{
 		yield( ParserEvent(event) );
 	}
 	
 	/// <Root> ::= <Tags> EOF  (Lookaheads: Anything)
-	private void parseRoot()
+	private void parseRoot() @trusted
 	{
 		//trace("Starting parse of file: ", lexer.filename);
 		//trace(__FUNCTION__, ": <Root> ::= <Tags> EOF  (Lookaheads: Anything)");
@@ -295,7 +295,7 @@ private struct PullParser
 	/// <Tags> ::= <Tag> <Tags>  (Lookaheads: Ident Value)
 	///        |   EOL   <Tags>  (Lookaheads: EOL)
 	///        |   {empty}       (Lookaheads: Anything else, except '{')
-	void parseTags()
+	void parseTags() @safe
 	{
 		//trace("Enter ", __FUNCTION__);
 		while(true)
@@ -329,7 +329,7 @@ private struct PullParser
 	/// <Tag>
 	///     ::= <IDFull> <Values> <Attributes> <OptChild> <TagTerminator>  (Lookaheads: Ident)
 	///     |   <Value>  <Values> <Attributes> <OptChild> <TagTerminator>  (Lookaheads: Value)
-	void parseTag()
+	void parseTag() @safe
 	{
 		auto token = lexer.front;
 		if(token.matches!"Ident"())
@@ -361,7 +361,7 @@ private struct PullParser
 	}
 
 	/// <IDFull> ::= Ident <IDSuffix>  (Lookaheads: Ident)
-	IDFull parseIDFull()
+	IDFull parseIDFull() @safe
 	{
 		auto token = lexer.front;
 		if(token.matches!"Ident"())
@@ -380,7 +380,7 @@ private struct PullParser
 	/// <IDSuffix>
 	///     ::= ':' Ident  (Lookaheads: ':')
 	///     ::= {empty}    (Lookaheads: Anything else)
-	IDFull parseIDSuffix(string firstIdent)
+	IDFull parseIDSuffix(string firstIdent) @trusted
 	{
 		auto token = lexer.front;
 		if(token.matches!":"())
@@ -409,7 +409,7 @@ private struct PullParser
 	/// <Values>
 	///     ::= Value <Values>  (Lookaheads: Value)
 	///     |   {empty}         (Lookaheads: Anything else)
-	void parseValues()
+	void parseValues() @safe
 	{
 		while(true)
 		{
@@ -429,7 +429,7 @@ private struct PullParser
 	}
 
 	/// Handle Value terminals that aren't part of an attribute
-	void parseValue()
+	void parseValue() @safe
 	{
 		auto token = lexer.front;
 		if(token.matches!"Value"())
@@ -448,7 +448,7 @@ private struct PullParser
 	/// <Attributes>
 	///     ::= <Attribute> <Attributes>  (Lookaheads: Ident)
 	///     |   {empty}                   (Lookaheads: Anything else)
-	void parseAttributes()
+	void parseAttributes() @safe
 	{
 		while(true)
 		{
@@ -468,7 +468,7 @@ private struct PullParser
 	}
 
 	/// <Attribute> ::= <IDFull> '=' Value  (Lookaheads: Ident)
-	void parseAttribute()
+	void parseAttribute() @trusted
 	{
 		//trace(__FUNCTION__, ": <Attribute> ::= <IDFull> '=' Value  (Lookaheads: Ident)");
 		auto token = lexer.front;
@@ -495,7 +495,7 @@ private struct PullParser
 	/// <OptChild>
 	///      ::= '{' EOL <Tags> '}'  (Lookaheads: '{')
 	///      |   {empty}             (Lookaheads: Anything else)
-	void parseOptChild()
+	void parseOptChild() @trusted
 	{
 		auto token = lexer.front;
 		if(token.matches!"{")
@@ -524,7 +524,7 @@ private struct PullParser
 	/// <TagTerminator>
 	///     ::= EOL      (Lookahead: EOL)
 	///     |   {empty}  (Lookahead: EOF)
-	void parseTagTerminator()
+	void parseTagTerminator() @safe
 	{
 		auto token = lexer.front;
 		if(token.matches!"EOL")
@@ -546,7 +546,7 @@ private struct DOMParser
 {
 	Lexer lexer;
 	
-	Tag parseRoot()
+	Tag parseRoot() @trusted
 	{
 		auto currTag = new Tag(null, null, "root");
 		currTag.location = Location(lexer.filename, 0, 0, 0);

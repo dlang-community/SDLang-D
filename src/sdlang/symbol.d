@@ -27,7 +27,7 @@ template symbol(string name)
 	immutable symbol = _symbol(name);
 }
 
-private Symbol _symbol(string name)
+private Symbol _symbol(string name) @safe pure
 {
 	return Symbol(name);
 }
@@ -43,18 +43,18 @@ private Symbol _symbol(string name)
 struct Symbol
 {
 	private string _name;
-	@property string name()
+	@property string name() @safe pure @nogc nothrow
 	{
 		return _name;
 	}
 	
 	@disable this();
-	private this(string name)
+	private this(string name) @safe pure @nogc nothrow
 	{
 		this._name = name;
 	}
 
-	string toString()
+	string toString() @safe pure @nogc nothrow
 	{
 		return _name;
 	}

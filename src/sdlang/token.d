@@ -50,11 +50,11 @@ struct DateTimeFracUnknownZone
 	}
 	string timeZone;
 
-	bool opEquals(const DateTimeFracUnknownZone b) const
+	bool opEquals(const DateTimeFracUnknownZone b) const @safe pure
 	{
 		return opEquals(b);
 	}
-	bool opEquals(ref const DateTimeFracUnknownZone b) const
+	bool opEquals(ref const DateTimeFracUnknownZone b) const @safe pure
 	{
 		return
 			this.dateTime == b.dateTime &&
@@ -104,7 +104,8 @@ enum isSink(T) =
 	isOutputRange!T &&
 	is(ElementType!(T)[] == string);
 
-string toSDLString(T)(T value) if(is(T==Value) || isValueType!T)
+string toSDLString(T)(T value) @trusted
+	if(is(T==Value) || isValueType!T) 
 {
 	Appender!string sink;
 	toSDLString(value, sink);
@@ -113,7 +114,8 @@ string toSDLString(T)(T value) if(is(T==Value) || isValueType!T)
 
 /// Throws SDLangException if value is infinity, -infinity or NaN, because
 /// those are not currently supported by the SDLang spec.
-void toSDLString(Sink)(Value value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(Value value, ref Sink sink) @trusted 
+	if(isOutputRange!(Sink,char))
 {
 	foreach(T; ValueTypes)
 	{
@@ -173,18 +175,21 @@ unittest
 	assertThrown!ValidationException( toSDLString(Value(realNaN)) );
 }
 
-void toSDLString(Sink)(typeof(null) value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(typeof(null) value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	sink.put("null");
 }
 
-void toSDLString(Sink)(bool value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(bool value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	sink.put(value? "true" : "false");
 }
 
 //TODO: Figure out how to properly handle strings/chars containing lineSep or paraSep
-void toSDLString(Sink)(string value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(string value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	sink.put('"');
 	
@@ -203,7 +208,8 @@ void toSDLString(Sink)(string value, ref Sink sink) if(isOutputRange!(Sink,char)
 	sink.put('"');
 }
 
-void toSDLString(Sink)(dchar value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(dchar value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	sink.put('\'');
 	
@@ -218,17 +224,20 @@ void toSDLString(Sink)(dchar value, ref Sink sink) if(isOutputRange!(Sink,char))
 	sink.put('\'');
 }
 
-void toSDLString(Sink)(int value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(int value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	sink.put( "%s".format(value) );
 }
 
-void toSDLString(Sink)(long value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(long value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	sink.put( "%sL".format(value) );
 }
 
-private void checkUnsupportedFloatingPoint(T)(T value) if(isFloatingPoint!T)
+private void checkUnsupportedFloatingPoint(T)(T value) @safe pure
+		if(isFloatingPoint!T)
 {
 	import std.exception;
 	import std.math;
@@ -244,14 +253,15 @@ private void checkUnsupportedFloatingPoint(T)(T value) if(isFloatingPoint!T)
 	);
 }
 
-private string trimmedDecimal(string str)
+private string trimmedDecimal(string str) @safe pure
 {
 	Appender!string sink;
 	trimmedDecimal(str, sink);
 	return sink.data;
 }
 
-private void trimmedDecimal(Sink)(string str, ref Sink sink) if(isOutputRange!(Sink,char))
+private void trimmedDecimal(Sink)(string str, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	// Special case
 	if(str == ".")
@@ -295,21 +305,24 @@ unittest
 	assert(trimmedDecimal(".")          == "0");
 }
 
-void toSDLString(Sink)(float value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(float value, ref Sink sink) @safe
+		if(isOutputRange!(Sink,char))
 {
 	checkUnsupportedFloatingPoint(value);
 	"%.10f".format(value).trimmedDecimal(sink);
 	sink.put("F");
 }
 
-void toSDLString(Sink)(double value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(double value, ref Sink sink) @safe
+		if(isOutputRange!(Sink,char))
 {
 	checkUnsupportedFloatingPoint(value);
 	"%.30f".format(value).trimmedDecimal(sink);
 	sink.put("D");
 }
 
-void toSDLString(Sink)(real value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(real value, ref Sink sink) @safe
+		if(isOutputRange!(Sink,char))
 {
 	checkUnsupportedFloatingPoint(value);
 	"%.90f".format(value).trimmedDecimal(sink);
@@ -342,7 +355,8 @@ unittest
 	assert(!tag.values[2].toSDLString.canFind("-"));
 }
 
-void toSDLString(Sink)(Date value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(Date value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	sink.put(to!string(value.year));
 	sink.put('/');
@@ -351,7 +365,8 @@ void toSDLString(Sink)(Date value, ref Sink sink) if(isOutputRange!(Sink,char))
 	sink.put(to!string(value.day));
 }
 
-void toSDLString(Sink)(DateTimeFrac value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(DateTimeFrac value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	toSDLString(value.dateTime.date, sink);
 	sink.put(' ');
@@ -372,7 +387,8 @@ void toSDLString(Sink)(DateTimeFrac value, ref Sink sink) if(isOutputRange!(Sink
 	}
 }
 
-void toSDLString(Sink)(SysTime value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(SysTime value, ref Sink sink)  @safe
+		if(isOutputRange!(Sink,char))
 {
 	auto dateTimeFrac = DateTimeFrac(cast(DateTime)value, value.fracSecs);
 	toSDLString(dateTimeFrac, sink);
@@ -417,7 +433,8 @@ void toSDLString(Sink)(SysTime value, ref Sink sink) if(isOutputRange!(Sink,char
 		sink.put(tzString);
 }
 
-void toSDLString(Sink)(DateTimeFracUnknownZone value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(DateTimeFracUnknownZone value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	auto dateTimeFrac = DateTimeFrac(value.dateTime, value.fracSecs);
 	toSDLString(dateTimeFrac, sink);
@@ -426,7 +443,8 @@ void toSDLString(Sink)(DateTimeFracUnknownZone value, ref Sink sink) if(isOutput
 	sink.put(value.timeZone);
 }
 
-void toSDLString(Sink)(Duration value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(Duration value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char))
 {
 	if(value < seconds(0))
 	{
@@ -454,7 +472,8 @@ void toSDLString(Sink)(Duration value, ref Sink sink) if(isOutputRange!(Sink,cha
 	}
 }
 
-void toSDLString(Sink)(ubyte[] value, ref Sink sink) if(isOutputRange!(Sink,char))
+void toSDLString(Sink)(ubyte[] value, ref Sink sink) @safe pure
+		if(isOutputRange!(Sink,char)) 
 {
 	sink.put('[');
 	sink.put( Base64.encode(value) );
@@ -471,7 +490,7 @@ struct Token
 	string data; /// Original text from source
 
 	@disable this();
-	this(Symbol symbol, Location location, Value value=Value(null), string data=null)
+	this(Symbol symbol, Location location, Value value=Value(null), string data=null) @safe pure @nogc nothrow
 	{
 		this.symbol   = symbol;
 		this.location = location;
@@ -484,11 +503,11 @@ struct Token
 	/// Tokens with differing Value types are always unequal.
 	/// Member `location` is always ignored for comparison.
 	/// Member `data` is ignored for comparison *EXCEPT* when the symbol is Ident.
-	bool opEquals(Token b)
+	bool opEquals(Token b) @safe
 	{
 		return opEquals(b);
 	}
-	bool opEquals(ref Token b) ///ditto
+	bool opEquals(ref Token b) @trusted ///ditto
 	{
 		if(
 			this.symbol     != b.symbol     ||
@@ -503,10 +522,11 @@ struct Token
 		return true;
 	}
 	
-	bool matches(string symbolName)()
+	bool matches(string symbolName)() @safe pure
 	{
 		return this.symbol == .symbol!symbolName;
 	}
+	//TODO: override opAssign to improve memory safety and purity
 }
 
 @("sdlang token")
