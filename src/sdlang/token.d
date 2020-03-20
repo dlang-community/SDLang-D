@@ -24,9 +24,11 @@ struct DateTimeFrac
 {
 	DateTime dateTime;
 	Duration fracSecs;
-	deprecated("Use fracSecs instead.") {
+	static if(is(FracSec)) {
+	    deprecated("Use fracSecs instead.") {
 		@property FracSec fracSec() const { return FracSec.from!"hnsecs"(fracSecs.total!"hnsecs"); }
 		@property void fracSec(FracSec v) { fracSecs = v.hnsecs.hnsecs; }
+	    }
 	}
 }
 
@@ -44,9 +46,11 @@ struct DateTimeFracUnknownZone
 {
 	DateTime dateTime;
 	Duration fracSecs;
-	deprecated("Use fracSecs instead.") {
+	static if(is(FracSec)) {
+	    deprecated("Use fracSecs instead.") {
 		@property FracSec fracSec() const { return FracSec.from!"hnsecs"(fracSecs.total!"hnsecs"); }
 		@property void fracSec(FracSec v) { fracSecs = v.hnsecs.hnsecs; }
+	    }
 	}
 	string timeZone;
 
