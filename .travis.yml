@@ -5,8 +5,10 @@ script: ./ci_script
 
 matrix:
     include:
-        - d: dmd-2.084.1
+        - d: dmd-2.091.0
           env: DUB_UPGRADE=true   # Test with latest supported dependencies
+        - d: dmd-2.091.0
+          env: DUB_SELECT=ut-0.7.46
         - d: dmd-2.084.1
           env: DUB_SELECT=ut-0.7.46
         - d: dmd-2.083.1
@@ -61,7 +63,7 @@ matrix:
         - d: gdc-4.8.5
 
         # on Mac just test latest & oldest supported dmd and ldc
-        - d: dmd-2.081.1
+        - d: dmd-2.091.0
           env: DUB_SELECT=ut-0.7.46
           os: osx
           osx_image: xcode9 # use OSX 10.13

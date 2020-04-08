@@ -2,6 +2,12 @@ platform: x64
 environment:
  matrix:
   - DC: dmd
+    DVersion: 2.091.0
+    arch: x86
+  - DC: dmd
+    DVersion: 2.091.0
+    arch: x64
+  - DC: dmd
     DVersion: 2.084.1
     arch: x86
   - DC: dmd
