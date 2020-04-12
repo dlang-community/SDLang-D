@@ -3,6 +3,11 @@ SDLang-D - ChangeLog
 
 (Dates below are YYYY/MM/DD)
 
+v0.10.6 - 2020-04-12
+---------------------
+- **Fixed:** [#68](https://github.com/Abscissa/SDLang-D/issues/68)/[#70](https://github.com/Abscissa/SDLang-D/issues/70):
+	Compatibility fix for DMD 2.091+: Remove FracSec usage if not available in Phobos (@schveiguy)
+
 v0.10.5 - 2019-02-23
 ---------------------
 - **New:**: Eliminate libInputVisitor dependency, use Phobos Generator instead.
