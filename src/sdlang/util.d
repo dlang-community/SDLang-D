@@ -30,15 +30,15 @@ struct Location
 	int line; /// Zero-indexed
 	int col;  /// Zero-indexed, Tab counts as 1
 	size_t index; /// Index into the source
-
-	this(int line, int col, int index)
+	///Ctor
+	this(int line, int col, int index) @nogc @safe pure nothrow
 	{
 		this.line  = line;
 		this.col   = col;
 		this.index = index;
 	}
-
-	this(string file, int line, int col, int index)
+	///Ditto
+	this(string file, int line, int col, int index) @nogc @safe pure nothrow
 	{
 		this.file  = file;
 		this.line  = line;
@@ -47,7 +47,7 @@ struct Location
 	}
 
 	/// Convert to string. Optionally takes output range as a sink.
-	string toString()
+	string toString() @safe pure 
 	{
 		Appender!string sink;
 		this.toString(sink);
@@ -55,7 +55,8 @@ struct Location
 	}
 
 	///ditto
-	void toString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char))
+	void toString(Sink)(ref Sink sink) @safe pure 
+			if(isOutputRange!(Sink,char)) 
 	{
 		sink.put(file);
 		sink.put("(");
@@ -65,14 +66,16 @@ struct Location
 		sink.put(")");
 	}
 }
-
+/**
+ * Implements the full name of a tag or attribute.
+ */
 struct FullName
 {
-	string namespace;
-	string name;
+	string namespace;		///Namespace part of the full name
+	string name;			///Name part of the full name
 
 	/// Convert to string. Optionally takes output range as a sink.
-	string toString()
+	string toString() @safe pure
 	{
 		if(namespace == "")
 			return name;
@@ -83,7 +86,8 @@ struct FullName
 	}
 
 	///ditto
-	void toString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char))
+	void toString(Sink)(ref Sink sink) @safe pure 
+		if(isOutputRange!(Sink,char))
 	{
 		if(namespace != "")
 		{
@@ -94,8 +98,8 @@ struct FullName
 		sink.put(name);
 	}
 
-	///
-	static string combine(string namespace, string name)
+	///Combines the namespace and name into a full SDL name
+	static string combine(string namespace, string name) @safe pure
 	{
 		return FullName(namespace, name).toString();
 	}
@@ -108,8 +112,8 @@ struct FullName
 		assert(FullName.combine("namespace", "name") == "namespace:name");
 	}
 
-	///
-	static FullName parse(string fullName)
+	///Parses a name from a string
+	static FullName parse(string fullName) @safe pure
 	{
 		FullName result;
 		
@@ -138,7 +142,7 @@ struct FullName
 
 	/// Throws with appropriate message if this.name is "*".
 	/// Wildcards are only supported for namespaces, not names.
-	void ensureNoWildcardName(string extaMsg = null)
+	void ensureNoWildcardName(string extaMsg = null) @safe pure
 	{
 		if(name == "*")
 			throw new ArgumentException(`Wildcards ("*") only allowed for namespaces, not names. `~extaMsg);

@@ -15,7 +15,7 @@ import sdlang.util;
 /// Abstract parent class of all SDLang-D defined exceptions.
 abstract class SDLangException : Exception
 {
-	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	this(string msg, string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		super(msg, file, line);
 	}
@@ -27,13 +27,13 @@ class ParseException : SDLangException
 	Location location;
 	bool hasLocation;
 
-	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	this(string msg, string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		hasLocation = false;
 		super(msg, file, line);
 	}
 
-	this(Location location, string msg, string file = __FILE__, size_t line = __LINE__)
+	this(Location location, string msg, string file = __FILE__, size_t line = __LINE__) @safe pure
 	{
 		hasLocation = true;
 		super("%s: %s".format(location.toString(), msg), file, line);
@@ -60,7 +60,7 @@ $(LI Writing SDLang where:
 +/
 class ValidationException : SDLangException
 {
-	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	this(string msg, string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		super(msg, file, line);
 	}
@@ -73,7 +73,7 @@ alias SDLangValidationException = ValidationException;
 /// Thrown when someting is wrong with the provided arguments to a function.
 class ArgumentException : SDLangException
 {
-	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	this(string msg, string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		super(msg, file, line);
 	}
@@ -84,7 +84,7 @@ abstract class DOMException : SDLangException
 {
 	Tag base; /// The tag searched from
 
-	this(Tag base, string msg, string file = __FILE__, size_t line = __LINE__)
+	this(Tag base, string msg, string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		this.base = base;
 		super(msg, file, line);
@@ -125,7 +125,7 @@ abstract class DOMException : SDLangException
 /// Thrown by the DOM on empty range and out-of-range conditions.
 class DOMRangeException : DOMException
 {
-	this(Tag base, string msg, string file = __FILE__, size_t line = __LINE__)
+	this(Tag base, string msg, string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		super(base, msg, file, line);
 	}
@@ -143,7 +143,7 @@ abstract class DOMNotFoundException : DOMException
 {
 	FullName tagName; /// The tag searched for
 
-	this(Tag base, FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__)
+	this(Tag base, FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		this.tagName = tagName;
 		super(base, msg, file, line);
@@ -153,7 +153,7 @@ abstract class DOMNotFoundException : DOMException
 /// Thrown by the DOM's `sdlang.ast.Tag.expectTag`, etc. functions if a Tag isn't found.
 class TagNotFoundException : DOMNotFoundException
 {
-	this(Tag base, FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__)
+	this(Tag base, FullName tagName, string msg, string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		super(base, tagName, msg, file, line);
 	}
@@ -165,7 +165,7 @@ class ValueNotFoundException : DOMNotFoundException
 	/// Expected type for the not-found value.
 	TypeInfo valueType;
 
-	this(Tag base, FullName tagName, TypeInfo valueType, string msg, string file = __FILE__, size_t line = __LINE__)
+	this(Tag base, FullName tagName, TypeInfo valueType, string msg, string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		this.valueType = valueType;
 		super(base, tagName, msg, file, line);
@@ -181,7 +181,7 @@ class AttributeNotFoundException : DOMNotFoundException
 	TypeInfo valueType;
 
 	this(Tag base, FullName tagName, FullName attributeName, TypeInfo valueType, string msg,
-		string file = __FILE__, size_t line = __LINE__)
+		string file = __FILE__, size_t line = __LINE__) @nogc @safe pure nothrow
 	{
 		this.valueType = valueType;
 		this.attributeName = attributeName;

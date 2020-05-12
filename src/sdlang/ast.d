@@ -13,10 +13,14 @@ import sdlang.exception;
 import sdlang.token;
 import sdlang.util;
 
+/**
+ * Implements an attribute, that can be attached to an SDL tag.
+ * Can store any value native to the SDL format.
+ */
 class Attribute
 {
-	Value    value;
-	Location location;
+	Value    value;			///The value of this attribute
+	Location location;		///Location of the attribute within the file
 	
 	private Tag _parent;
 	/// Get parent tag. To set a parent, attach this Attribute to its intended
@@ -37,12 +41,12 @@ class Attribute
 	Note also, that setting this may change where this tag is ordered among
 	its parent's list of tags.
 	+/
-	@property string namespace()
+	@property string namespace() @nogc @safe pure nothrow
 	{
 		return _namespace;
 	}
 	///ditto
-	@property void namespace(string value)
+	@property void namespace(string value) @safe
 	{
 		if(_parent && _namespace != value)
 		{
@@ -74,18 +78,19 @@ class Attribute
 	Note also, that setting this may change where this attribute is ordered
 	among its parent's list of tags.
 	+/
-	@property string name()
+	@property string name() @nogc @safe pure nothrow
 	{
 		return _name;
 	}
 	///ditto
-	@property void name(string value)
+	@property void name(string value) @safe //pure
 	{
+		//NOTE: Function cannot be marked as pure due to countUntil is not marked as such
 		if(_parent && _name != value)
 		{
 			_parent.updateId++;
 			
-			void removeFromGroupedLookup(string ns)
+			void removeFromGroupedLookup(string ns) @trusted //pure
 			{
 				// Remove from _parent._attributes[ns]
 				auto sameNameAttrs = _parent._attributes[ns][_name];
@@ -116,22 +121,24 @@ class Attribute
 	}
 	
 	/// This tag's name, including namespace if one exists.
-	FullName getFullName()
+	FullName getFullName() @nogc @safe pure nothrow
 	{
 		return FullName(_namespace, _name);
 	}
-
-	this(string namespace, string name, Value value, Location location = Location(0, 0, 0))
+	/**
+	 * Constructs an attribute with the supplied values.
+	 */
+	this(string namespace, string name, Value value, Location location = Location(0, 0, 0)) @nogc @safe pure nothrow
 	{
 		this._namespace = namespace;
 		this._name      = name;
 		this.location   = location;
 		this.value      = value;
 	}
-	
-	this(string name, Value value, Location location = Location(0, 0, 0))
+	///Ditto
+	this(string name, Value value, Location location = Location(0, 0, 0)) @nogc @safe pure nothrow
 	{
-		this._namespace = "";
+		//this._namespace = "";		//_namespace sould be "" by default
 		this._name      = name;
 		this.location   = location;
 		this.value      = value;
@@ -139,19 +146,20 @@ class Attribute
 	
 	/// Copy this Attribute.
 	/// The clone does $(B $(I not)) have a parent, even if the original does.
-	Attribute clone()
+	Attribute clone() @safe pure nothrow
 	{
 		return new Attribute(_namespace, _name, value, location);
 	}
 	
 	/// Removes `this` from its parent, if any. Returns `this` for chaining.
 	/// Inefficient ATM, but it works.
-	Attribute remove()
+	Attribute remove() @trusted 
 	{
+		//NOTE: Function cannot be marked as safe and/or pure due to countUntil is not marked as such
 		if(!_parent)
 			return this;
 		
-		void removeFromGroupedLookup(string ns)
+		void removeFromGroupedLookup(string ns) @trusted
 		{
 			// Remove from _parent._attributes[ns]
 			auto sameNameAttrs = _parent._attributes[ns][_name];
@@ -174,9 +182,9 @@ class Attribute
 		
 		// Fixup other indicies
 		foreach(ns, ref nsAttrIndicies; _parent.attributeIndicies)
-		foreach(k, ref v; nsAttrIndicies)
-		if(v > allAttrsIndex)
-			v--;
+			foreach(k, ref v; nsAttrIndicies)
+				if(v > allAttrsIndex)
+					v--;
 		
 		_parent.removeNamespaceIfEmpty(_namespace);
 		_parent.updateId++;
@@ -184,26 +192,29 @@ class Attribute
 		return this;
 	}
 
-	override bool opEquals(Object o)
+	override bool opEquals(Object o) @trusted
 	{
-		auto a = cast(Attribute)o;
-		if(!a)
-			return false;
-
-		return
-			_namespace == a._namespace &&
-			_name      == a._name      &&
-			value      == a.value;
+		bool _opEquals() @system{
+			auto a = cast(Attribute)o;
+			if(!a)
+				return false;
+			return
+				_namespace == a._namespace &&
+				_name      == a._name      &&
+				value      == a.value;
+		}
+		return _opEquals();
 	}
 	
-	string toSDLString()()
+	string toSDLString()() @safe pure
 	{
 		Appender!string sink;
 		this.toSDLString(sink);
 		return sink.data;
 	}
 
-	void toSDLString(Sink)(ref Sink sink) if(isOutputRange!(Sink,char))
+	void toSDLString(Sink)(ref Sink sink) @safe 
+		if(isOutputRange!(Sink,char))
 	{
 		if(_namespace != "")
 		{
@@ -219,7 +230,7 @@ class Attribute
 
 /// Deep-copy an array of Tag or Attribute.
 /// The top-level clones are $(B $(I not)) attached to any parent, even if the originals are.
-T[] clone(T)(T[] arr) if(is(T==Tag) || is(T==Attribute))
+T[] clone(T)(T[] arr) @safe pure if(is(T==Tag) || is(T==Attribute))
 {
 	T[] newArr;
 	newArr.length = arr.length;
@@ -229,7 +240,10 @@ T[] clone(T)(T[] arr) if(is(T==Tag) || is(T==Attribute))
 	
 	return newArr;
 }
-
+/**
+ * Implements the standard SDL tag.
+ * Contains further tags, values, and Attributes within itself.
+ */
 class Tag
 {
 	/// File/Line/Column/Index information for where this tag was located in
@@ -243,7 +257,7 @@ class Tag
 	/// Get parent tag. To set a parent, attach this Tag to its intended
 	/// parent tag by calling `Tag.add(...)`, or by passing it to
 	/// the parent tag's constructor.
-	@property Tag parent()
+	@property Tag parent() @nogc @safe pure nothrow
 	{
 		return _parent;
 	}
@@ -258,12 +272,12 @@ class Tag
 	Note also, that setting this may change where this tag is ordered among
 	its parent's list of tags.
 	+/
-	@property string namespace()
+	@property string namespace() @nogc @safe pure nothrow
 	{
 		return _namespace;
 	}
 	///ditto
-	@property void namespace(string value)
+	@property void namespace(string value) @safe
 	{
 		//TODO: Can we do this in-place, without removing/adding and thus
 		//      modyfying the internal order?
@@ -297,12 +311,12 @@ class Tag
 	Note also, that setting this may change where this tag is ordered among
 	its parent's list of tags.
 	+/
-	@property string name()
+	@property string name() @nogc @safe pure nothrow
 	{
 		return _name;
 	}
 	///ditto
-	@property void name(string value)
+	@property void name(string value) @safe
 	{
 		//TODO: Seriously? Can't we at least do the "*" modification *in-place*?
 		
@@ -311,7 +325,7 @@ class Tag
 			_parent.updateId++;
 			
 			// Not the most efficient, but it works.
-			void removeFromGroupedLookup(string ns)
+			void removeFromGroupedLookup(string ns) @trusted
 			{
 				// Remove from _parent._tags[ns]
 				auto sameNameTags = _parent._tags[ns][_name];
@@ -337,13 +351,13 @@ class Tag
 	
 	/// This tag's name, including namespace if one exists.
 	deprecated("Use 'getFullName().toString()'")
-	@property string fullName()
+	@property string fullName() @safe pure
 	{
 		return getFullName().toString();
 	}
 	
 	/// This tag's name, including namespace if one exists.
-	FullName getFullName()
+	FullName getFullName() @nogc @safe pure nothrow
 	{
 		return FullName(_namespace, _name);
 	}
@@ -353,7 +367,7 @@ class Tag
 	// they've been invalidated.
 	private size_t updateId=0;
 	
-	this(Tag parent = null)
+	this(Tag parent = null) @safe pure
 	{
 		if(parent)
 			parent.add(this);
@@ -362,7 +376,7 @@ class Tag
 	this(
 		string namespace, string name,
 		Value[] values=null, Attribute[] attributes=null, Tag[] children=null
-	)
+	) @safe pure
 	{
 		this(null, namespace, name, values, attributes, children);
 	}
@@ -370,7 +384,7 @@ class Tag
 	this(
 		Tag parent, string namespace, string name,
 		Value[] values=null, Attribute[] attributes=null, Tag[] children=null
-	)
+	) @safe pure
 	{
 		this._namespace = namespace;
 		this._name      = name;
@@ -385,7 +399,7 @@ class Tag
 
 	/// Deep-copy this Tag.
 	/// The clone does $(B $(I not)) have a parent, even if the original does.
-	Tag clone()
+	Tag clone() @safe pure
 	{
 		auto newTag = new Tag(_namespace, _name, values.dup, allAttributes.clone(), allTags.clone());
 		newTag.location = location;
@@ -406,7 +420,7 @@ class Tag
 	/// Returns `this` for chaining.
 	/// Throws `ValidationException` if trying to add an Attribute or Tag
 	/// that already has a parent.
-	Tag add(Value val)
+	Tag add(Value val) @safe pure
 	{
 		values ~= val;
 		updateId++;
@@ -414,7 +428,7 @@ class Tag
 	}
 	
 	///ditto
-	Tag add(Value[] vals)
+	Tag add(Value[] vals) @safe pure
 	{
 		foreach(val; vals)
 			add(val);
@@ -423,7 +437,7 @@ class Tag
 	}
 	
 	///ditto
-	Tag add(Attribute attr)
+	Tag add(Attribute attr) @safe pure
 	{
 		if(attr._parent)
 		{
@@ -448,7 +462,7 @@ class Tag
 	}
 	
 	///ditto
-	Tag add(Attribute[] attrs)
+	Tag add(Attribute[] attrs) @safe pure
 	{
 		foreach(attr; attrs)
 			add(attr);
@@ -457,7 +471,7 @@ class Tag
 	}
 	
 	///ditto
-	Tag add(Tag tag)
+	Tag add(Tag tag) @safe pure
 	{
 		if(tag._parent)
 		{
@@ -482,7 +496,7 @@ class Tag
 	}
 	
 	///ditto
-	Tag add(Tag[] tags)
+	Tag add(Tag[] tags) @safe pure
 	{
 		foreach(tag; tags)
 			add(tag);
@@ -492,12 +506,12 @@ class Tag
 	
 	/// Removes `this` from its parent, if any. Returns `this` for chaining.
 	/// Inefficient ATM, but it works.
-	Tag remove()
+	Tag remove() @trusted
 	{
 		if(!_parent)
 			return this;
 		
-		void removeFromGroupedLookup(string ns)
+		void removeFromGroupedLookup(string ns) @system
 		{
 			// Remove from _parent._tags[ns]
 			auto sameNameTags = _parent._tags[ns][_name];
@@ -530,7 +544,7 @@ class Tag
 		return this;
 	}
 	
-	private void removeNamespaceIfEmpty(string namespace)
+	private void removeNamespaceIfEmpty(string namespace) @safe pure
 	{
 		// If namespace has no attributes, remove it from attributeIndicies/_attributes
 		if(namespace in attributeIndicies && attributeIndicies[namespace].length == 0)
@@ -564,7 +578,7 @@ class Tag
 		private string name;
 		private size_t updateId;  // Tag's updateId when this range was created.
 
-		this(Tag tag, string namespace, string name, size_t updateId)
+		this(Tag tag, string namespace, string name, size_t updateId) @safe pure
 		{
 			this.tag       = tag;
 			this.namespace = namespace;
@@ -590,17 +604,17 @@ class Tag
 			);
 		}
 
-		@property bool empty()
+		@property bool empty() @nogc @safe pure nothrow
 		{
 			return tag is null || frontIndex == endIndex;
 		}
 		
 		private size_t frontIndex;
-		@property T front()
+		@property T front() @safe pure
 		{
 			return this[0];
 		}
-		void popFront()
+		void popFront() @safe pure
 		{
 			if(empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -609,11 +623,11 @@ class Tag
 		}
 
 		private size_t endIndex; // One past the last element
-		@property T back()
+		@property T back() @safe pure
 		{
 			return this[$-1];
 		}
-		void popBack()
+		void popBack() @safe pure
 		{
 			if(empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -622,12 +636,12 @@ class Tag
 		}
 		
 		alias length opDollar;
-		@property size_t length()
+		@property size_t length() @nogc @safe pure nothrow
 		{
 			return endIndex - frontIndex;
 		}
 		
-		@property typeof(this) save()
+		@property typeof(this) save() @safe pure
 		{
 			auto r = typeof(this)(this.tag, this.namespace, this.name, this.updateId);
 			r.frontIndex = this.frontIndex;
@@ -635,12 +649,12 @@ class Tag
 			return r;
 		}
 		
-		typeof(this) opSlice()
+		typeof(this) opSlice() @safe pure
 		{
 			return save();
 		}
 		
-		typeof(this) opSlice(size_t start, size_t end)
+		typeof(this) opSlice(size_t start, size_t end) @safe pure
 		{
 			auto r = save();
 			r.frontIndex = this.frontIndex + start;
@@ -656,7 +670,7 @@ class Tag
 			return r;
 		}
 
-		T opIndex(size_t index)
+		T opIndex(size_t index) @safe pure
 		{
 			if(empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -673,7 +687,7 @@ class Tag
 		private size_t updateId;  // Tag's updateId when this range was created.
 		private size_t initialEndIndex;
 
-		this(Tag tag, string namespace, bool isMaybe)
+		this(Tag tag, string namespace, bool isMaybe) @safe pure
 		{
 			this.tag       = tag;
 			this.namespace = namespace;
@@ -705,17 +719,17 @@ class Tag
 			);
 		}
 
-		@property bool empty()
+		@property bool empty() @safe pure nothrow
 		{
 			return tag is null || frontIndex == endIndex;
 		}
 		
 		private size_t frontIndex;
-		@property T front()
+		@property T front() @safe pure
 		{
 			return this[0];
 		}
-		void popFront()
+		void popFront() @safe pure
 		{
 			if(empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -724,11 +738,11 @@ class Tag
 		}
 
 		private size_t endIndex; // One past the last element
-		@property T back()
+		@property T back() @safe pure
 		{
 			return this[$-1];
 		}
-		void popBack()
+		void popBack() @safe pure
 		{
 			if(empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -737,12 +751,12 @@ class Tag
 		}
 		
 		alias length opDollar;
-		@property size_t length()
+		@property size_t length() @nogc @safe pure nothrow
 		{
 			return endIndex - frontIndex;
 		}
 		
-		@property typeof(this) save()
+		@property typeof(this) save() @safe pure
 		{
 			auto r = typeof(this)(this.tag, this.namespace, this.isMaybe);
 			r.frontIndex      = this.frontIndex;
@@ -752,12 +766,12 @@ class Tag
 			return r;
 		}
 		
-		typeof(this) opSlice()
+		typeof(this) opSlice() @safe pure
 		{
 			return save();
 		}
 		
-		typeof(this) opSlice(size_t start, size_t end)
+		typeof(this) opSlice(size_t start, size_t end) @safe pure
 		{
 			auto r = save();
 			r.frontIndex = this.frontIndex + start;
@@ -773,7 +787,7 @@ class Tag
 			return r;
 		}
 		
-		T opIndex(size_t index)
+		T opIndex(size_t index) @safe pure
 		{
 			if(empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -785,7 +799,7 @@ class Tag
 		}
 		
 		alias NamedMemberRange!(T,membersGrouped) ThisNamedMemberRange;
-		ThisNamedMemberRange opIndex(string name)
+		ThisNamedMemberRange opIndex(string name) @safe pure
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
 			{
@@ -806,7 +820,8 @@ class Tag
 			return ThisNamedMemberRange(tag, namespace, name, updateId);
 		}
 
-		bool opBinaryRight(string op)(string name) if(op=="in")
+		bool opBinaryRight(string op)(string name) @safe pure
+			if(op=="in")
 		{
 			if(frontIndex != 0 || endIndex != initialEndIndex)
 			{
@@ -834,7 +849,7 @@ class Tag
 		private bool isMaybe;
 		private size_t updateId;  // Tag's updateId when this range was created.
 
-		this(Tag tag, bool isMaybe)
+		this(Tag tag, bool isMaybe) @nogc @safe pure nothrow
 		{
 			this.tag     = tag;
 			this.isMaybe = isMaybe;
@@ -852,17 +867,17 @@ class Tag
 			);
 		}
 		
-		@property bool empty()
+		@property bool empty() @safe pure nothrow
 		{
 			return frontIndex == endIndex;
 		}
 		
 		private size_t frontIndex;
-		@property NamespaceAccess front()
+		@property NamespaceAccess front() @safe pure
 		{
 			return this[0];
 		}
-		void popFront()
+		void popFront() @safe pure
 		{
 			if(empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -871,11 +886,11 @@ class Tag
 		}
 
 		private size_t endIndex; // One past the last element
-		@property NamespaceAccess back()
+		@property NamespaceAccess back() @safe pure
 		{
 			return this[$-1];
 		}
-		void popBack()
+		void popBack() @safe pure
 		{
 			if(empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -884,12 +899,12 @@ class Tag
 		}
 		
 		alias length opDollar;
-		@property size_t length()
+		@property size_t length() @nogc @safe pure nothrow
 		{
 			return endIndex - frontIndex;
 		}
 		
-		@property NamespaceRange save()
+		@property NamespaceRange save() @safe pure
 		{
 			auto r = NamespaceRange(this.tag, this.isMaybe);
 			r.frontIndex = this.frontIndex;
@@ -898,12 +913,12 @@ class Tag
 			return r;
 		}
 		
-		typeof(this) opSlice()
+		typeof(this) opSlice() @safe pure
 		{
 			return save();
 		}
 		
-		typeof(this) opSlice(size_t start, size_t end)
+		typeof(this) opSlice(size_t start, size_t end) @safe pure
 		{
 			auto r = save();
 			r.frontIndex = this.frontIndex + start;
@@ -919,7 +934,7 @@ class Tag
 			return r;
 		}
 		
-		NamespaceAccess opIndex(size_t index)
+		NamespaceAccess opIndex(size_t index) @safe pure
 		{
 			if(empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -932,7 +947,7 @@ class Tag
 			);
 		}
 		
-		NamespaceAccess opIndex(string namespace)
+		NamespaceAccess opIndex(string namespace) @safe pure
 		{
 			if(!isMaybe && empty)
 				throw new DOMRangeException(tag, "Range is empty");
@@ -948,7 +963,8 @@ class Tag
 		}
 		
 		/// Inefficient when range is a slice or has used popFront/popBack, but it works.
-		bool opBinaryRight(string op)(string namespace) if(op=="in")
+		bool opBinaryRight(string op)(string namespace) @safe pure
+			if(op=="in") 
 		{
 			if(frontIndex == 0 && endIndex == tag.allNamespaces.length)
 			{
@@ -991,7 +1007,7 @@ class Tag
 	See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
 	for a high-level overview (and examples) of how to use this.
 	+/
-	@property AttributeRange attributes()
+	@property AttributeRange attributes() @safe pure nothrow
 	{
 		return AttributeRange(this, "", false);
 	}
@@ -1012,7 +1028,7 @@ class Tag
 	See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
 	for a high-level overview (and examples) of how to use this.
 	+/
-	@property TagRange tags()
+	@property TagRange tags() @safe pure nothrow
 	{
 		return TagRange(this, "", false);
 	}
@@ -1026,7 +1042,7 @@ class Tag
 	See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
 	for a high-level overview (and examples) of how to use this.
 	+/
-	@property NamespaceRange namespaces()
+	@property NamespaceRange namespaces() @safe pure nothrow
 	{
 		return NamespaceRange(this, false);
 	}
@@ -1035,7 +1051,7 @@ class Tag
 	///
 	/// See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
 	/// for a better understanding (and examples) of how to use this.
-	@property NamespaceAccess all()
+	@property NamespaceAccess all() @safe pure nothrow
 	{
 		// "*" isn't a valid namespace name, so we can use it to indicate "all namespaces"
 		return NamespaceAccess(
@@ -1050,25 +1066,25 @@ class Tag
 		Tag tag;
 
 		/// Access all attributes that don't have a namespace
-		@property AttributeRange attributes()
+		@property AttributeRange attributes() @safe pure nothrow
 		{
 			return AttributeRange(tag, "", true);
 		}
 
 		/// Access all direct-child tags that don't have a namespace
-		@property TagRange tags()
+		@property TagRange tags() @safe pure nothrow
 		{
 			return TagRange(tag, "", true);
 		}
 		
 		/// Access all namespaces in this tag, and the attributes/tags within them.
-		@property NamespaceRange namespaces()
+		@property NamespaceRange namespaces() @safe pure nothrow
 		{
 			return NamespaceRange(tag, true);
 		}
 
 		/// Access all attributes and tags regardless of namespace.
-		@property NamespaceAccess all()
+		@property NamespaceAccess all() @safe pure nothrow
 		{
 			// "*" isn't a valid namespace name, so we can use it to indicate "all namespaces"
 			return NamespaceAccess(
@@ -1086,14 +1102,14 @@ class Tag
 	///
 	/// See $(LINK2 https://github.com/Abscissa/SDLang-D/blob/master/HOWTO.md#tag-and-attribute-api-summary, API Overview)
 	/// for a more information (and examples) of how to use this.
-	@property MaybeAccess maybe()
+	@property MaybeAccess maybe() @safe pure nothrow
 	{
 		return MaybeAccess(this);
 	}
 	
 	// Internal implementations for the get/expect functions further below:
 	
-	private Tag getTagImpl(FullName tagFullName, Tag defaultValue=null, bool useDefaultValue=true)
+	private Tag getTagImpl(FullName tagFullName, Tag defaultValue=null, bool useDefaultValue=true) @trusted
 	{
 		auto tagNS   = tagFullName.namespace;
 		auto tagName = tagFullName.name;
@@ -1120,7 +1136,7 @@ class Tag
 		return _tags[tagNS][tagName][$-1];
 	}
 
-	private T getValueImpl(T)(T defaultValue, bool useDefaultValue=true)
+	private T getValueImpl(T)(T defaultValue, bool useDefaultValue=true) @trusted
 	if(isValueType!T)
 	{
 		// Find value
@@ -1144,7 +1160,7 @@ class Tag
 		}
 	}
 
-	private T getAttributeImpl(T)(FullName attrFullName, T defaultValue, bool useDefaultValue=true)
+	private T getAttributeImpl(T)(FullName attrFullName, T defaultValue, bool useDefaultValue=true) @trusted 
 	if(isValueType!T)
 	{
 		auto attrNS   = attrFullName.namespace;
@@ -1208,7 +1224,7 @@ class Tag
 	value is returned. Otherwise null is returned. If you'd prefer an
 	exception thrown, use `expectTag` instead.
 	+/
-	Tag getTag(string fullTagName, Tag defaultValue=null)
+	Tag getTag(string fullTagName, Tag defaultValue=null) @safe
 	{
 		auto parsedName = FullName.parse(fullTagName);
 		parsedName.ensureNoWildcardName(
@@ -1268,7 +1284,7 @@ class Tag
 	If no such tag is found, an `sdlang.exception.TagNotFoundException` will
 	be thrown. If you'd rather receive a default value, use `getTag` instead.
 	+/
-	Tag expectTag(string fullTagName)
+	Tag expectTag(string fullTagName) @safe
 	{
 		auto parsedName = FullName.parse(fullTagName);
 		parsedName.ensureNoWildcardName(
@@ -1322,7 +1338,8 @@ class Tag
 	If you'd rather an exception be thrown when a value cannot be found,
 	use `expectValue` instead.
 	+/
-	T getValue(T)(T defaultValue = T.init) if(isValueType!T)
+	T getValue(T)(T defaultValue = T.init) @safe
+	if(isValueType!T)
 	{
 		return getValueImpl!T(defaultValue, true);
 	}
@@ -1372,7 +1389,8 @@ class Tag
 	the requested type can be found. If you'd rather receive a default value,
 	use `getValue` instead.
 	+/
-	T expectValue(T)() if(isValueType!T)
+	T expectValue(T)() @safe 
+	if(isValueType!T)
 	{
 		return getValueImpl!T(T.init, false);
 	}
@@ -1409,7 +1427,8 @@ class Tag
 	then instead of a null reference error, it will return the requested
 	`defaultValue` (or T.init by default).
 	+/
-	T getTagValue(T)(string fullTagName, T defaultValue = T.init) if(isValueType!T)
+	T getTagValue(T)(string fullTagName, T defaultValue = T.init) @safe 
+	if(isValueType!T)
 	{
 		auto tag = getTag(fullTagName);
 		if(!tag)
@@ -1477,7 +1496,8 @@ class Tag
 	
 	This is a shortcut for `expectTag().expectValue()`.
 	+/
-	T expectTagValue(T)(string fullTagName) if(isValueType!T)
+	T expectTagValue(T)(string fullTagName) @safe 
+	if(isValueType!T)
 	{
 		return expectTag(fullTagName).expectValue!T();
 	}
@@ -1559,7 +1579,8 @@ class Tag
 	If you'd rather an exception be thrown when an attribute cannot be found,
 	use `expectAttribute` instead.
 	+/
-	T getAttribute(T)(string fullAttributeName, T defaultValue = T.init) if(isValueType!T)
+	T getAttribute(T)(string fullAttributeName, T defaultValue = T.init) @safe 
+	if(isValueType!T)
 	{
 		auto parsedName = FullName.parse(fullAttributeName);
 		parsedName.ensureNoWildcardName(
@@ -1645,7 +1666,8 @@ class Tag
 	value of the requested type can be found. If you'd rather receive a
 	default value, use `getAttribute` instead.
 	+/
-	T expectAttribute(T)(string fullAttributeName) if(isValueType!T)
+	T expectAttribute(T)(string fullAttributeName) @safe 
+	if(isValueType!T)
 	{
 		auto parsedName = FullName.parse(fullAttributeName);
 		parsedName.ensureNoWildcardName(
@@ -1710,7 +1732,8 @@ class Tag
 	found, then instead of a null reference error, it will return the requested
 	`defaultValue` (or T.init by default).
 	+/
-	T getTagAttribute(T)(string fullTagName, string fullAttributeName, T defaultValue = T.init) if(isValueType!T)
+	T getTagAttribute(T)(string fullTagName, string fullAttributeName, T defaultValue = T.init) @safe  
+	if(isValueType!T)
 	{
 		auto tag = getTag(fullTagName);
 		if(!tag)
@@ -1786,7 +1809,8 @@ class Tag
 
 	This is a shortcut for `expectTag().expectAttribute()`.
 	+/
-	T expectTagAttribute(T)(string fullTagName, string fullAttributeName) if(isValueType!T)
+	T expectTagAttribute(T)(string fullTagName, string fullAttributeName) @safe  
+	if(isValueType!T)
 	{
 		return expectTag(fullTagName).expectAttribute!T(fullAttributeName);
 	}
@@ -1854,7 +1878,7 @@ class Tag
 	If you'd prefer an exception thrown when the tag isn't found, use
 	`expectTag`.`values` instead.
 	+/
-	Value[] getTagValues(string fullTagName, Value[] defaultValues = null)
+	Value[] getTagValues(string fullTagName, Value[] defaultValues = null) @safe
 	{
 		auto tag = getTag(fullTagName);
 		if(tag)
@@ -1902,7 +1926,7 @@ class Tag
 	If you'd prefer an exception thrown when the tag isn't found, use
 	`expectTag`.`attributes` instead.
 	+/
-	auto getTagAttributes(string fullTagName, string attributeNamespace = null)
+	auto getTagAttributes(string fullTagName, string attributeNamespace = null) @safe
 	{
 		auto tag = getTag(fullTagName);
 		if(tag)
@@ -2045,7 +2069,7 @@ class Tag
 		assertThrown!ArgumentException( root.expectTagAttribute!int("*:foo", "*:*") );
 	}
 	
-	override bool opEquals(Object o)
+	override bool opEquals(Object o) @trusted
 	{
 		auto t = cast(Tag)o;
 		if(!t)
@@ -2080,7 +2104,7 @@ class Tag
 	/// values or attributes, and cannot be part of a namespace.
 	/// If this isn't a valid root tag, `sdlang.exception.ValidationException`
 	/// will be thrown.
-	string toSDLDocument()(string indent="\t", int indentLevel=0)
+	string toSDLDocument()(string indent="\t", int indentLevel=0) @trusted
 	{
 		Appender!string sink;
 		toSDLDocument(sink, indent, indentLevel);
@@ -2088,7 +2112,7 @@ class Tag
 	}
 	
 	///ditto
-	void toSDLDocument(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
+	void toSDLDocument(Sink)(ref Sink sink, string indent="\t", int indentLevel=0) @trusted
 		if(isOutputRange!(Sink,char))
 	{
 		if(values.length > 0)
@@ -2107,7 +2131,7 @@ class Tag
 	/// Output this entire tag in SDL format. Does $(B $(I not)) treat `this` as
 	/// a root tag. If you intend this to be the root of a standard SDL
 	/// document, use `toSDLDocument` instead.
-	string toSDLString()(string indent="\t", int indentLevel=0)
+	string toSDLString()(string indent="\t", int indentLevel=0) @safe 
 	{
 		Appender!string sink;
 		toSDLString(sink, indent, indentLevel);
@@ -2115,7 +2139,7 @@ class Tag
 	}
 	
 	///ditto
-	void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0)
+	void toSDLString(Sink)(ref Sink sink, string indent="\t", int indentLevel=0) @safe
 		if(isOutputRange!(Sink,char))
 	{
 		if(_name == "" && values.length == 0)
