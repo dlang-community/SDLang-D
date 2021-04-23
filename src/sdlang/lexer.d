@@ -1470,9 +1470,6 @@ version(unittest)
 {
 	import std.stdio;
 
-	version(Have_unit_threaded) import unit_threaded;
-	else                        { enum DontTest; }
-
 	private auto loc  = Location("filename", 0, 0, 0);
 	private auto loc2 = Location("a", 1, 1, 1);
 
@@ -1484,8 +1481,8 @@ version(unittest)
 	}
 
 	private int numErrors = 0;
-	@DontTest
-	private void testLex(string source, Token[] expected, bool test_locations = false, string file=__FILE__, size_t line=__LINE__)
+
+	private void _testLex(string source, Token[] expected, bool test_locations = false, string file=__FILE__, size_t line=__LINE__)
 	{
 		Token[] actual;
 		try
@@ -1493,7 +1490,7 @@ version(unittest)
 		catch(ParseException e)
 		{
 			numErrors++;
-			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
+			stderr.writeln(file, "(", line, "): _testLex failed on: ", source);
 			stderr.writeln("    Expected:");
 			stderr.writeln("        ", expected);
 			stderr.writeln("    Actual: ParseException thrown:");
@@ -1505,11 +1502,11 @@ version(unittest)
 		if (is_same && test_locations) {
 			is_same = actual.map!(t => t.location).equal(expected.map!(t => t.location));
 		}
-		
+
 		if(!is_same)
 		{
 			numErrors++;
-			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
+			stderr.writeln(file, "(", line, "): _testLex failed on: ", source);
 			stderr.writeln("    Expected:");
 			stderr.writeln("        ", expected);
 			stderr.writeln("    Actual:");
@@ -1534,7 +1531,7 @@ version(unittest)
 		}
 	}
 
-	private void testLexThrows(string file=__FILE__, size_t line=__LINE__)(string source)
+	private void _testLexThrows(string file=__FILE__, size_t line=__LINE__)(string source)
 	{
 		bool hadException = false;
 		Token[] actual;
@@ -1546,7 +1543,7 @@ version(unittest)
 		if(!hadException)
 		{
 			numErrors++;
-			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
+			stderr.writeln(file, "(", line, "): _testLex failed on: ", source);
 			stderr.writeln("    Expected ParseException");
 			stderr.writeln("    Actual:");
 			stderr.writeln("        ", actual);
@@ -1557,47 +1554,47 @@ version(unittest)
 @("sdlang lexer")
 unittest
 {
-	testLex("",        []);
-	testLex(" ",       []);
-	testLex("\\\n",    []);
-	testLex("/*foo*/", []);
-	testLex("/* multiline \n comment */", []);
-	testLex("/* * */", []);
-	testLexThrows("/* ");
+	_testLex("",        []);
+	_testLex(" ",       []);
+	_testLex("\\\n",    []);
+	_testLex("/*foo*/", []);
+	_testLex("/* multiline \n comment */", []);
+	_testLex("/* * */", []);
+	_testLexThrows("/* ");
 
-	testLex(":",  [ Token(symbol!":",  loc) ]);
-	testLex("=",  [ Token(symbol!"=",  loc) ]);
-	testLex("{",  [ Token(symbol!"{",  loc) ]);
-	testLex("}",  [ Token(symbol!"}",  loc) ]);
-	testLex(";",  [ Token(symbol!"EOL",loc) ]);
-	testLex("\n", [ Token(symbol!"EOL",loc) ]);
+	_testLex(":",  [ Token(symbol!":",  loc) ]);
+	_testLex("=",  [ Token(symbol!"=",  loc) ]);
+	_testLex("{",  [ Token(symbol!"{",  loc) ]);
+	_testLex("}",  [ Token(symbol!"}",  loc) ]);
+	_testLex(";",  [ Token(symbol!"EOL",loc) ]);
+	_testLex("\n", [ Token(symbol!"EOL",loc) ]);
 
-	testLex("foo",     [ Token(symbol!"Ident",loc,Value(null),"foo")     ]);
-	testLex("_foo",    [ Token(symbol!"Ident",loc,Value(null),"_foo")    ]);
-	testLex("foo.bar", [ Token(symbol!"Ident",loc,Value(null),"foo.bar") ]);
-	testLex("foo-bar", [ Token(symbol!"Ident",loc,Value(null),"foo-bar") ]);
-	testLex("foo.",    [ Token(symbol!"Ident",loc,Value(null),"foo.")    ]);
-	testLex("foo-",    [ Token(symbol!"Ident",loc,Value(null),"foo-")    ]);
-	testLexThrows(".foo");
+	_testLex("foo",     [ Token(symbol!"Ident",loc,Value(null),"foo")     ]);
+	_testLex("_foo",    [ Token(symbol!"Ident",loc,Value(null),"_foo")    ]);
+	_testLex("foo.bar", [ Token(symbol!"Ident",loc,Value(null),"foo.bar") ]);
+	_testLex("foo-bar", [ Token(symbol!"Ident",loc,Value(null),"foo-bar") ]);
+	_testLex("foo.",    [ Token(symbol!"Ident",loc,Value(null),"foo.")    ]);
+	_testLex("foo-",    [ Token(symbol!"Ident",loc,Value(null),"foo-")    ]);
+	_testLexThrows(".foo");
 
-	testLex("foo bar", [
+	_testLex("foo bar", [
 		Token(symbol!"Ident",loc,Value(null),"foo"),
 		Token(symbol!"Ident",loc,Value(null),"bar"),
 	]);
-	testLex("foo \\  \n  \n  bar", [
+	_testLex("foo \\  \n  \n  bar", [
 		Token(symbol!"Ident",loc,Value(null),"foo"),
 		Token(symbol!"Ident",loc,Value(null),"bar"),
 	]);
-	testLex("foo \\  \n \\ \n  bar", [
+	_testLex("foo \\  \n \\ \n  bar", [
 		Token(symbol!"Ident",loc,Value(null),"foo"),
 		Token(symbol!"Ident",loc,Value(null),"bar"),
 	]);
-	testLexThrows("foo \\ ");
-	testLexThrows("foo \\ bar");
-	testLexThrows("foo \\  \n  \\ ");
-	testLexThrows("foo \\  \n  \\ bar");
+	_testLexThrows("foo \\ ");
+	_testLexThrows("foo \\ bar");
+	_testLexThrows("foo \\  \n  \\ ");
+	_testLexThrows("foo \\  \n  \\ bar");
 
-	testLex("foo : = { } ; \n bar \n", [
+	_testLex("foo : = { } ; \n bar \n", [
 		Token(symbol!"Ident",loc,Value(null),"foo"),
 		Token(symbol!":",loc),
 		Token(symbol!"=",loc),
@@ -1609,265 +1606,265 @@ unittest
 		Token(symbol!"EOL",loc),
 	]);
 
-	testLexThrows("<");
-	testLexThrows("*");
-	testLexThrows(`\`);
-	
+	_testLexThrows("<");
+	_testLexThrows("*");
+	_testLexThrows(`\`);
+
 	// Integers
-	testLex(  "7", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
-	testLex( "-7", [ Token(symbol!"Value",loc,Value(cast( int)-7)) ]);
-	testLex( "7L", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
-	testLex( "7l", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
-	testLex("-7L", [ Token(symbol!"Value",loc,Value(cast(long)-7)) ]);
-	testLex(  "0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
-	testLex( "-0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
+	_testLex(  "7", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
+	_testLex( "-7", [ Token(symbol!"Value",loc,Value(cast( int)-7)) ]);
+	_testLex( "7L", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
+	_testLex( "7l", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
+	_testLex("-7L", [ Token(symbol!"Value",loc,Value(cast(long)-7)) ]);
+	_testLex(  "0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
+	_testLex( "-0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
 
-	testLex("7/**/", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
-	testLex("7#",    [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
+	_testLex("7/**/", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
+	_testLex("7#",    [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
 
-	testLex("7 A", [
+	_testLex("7 A", [
 		Token(symbol!"Value",loc,Value(cast(int)7)),
 		Token(symbol!"Ident",loc,Value(      null),"A"),
 	]);
-	testLexThrows("7A");
-	testLexThrows("-A");
-	testLexThrows(`-""`);
-	
-	testLex("7;", [
+	_testLexThrows("7A");
+	_testLexThrows("-A");
+	_testLexThrows(`-""`);
+
+	_testLex("7;", [
 		Token(symbol!"Value",loc,Value(cast(int)7)),
 		Token(symbol!"EOL",loc),
 	]);
-	
+
 	// Floats
-	testLex("1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
-	testLex("1.2f" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
-	testLex("1.2"  , [ Token(symbol!"Value",loc,Value(cast(double)1.2)) ]);
-	testLex("1.2D" , [ Token(symbol!"Value",loc,Value(cast(double)1.2)) ]);
-	testLex("1.2d" , [ Token(symbol!"Value",loc,Value(cast(double)1.2)) ]);
-	testLex("1.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
-	testLex("1.2bd", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
-	testLex("1.2Bd", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
-	testLex("1.2bD", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
+	_testLex("1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
+	_testLex("1.2f" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
+	_testLex("1.2"  , [ Token(symbol!"Value",loc,Value(cast(double)1.2)) ]);
+	_testLex("1.2D" , [ Token(symbol!"Value",loc,Value(cast(double)1.2)) ]);
+	_testLex("1.2d" , [ Token(symbol!"Value",loc,Value(cast(double)1.2)) ]);
+	_testLex("1.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
+	_testLex("1.2bd", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
+	_testLex("1.2Bd", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
+	_testLex("1.2bD", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
 
-	testLex(".2F" , [ Token(symbol!"Value",loc,Value(cast( float)0.2)) ]);
-	testLex(".2"  , [ Token(symbol!"Value",loc,Value(cast(double)0.2)) ]);
-	testLex(".2D" , [ Token(symbol!"Value",loc,Value(cast(double)0.2)) ]);
-	testLex(".2BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.2)) ]);
+	_testLex(".2F" , [ Token(symbol!"Value",loc,Value(cast( float)0.2)) ]);
+	_testLex(".2"  , [ Token(symbol!"Value",loc,Value(cast(double)0.2)) ]);
+	_testLex(".2D" , [ Token(symbol!"Value",loc,Value(cast(double)0.2)) ]);
+	_testLex(".2BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.2)) ]);
 
-	testLex("-1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)-1.2)) ]);
-	testLex("-1.2"  , [ Token(symbol!"Value",loc,Value(cast(double)-1.2)) ]);
-	testLex("-1.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-1.2)) ]);
-	testLex("-1.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-1.2)) ]);
+	_testLex("-1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)-1.2)) ]);
+	_testLex("-1.2"  , [ Token(symbol!"Value",loc,Value(cast(double)-1.2)) ]);
+	_testLex("-1.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-1.2)) ]);
+	_testLex("-1.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-1.2)) ]);
 
-	testLex("-.2F" , [ Token(symbol!"Value",loc,Value(cast( float)-0.2)) ]);
-	testLex("-.2"  , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
-	testLex("-.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
-	testLex("-.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-0.2)) ]);
+	_testLex("-.2F" , [ Token(symbol!"Value",loc,Value(cast( float)-0.2)) ]);
+	_testLex("-.2"  , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
+	_testLex("-.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
+	_testLex("-.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-0.2)) ]);
 
-	testLex( "0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
-	testLex( "0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
-	testLex( "0.0BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
-	testLex("-0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
-	testLex("-0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
-	testLex("-0.0BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
-	testLex( "7F"   , [ Token(symbol!"Value",loc,Value(cast( float)7.0)) ]);
-	testLex( "7D"   , [ Token(symbol!"Value",loc,Value(cast(double)7.0)) ]);
-	testLex( "7BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)7.0)) ]);
-	testLex( "0F"   , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
-	testLex( "0D"   , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
-	testLex( "0BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
-	testLex("-0F"   , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
-	testLex("-0D"   , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
-	testLex("-0BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
+	_testLex( "0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
+	_testLex( "0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
+	_testLex( "0.0BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
+	_testLex("-0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
+	_testLex("-0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
+	_testLex("-0.0BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
+	_testLex( "7F"   , [ Token(symbol!"Value",loc,Value(cast( float)7.0)) ]);
+	_testLex( "7D"   , [ Token(symbol!"Value",loc,Value(cast(double)7.0)) ]);
+	_testLex( "7BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)7.0)) ]);
+	_testLex( "0F"   , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
+	_testLex( "0D"   , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
+	_testLex( "0BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
+	_testLex("-0F"   , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
+	_testLex("-0D"   , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
+	_testLex("-0BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
 
-	testLex("1.2 F", [
+	_testLex("1.2 F", [
 		Token(symbol!"Value",loc,Value(cast(double)1.2)),
 		Token(symbol!"Ident",loc,Value(           null),"F"),
 	]);
-	testLexThrows("1.2A");
-	testLexThrows("1.2B");
-	testLexThrows("1.2BDF");
+	_testLexThrows("1.2A");
+	_testLexThrows("1.2B");
+	_testLexThrows("1.2BDF");
 
-	testLex("1.2;", [
+	_testLex("1.2;", [
 		Token(symbol!"Value",loc,Value(cast(double)1.2)),
 		Token(symbol!"EOL",loc),
 	]);
 
-	testLex("1.2F;", [
+	_testLex("1.2F;", [
 		Token(symbol!"Value",loc,Value(cast(float)1.2)),
 		Token(symbol!"EOL",loc),
 	]);
 
-	testLex("1.2BD;", [
+	_testLex("1.2BD;", [
 		Token(symbol!"Value",loc,Value(cast(real)1.2)),
 		Token(symbol!"EOL",loc),
 	]);
 
 	// Booleans and null
-	testLex("true",   [ Token(symbol!"Value",loc,Value( true)) ]);
-	testLex("false",  [ Token(symbol!"Value",loc,Value(false)) ]);
-	testLex("on",     [ Token(symbol!"Value",loc,Value( true)) ]);
-	testLex("off",    [ Token(symbol!"Value",loc,Value(false)) ]);
-	testLex("null",   [ Token(symbol!"Value",loc,Value( null)) ]);
+	_testLex("true",   [ Token(symbol!"Value",loc,Value( true)) ]);
+	_testLex("false",  [ Token(symbol!"Value",loc,Value(false)) ]);
+	_testLex("on",     [ Token(symbol!"Value",loc,Value( true)) ]);
+	_testLex("off",    [ Token(symbol!"Value",loc,Value(false)) ]);
+	_testLex("null",   [ Token(symbol!"Value",loc,Value( null)) ]);
 
-	testLex("TRUE",   [ Token(symbol!"Ident",loc,Value(null),"TRUE")  ]);
-	testLex("true ",  [ Token(symbol!"Value",loc,Value(true)) ]);
-	testLex("true  ", [ Token(symbol!"Value",loc,Value(true)) ]);
-	testLex("tru",    [ Token(symbol!"Ident",loc,Value(null),"tru")   ]);
-	testLex("truX",   [ Token(symbol!"Ident",loc,Value(null),"truX")  ]);
-	testLex("trueX",  [ Token(symbol!"Ident",loc,Value(null),"trueX") ]);
+	_testLex("TRUE",   [ Token(symbol!"Ident",loc,Value(null),"TRUE")  ]);
+	_testLex("true ",  [ Token(symbol!"Value",loc,Value(true)) ]);
+	_testLex("true  ", [ Token(symbol!"Value",loc,Value(true)) ]);
+	_testLex("tru",    [ Token(symbol!"Ident",loc,Value(null),"tru")   ]);
+	_testLex("truX",   [ Token(symbol!"Ident",loc,Value(null),"truX")  ]);
+	_testLex("trueX",  [ Token(symbol!"Ident",loc,Value(null),"trueX") ]);
 
 	// Raw Backtick Strings
-	testLex("`hello world`",      [ Token(symbol!"Value",loc,Value(`hello world`   )) ]);
-	testLex("` hello world `",    [ Token(symbol!"Value",loc,Value(` hello world ` )) ]);
-	testLex("`hello \\t world`",  [ Token(symbol!"Value",loc,Value(`hello \t world`)) ]);
-	testLex("`hello \\n world`",  [ Token(symbol!"Value",loc,Value(`hello \n world`)) ]);
-	testLex("`hello \n world`",   [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
-	testLex("`hello \r\n world`", [ Token(symbol!"Value",loc,Value("hello \r\n world")) ]);
-	testLex("`hello \"world\"`",  [ Token(symbol!"Value",loc,Value(`hello "world"` )) ]);
+	_testLex("`hello world`",      [ Token(symbol!"Value",loc,Value(`hello world`   )) ]);
+	_testLex("` hello world `",    [ Token(symbol!"Value",loc,Value(` hello world ` )) ]);
+	_testLex("`hello \\t world`",  [ Token(symbol!"Value",loc,Value(`hello \t world`)) ]);
+	_testLex("`hello \\n world`",  [ Token(symbol!"Value",loc,Value(`hello \n world`)) ]);
+	_testLex("`hello \n world`",   [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
+	_testLex("`hello \r\n world`", [ Token(symbol!"Value",loc,Value("hello \r\n world")) ]);
+	_testLex("`hello \"world\"`",  [ Token(symbol!"Value",loc,Value(`hello "world"` )) ]);
 
-	testLexThrows("`foo");
-	testLexThrows("`");
+	_testLexThrows("`foo");
+	_testLexThrows("`");
 
 	// Double-Quote Strings
-	testLex(`"hello world"`,            [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
-	testLex(`" hello world "`,          [ Token(symbol!"Value",loc,Value(" hello world " )) ]);
-	testLex(`"hello \t world"`,         [ Token(symbol!"Value",loc,Value("hello \t world")) ]);
-	testLex(`"hello \n world"`,         [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
-	testLex("\"hello \\\n world\"",     [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
-	testLex("\"hello \\  \n world\"",   [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
-	testLex("\"hello \\  \n\n world\"", [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
-	testLex(`"\"hello world\""`,        [ Token(symbol!"Value",loc,Value(`"hello world"` )) ]);
-	testLex(`""`,                       [ Token(symbol!"Value",loc,Value(""              )) ]); // issue #34
+	_testLex(`"hello world"`,            [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
+	_testLex(`" hello world "`,          [ Token(symbol!"Value",loc,Value(" hello world " )) ]);
+	_testLex(`"hello \t world"`,         [ Token(symbol!"Value",loc,Value("hello \t world")) ]);
+	_testLex(`"hello \n world"`,         [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
+	_testLex("\"hello \\\n world\"",     [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
+	_testLex("\"hello \\  \n world\"",   [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
+	_testLex("\"hello \\  \n\n world\"", [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
+	_testLex(`"\"hello world\""`,        [ Token(symbol!"Value",loc,Value(`"hello world"` )) ]);
+	_testLex(`""`,                       [ Token(symbol!"Value",loc,Value(""              )) ]); // issue #34
 
-	testLexThrows("\"hello \n world\"");
-	testLexThrows(`"foo`);
-	testLexThrows(`"`);
+	_testLexThrows("\"hello \n world\"");
+	_testLexThrows(`"foo`);
+	_testLexThrows(`"`);
 
 	// Characters
-	testLex("'a'",   [ Token(symbol!"Value",loc,Value(cast(dchar) 'a')) ]);
-	testLex("'\\n'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
-	testLex("'\\t'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\t')) ]);
-	testLex("'\t'",  [ Token(symbol!"Value",loc,Value(cast(dchar)'\t')) ]);
-	testLex("'\\''", [ Token(symbol!"Value",loc,Value(cast(dchar)'\'')) ]);
-	testLex(`'\\'`,  [ Token(symbol!"Value",loc,Value(cast(dchar)'\\')) ]);
+	_testLex("'a'",   [ Token(symbol!"Value",loc,Value(cast(dchar) 'a')) ]);
+	_testLex("'\\n'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
+	_testLex("'\\t'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\t')) ]);
+	_testLex("'\t'",  [ Token(symbol!"Value",loc,Value(cast(dchar)'\t')) ]);
+	_testLex("'\\''", [ Token(symbol!"Value",loc,Value(cast(dchar)'\'')) ]);
+	_testLex(`'\\'`,  [ Token(symbol!"Value",loc,Value(cast(dchar)'\\')) ]);
 
-	testLexThrows("'a");
-	testLexThrows("'aa'");
-	testLexThrows("''");
-	testLexThrows("'\\\n'");
-	testLexThrows("'\n'");
-	testLexThrows(`'\`);
-	testLexThrows(`'\'`);
-	testLexThrows("'");
-	
+	_testLexThrows("'a");
+	_testLexThrows("'aa'");
+	_testLexThrows("''");
+	_testLexThrows("'\\\n'");
+	_testLexThrows("'\n'");
+	_testLexThrows(`'\`);
+	_testLexThrows(`'\'`);
+	_testLexThrows("'");
+
 	// Unicode
-	testLex("日本語",         [ Token(symbol!"Ident",loc,Value(null), "日本語") ]);
-	testLex("`おはよう、日本。`", [ Token(symbol!"Value",loc,Value(`おはよう、日本。`)) ]);
-	testLex(`"おはよう、日本。"`, [ Token(symbol!"Value",loc,Value(`おはよう、日本。`)) ]);
-	testLex("'月'",           [ Token(symbol!"Value",loc,Value("月"d.dup[0]))   ]);
+	_testLex("日本語",         [ Token(symbol!"Ident",loc,Value(null), "日本語") ]);
+	_testLex("`おはよう、日本。`", [ Token(symbol!"Value",loc,Value(`おはよう、日本。`)) ]);
+	_testLex(`"おはよう、日本。"`, [ Token(symbol!"Value",loc,Value(`おはよう、日本。`)) ]);
+	_testLex("'月'",           [ Token(symbol!"Value",loc,Value("月"d.dup[0]))   ]);
 
 	// Base64 Binary
-	testLex("[aGVsbG8gd29ybGQ=]",              [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
-	testLex("[ aGVsbG8gd29ybGQ= ]",            [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
-	testLex("[\n aGVsbG8g \n \n d29ybGQ= \n]", [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
+	_testLex("[aGVsbG8gd29ybGQ=]",              [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
+	_testLex("[ aGVsbG8gd29ybGQ= ]",            [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
+	_testLex("[\n aGVsbG8g \n \n d29ybGQ= \n]", [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
 
-	testLexThrows("[aGVsbG8gd29ybGQ]"); // Ie: Not multiple of 4
-	testLexThrows("[ aGVsbG8gd29ybGQ ]");
+	_testLexThrows("[aGVsbG8gd29ybGQ]"); // Ie: Not multiple of 4
+	_testLexThrows("[ aGVsbG8gd29ybGQ ]");
 
 	// Date
-	testLex( "1999/12/5", [ Token(symbol!"Value",loc,Value(Date( 1999, 12, 5))) ]);
-	testLex( "2013/2/22", [ Token(symbol!"Value",loc,Value(Date( 2013, 2, 22))) ]);
-	testLex("-2013/2/22", [ Token(symbol!"Value",loc,Value(Date(-2013, 2, 22))) ]);
+	_testLex( "1999/12/5", [ Token(symbol!"Value",loc,Value(Date( 1999, 12, 5))) ]);
+	_testLex( "2013/2/22", [ Token(symbol!"Value",loc,Value(Date( 2013, 2, 22))) ]);
+	_testLex("-2013/2/22", [ Token(symbol!"Value",loc,Value(Date(-2013, 2, 22))) ]);
 
-	testLexThrows("7/");
-	testLexThrows("2013/2/22a");
-	testLexThrows("2013/2/22f");
+	_testLexThrows("7/");
+	_testLexThrows("2013/2/22a");
+	_testLexThrows("2013/2/22f");
 
-	testLex("1999/12/5\n", [
+	_testLex("1999/12/5\n", [
 		Token(symbol!"Value",loc,Value(Date(1999, 12, 5))),
 		Token(symbol!"EOL",loc),
 	]);
 
 	// DateTime, no timezone
-	testLex( "2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 \t 07:53",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22/*foo*/07:53",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 /*foo*/ \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 /*foo*/ \\\n\n  \n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 /*foo*/ \\\n\\\n  \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22/*foo*/\\\n/*bar*/07:53",      [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex("-2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
-	testLex("-2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
-	testLex( "2013/2/22 07:53:34",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34)))) ]);
-	testLex( "2013/2/22 07:53:34.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs))) ]);
-	testLex( "2013/2/22 07:53:34.12",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 120.msecs))) ]);
-	testLex( "2013/2/22 07:53:34.1",   [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 100.msecs))) ]);
-	testLex( "2013/2/22 07:53.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs))) ]);
+	_testLex( "2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	_testLex( "2013/2/22 \t 07:53",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	_testLex( "2013/2/22/*foo*/07:53",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	_testLex( "2013/2/22 /*foo*/ \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	_testLex( "2013/2/22 /*foo*/ \\\n\n  \n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	_testLex( "2013/2/22 /*foo*/ \\\n\\\n  \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	_testLex( "2013/2/22/*foo*/\\\n/*bar*/07:53",      [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	_testLex("-2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 7, 53,  0)))) ]);
+	_testLex( "2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
+	_testLex("-2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
+	_testLex( "2013/2/22 07:53:34",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34)))) ]);
+	_testLex( "2013/2/22 07:53:34.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs))) ]);
+	_testLex( "2013/2/22 07:53:34.12",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 120.msecs))) ]);
+	_testLex( "2013/2/22 07:53:34.1",   [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 100.msecs))) ]);
+	_testLex( "2013/2/22 07:53.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs))) ]);
 
-	testLex( "2013/2/22 34:65",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0)))) ]);
-	testLex( "2013/2/22 34:65:77.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds(77), 123.msecs))) ]);
-	testLex( "2013/2/22 34:65.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0), 123.msecs))) ]);
+	_testLex( "2013/2/22 34:65",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0)))) ]);
+	_testLex( "2013/2/22 34:65:77.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds(77), 123.msecs))) ]);
+	_testLex( "2013/2/22 34:65.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0), 123.msecs))) ]);
 
-	testLex( "2013/2/22 -34:65",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0)))) ]);
-	testLex( "2013/2/22 -34:65:77.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds(77), -123.msecs))) ]);
-	testLex( "2013/2/22 -34:65.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0), -123.msecs))) ]);
+	_testLex( "2013/2/22 -34:65",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0)))) ]);
+	_testLex( "2013/2/22 -34:65:77.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds(77), -123.msecs))) ]);
+	_testLex( "2013/2/22 -34:65.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0), -123.msecs))) ]);
 
-	testLexThrows("2013/2/22 07:53a");
-	testLexThrows("2013/2/22 07:53f");
-	testLexThrows("2013/2/22 07:53:34.123a");
-	testLexThrows("2013/2/22 07:53:34.123f");
-	testLexThrows("2013/2/22a 07:53");
+	_testLexThrows("2013/2/22 07:53a");
+	_testLexThrows("2013/2/22 07:53f");
+	_testLexThrows("2013/2/22 07:53:34.123a");
+	_testLexThrows("2013/2/22 07:53:34.123f");
+	_testLexThrows("2013/2/22a 07:53");
 
-	testLex(`2013/2/22 "foo"`, [
+	_testLex(`2013/2/22 "foo"`, [
 		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
 		Token(symbol!"Value",loc,Value("foo")),
 	]);
 
-	testLex("2013/2/22 07", [
+	_testLex("2013/2/22 07", [
 		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
 		Token(symbol!"Value",loc,Value(cast(int)7)),
 	]);
 
-	testLex("2013/2/22 1.2F", [
+	_testLex("2013/2/22 1.2F", [
 		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
 		Token(symbol!"Value",loc,Value(cast(float)1.2)),
 	]);
 
-	testLex("2013/2/22 .2F", [
+	_testLex("2013/2/22 .2F", [
 		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
 		Token(symbol!"Value",loc,Value(cast(float)0.2)),
 	]);
 
-	testLex("2013/2/22 -1.2F", [
+	_testLex("2013/2/22 -1.2F", [
 		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
 		Token(symbol!"Value",loc,Value(cast(float)-1.2)),
 	]);
 
-	testLex("2013/2/22 -.2F", [
+	_testLex("2013/2/22 -.2F", [
 		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
 		Token(symbol!"Value",loc,Value(cast(float)-0.2)),
 	]);
 
 	// DateTime, with known timezone
-	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53-GMT+02:10",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53-GMT-05:30",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53:34-GMT+00:00",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53:34-GMT+02:10",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53:34-GMT-05:30",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT+00:00", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT+02:10", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT-05:30", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53.123-GMT+00:00",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53.123-GMT+02:10",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53.123-GMT-05:30",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	_testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	_testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	_testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	_testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	_testLex( "2013/2/22 07:53-GMT+02:10",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	_testLex( "2013/2/22 07:53-GMT-05:30",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	_testLex( "2013/2/22 07:53:34-GMT+00:00",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	_testLex( "2013/2/22 07:53:34-GMT+02:10",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	_testLex( "2013/2/22 07:53:34-GMT-05:30",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	_testLex( "2013/2/22 07:53:34.123-GMT+00:00", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone( hours(0)            )))) ]);
+	_testLex( "2013/2/22 07:53:34.123-GMT+02:10", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	_testLex( "2013/2/22 07:53:34.123-GMT-05:30", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	_testLex( "2013/2/22 07:53.123-GMT+00:00",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone( hours(0)            )))) ]);
+	_testLex( "2013/2/22 07:53.123-GMT+02:10",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	_testLex( "2013/2/22 07:53.123-GMT-05:30",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
 
-	testLex( "2013/2/22 -34:65-GMT-05:30",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(34) - minutes(65) - seconds( 0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	_testLex( "2013/2/22 -34:65-GMT-05:30",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(34) - minutes(65) - seconds( 0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
 
 	// DateTime, with Java SDLang's occasionally weird interpretation of some
 	// "not quite ISO" variations of the "GMT with offset" timezone strings.
@@ -1883,79 +1880,79 @@ unittest
 		auto frac = 0.msecs;
 		return Token( symbol!"Value", loc, Value(DateTimeFracUnknownZone(dateTime,frac,tzName)) );
 	}
-	testLex("2013/2/22 07:53-GMT+",          [ testTokenUnknownTimeZone("GMT+")     ]);
-	testLex("2013/2/22 07:53-GMT+:",         [ testTokenUnknownTimeZone("GMT+:")    ]);
-	testLex("2013/2/22 07:53-GMT+:3",        [ testTokenUnknownTimeZone("GMT+:3")   ]);
-	testLex("2013/2/22 07:53-GMT+:03",       [ testTokenSimpleTimeZone(minutes(3))  ]);
-	testLex("2013/2/22 07:53-GMT+:003",      [ testTokenUnknownTimeZone("GMT+:003") ]);
+	_testLex("2013/2/22 07:53-GMT+",          [ testTokenUnknownTimeZone("GMT+")     ]);
+	_testLex("2013/2/22 07:53-GMT+:",         [ testTokenUnknownTimeZone("GMT+:")    ]);
+	_testLex("2013/2/22 07:53-GMT+:3",        [ testTokenUnknownTimeZone("GMT+:3")   ]);
+	_testLex("2013/2/22 07:53-GMT+:03",       [ testTokenSimpleTimeZone(minutes(3))  ]);
+	_testLex("2013/2/22 07:53-GMT+:003",      [ testTokenUnknownTimeZone("GMT+:003") ]);
 
-	testLex("2013/2/22 07:53-GMT+4",         [ testTokenSimpleTimeZone(hours(4))            ]);
-	testLex("2013/2/22 07:53-GMT+4:",        [ testTokenUnknownTimeZone("GMT+4:")           ]);
-	testLex("2013/2/22 07:53-GMT+4:3",       [ testTokenUnknownTimeZone("GMT+4:3")          ]);
-	testLex("2013/2/22 07:53-GMT+4:03",      [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ]);
-	testLex("2013/2/22 07:53-GMT+4:003",     [ testTokenUnknownTimeZone("GMT+4:003")        ]);
+	_testLex("2013/2/22 07:53-GMT+4",         [ testTokenSimpleTimeZone(hours(4))            ]);
+	_testLex("2013/2/22 07:53-GMT+4:",        [ testTokenUnknownTimeZone("GMT+4:")           ]);
+	_testLex("2013/2/22 07:53-GMT+4:3",       [ testTokenUnknownTimeZone("GMT+4:3")          ]);
+	_testLex("2013/2/22 07:53-GMT+4:03",      [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ]);
+	_testLex("2013/2/22 07:53-GMT+4:003",     [ testTokenUnknownTimeZone("GMT+4:003")        ]);
 
-	testLex("2013/2/22 07:53-GMT+04",        [ testTokenSimpleTimeZone(hours(4))            ]);
-	testLex("2013/2/22 07:53-GMT+04:",       [ testTokenUnknownTimeZone("GMT+04:")          ]);
-	testLex("2013/2/22 07:53-GMT+04:3",      [ testTokenUnknownTimeZone("GMT+04:3")         ]);
-	testLex("2013/2/22 07:53-GMT+04:03",     [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ]);
-	testLex("2013/2/22 07:53-GMT+04:03abc",  [ testTokenUnknownTimeZone("GMT+04:03abc")     ]);
-	testLex("2013/2/22 07:53-GMT+04:003",    [ testTokenUnknownTimeZone("GMT+04:003")       ]);
+	_testLex("2013/2/22 07:53-GMT+04",        [ testTokenSimpleTimeZone(hours(4))            ]);
+	_testLex("2013/2/22 07:53-GMT+04:",       [ testTokenUnknownTimeZone("GMT+04:")          ]);
+	_testLex("2013/2/22 07:53-GMT+04:3",      [ testTokenUnknownTimeZone("GMT+04:3")         ]);
+	_testLex("2013/2/22 07:53-GMT+04:03",     [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ]);
+	_testLex("2013/2/22 07:53-GMT+04:03abc",  [ testTokenUnknownTimeZone("GMT+04:03abc")     ]);
+	_testLex("2013/2/22 07:53-GMT+04:003",    [ testTokenUnknownTimeZone("GMT+04:003")       ]);
 
-	testLex("2013/2/22 07:53-GMT+004",       [ testTokenSimpleTimeZone(minutes(4))     ]);
-	testLex("2013/2/22 07:53-GMT+004:",      [ testTokenUnknownTimeZone("GMT+004:")    ]);
-	testLex("2013/2/22 07:53-GMT+004:3",     [ testTokenUnknownTimeZone("GMT+004:3")   ]);
-	testLex("2013/2/22 07:53-GMT+004:03",    [ testTokenUnknownTimeZone("GMT+004:03")  ]);
-	testLex("2013/2/22 07:53-GMT+004:003",   [ testTokenUnknownTimeZone("GMT+004:003") ]);
+	_testLex("2013/2/22 07:53-GMT+004",       [ testTokenSimpleTimeZone(minutes(4))     ]);
+	_testLex("2013/2/22 07:53-GMT+004:",      [ testTokenUnknownTimeZone("GMT+004:")    ]);
+	_testLex("2013/2/22 07:53-GMT+004:3",     [ testTokenUnknownTimeZone("GMT+004:3")   ]);
+	_testLex("2013/2/22 07:53-GMT+004:03",    [ testTokenUnknownTimeZone("GMT+004:03")  ]);
+	_testLex("2013/2/22 07:53-GMT+004:003",   [ testTokenUnknownTimeZone("GMT+004:003") ]);
 
-	testLex("2013/2/22 07:53-GMT+0004",      [ testTokenSimpleTimeZone(minutes(4))      ]);
-	testLex("2013/2/22 07:53-GMT+0004:",     [ testTokenUnknownTimeZone("GMT+0004:")    ]);
-	testLex("2013/2/22 07:53-GMT+0004:3",    [ testTokenUnknownTimeZone("GMT+0004:3")   ]);
-	testLex("2013/2/22 07:53-GMT+0004:03",   [ testTokenUnknownTimeZone("GMT+0004:03")  ]);
-	testLex("2013/2/22 07:53-GMT+0004:003",  [ testTokenUnknownTimeZone("GMT+0004:003") ]);
+	_testLex("2013/2/22 07:53-GMT+0004",      [ testTokenSimpleTimeZone(minutes(4))      ]);
+	_testLex("2013/2/22 07:53-GMT+0004:",     [ testTokenUnknownTimeZone("GMT+0004:")    ]);
+	_testLex("2013/2/22 07:53-GMT+0004:3",    [ testTokenUnknownTimeZone("GMT+0004:3")   ]);
+	_testLex("2013/2/22 07:53-GMT+0004:03",   [ testTokenUnknownTimeZone("GMT+0004:03")  ]);
+	_testLex("2013/2/22 07:53-GMT+0004:003",  [ testTokenUnknownTimeZone("GMT+0004:003") ]);
 
-	testLex("2013/2/22 07:53-GMT+00004",     [ testTokenSimpleTimeZone(minutes(4))       ]);
-	testLex("2013/2/22 07:53-GMT+00004:",    [ testTokenUnknownTimeZone("GMT+00004:")    ]);
-	testLex("2013/2/22 07:53-GMT+00004:3",   [ testTokenUnknownTimeZone("GMT+00004:3")   ]);
-	testLex("2013/2/22 07:53-GMT+00004:03",  [ testTokenUnknownTimeZone("GMT+00004:03")  ]);
-	testLex("2013/2/22 07:53-GMT+00004:003", [ testTokenUnknownTimeZone("GMT+00004:003") ]);
+	_testLex("2013/2/22 07:53-GMT+00004",     [ testTokenSimpleTimeZone(minutes(4))       ]);
+	_testLex("2013/2/22 07:53-GMT+00004:",    [ testTokenUnknownTimeZone("GMT+00004:")    ]);
+	_testLex("2013/2/22 07:53-GMT+00004:3",   [ testTokenUnknownTimeZone("GMT+00004:3")   ]);
+	_testLex("2013/2/22 07:53-GMT+00004:03",  [ testTokenUnknownTimeZone("GMT+00004:03")  ]);
+	_testLex("2013/2/22 07:53-GMT+00004:003", [ testTokenUnknownTimeZone("GMT+00004:003") ]);
 
 	// DateTime, with unknown timezone
-	testLex( "2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0),   0.msecs, "Bogus/Foo")), "2013/2/22 07:53-Bogus/Foo") ]);
-	testLex("-2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 7, 53,  0),   0.msecs, "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), 0.msecs, "Bogus/Foo"))) ]);
-	testLex("-2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), 0.msecs, "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 07:53:34-Bogus/Foo",     [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34),   0.msecs, "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 07:53:34.123-Bogus/Foo", [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 07:53.123-Bogus/Foo",    [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, "Bogus/Foo"))) ]);
+	_testLex( "2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0),   0.msecs, "Bogus/Foo")), "2013/2/22 07:53-Bogus/Foo") ]);
+	_testLex("-2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 7, 53,  0),   0.msecs, "Bogus/Foo"))) ]);
+	_testLex( "2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), 0.msecs, "Bogus/Foo"))) ]);
+	_testLex("-2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), 0.msecs, "Bogus/Foo"))) ]);
+	_testLex( "2013/2/22 07:53:34-Bogus/Foo",     [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34),   0.msecs, "Bogus/Foo"))) ]);
+	_testLex( "2013/2/22 07:53:34.123-Bogus/Foo", [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, "Bogus/Foo"))) ]);
+	_testLex( "2013/2/22 07:53.123-Bogus/Foo",    [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, "Bogus/Foo"))) ]);
 
 	// Time Span
-	testLex( "12:14:42",         [ Token(symbol!"Value",loc,Value( days( 0)+hours(12)+minutes(14)+seconds(42)+msecs(  0))) ]);
-	testLex("-12:14:42",         [ Token(symbol!"Value",loc,Value(-days( 0)-hours(12)-minutes(14)-seconds(42)-msecs(  0))) ]);
-	testLex( "00:09:12",         [ Token(symbol!"Value",loc,Value( days( 0)+hours( 0)+minutes( 9)+seconds(12)+msecs(  0))) ]);
-	testLex( "00:00:01.023",     [ Token(symbol!"Value",loc,Value( days( 0)+hours( 0)+minutes( 0)+seconds( 1)+msecs( 23))) ]);
-	testLex( "23d:05:21:23.532", [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(532))) ]);
-	testLex( "23d:05:21:23.53",  [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(530))) ]);
-	testLex( "23d:05:21:23.5",   [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(500))) ]);
-	testLex("-23d:05:21:23.532", [ Token(symbol!"Value",loc,Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(532))) ]);
-	testLex("-23d:05:21:23.5",   [ Token(symbol!"Value",loc,Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(500))) ]);
-	testLex( "23d:05:21:23",     [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(  0))) ]);
+	_testLex( "12:14:42",         [ Token(symbol!"Value",loc,Value( days( 0)+hours(12)+minutes(14)+seconds(42)+msecs(  0))) ]);
+	_testLex("-12:14:42",         [ Token(symbol!"Value",loc,Value(-days( 0)-hours(12)-minutes(14)-seconds(42)-msecs(  0))) ]);
+	_testLex( "00:09:12",         [ Token(symbol!"Value",loc,Value( days( 0)+hours( 0)+minutes( 9)+seconds(12)+msecs(  0))) ]);
+	_testLex( "00:00:01.023",     [ Token(symbol!"Value",loc,Value( days( 0)+hours( 0)+minutes( 0)+seconds( 1)+msecs( 23))) ]);
+	_testLex( "23d:05:21:23.532", [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(532))) ]);
+	_testLex( "23d:05:21:23.53",  [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(530))) ]);
+	_testLex( "23d:05:21:23.5",   [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(500))) ]);
+	_testLex("-23d:05:21:23.532", [ Token(symbol!"Value",loc,Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(532))) ]);
+	_testLex("-23d:05:21:23.5",   [ Token(symbol!"Value",loc,Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(500))) ]);
+	_testLex( "23d:05:21:23",     [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(  0))) ]);
 
-	testLexThrows("12:14:42a");
-	testLexThrows("23d:05:21:23.532a");
-	testLexThrows("23d:05:21:23.532f");
+	_testLexThrows("12:14:42a");
+	_testLexThrows("23d:05:21:23.532a");
+	_testLexThrows("23d:05:21:23.532f");
 
 	// Combination
-	testLex("foo. 7", [
+	_testLex("foo. 7", [
 		Token(symbol!"Ident",loc,Value(      null),"foo."),
 		Token(symbol!"Value",loc,Value(cast(int)7))
 	]);
-	
-	testLex(`
+
+	_testLex(`
 		namespace:person "foo" "bar" 1 23L name.first="ひとみ" name.last="Smith" {
 			namespace:age 37; namespace:favorite_color "blue" // comment
 			somedate 2013/2/22  07:53 -- comment
-			
+
 			inventory /* comment */ {
 				socks
 			}
@@ -2017,9 +2014,9 @@ unittest
 @("lexer: Regression test issue #8")
 unittest
 {
-	testLex(`"\n \n"`, [ Token(symbol!"Value",loc,Value("\n \n"),`"\n \n"`) ]);
-	testLex(`"\t\t"`, [ Token(symbol!"Value",loc,Value("\t\t"),`"\t\t"`) ]);
-	testLex(`"\n\n"`, [ Token(symbol!"Value",loc,Value("\n\n"),`"\n\n"`) ]);
+	_testLex(`"\n \n"`, [ Token(symbol!"Value",loc,Value("\n \n"),`"\n \n"`) ]);
+	_testLex(`"\t\t"`, [ Token(symbol!"Value",loc,Value("\t\t"),`"\t\t"`) ]);
+	_testLex(`"\n\n"`, [ Token(symbol!"Value",loc,Value("\n\n"),`"\n\n"`) ]);
 }
 
 @("lexer: Regression test issue #11")
@@ -2027,7 +2024,7 @@ unittest
 {
 	void test(string input)
 	{
-		testLex(
+		_testLex(
 			input,
 			[
 				Token(symbol!"EOL", loc, Value(null), "\n"),
@@ -2046,27 +2043,27 @@ unittest
 unittest
 {
 	enum offset = 1; // workaround for an of-by-one error for line numbers
-	testLex("test", [
+	_testLex("test", [
 		Token(symbol!"Ident", Location("filename", 0, 0, 0), Value(null), "test")
 	], true);
-	testLex("\ntest", [
+	_testLex("\ntest", [
 		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\n"),
 		Token(symbol!"Ident", Location("filename", 1, 0, 1), Value(null), "test")
 	], true);
-	testLex("\rtest", [
+	_testLex("\rtest", [
 		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r"),
 		Token(symbol!"Ident", Location("filename", 1, 0, 1), Value(null), "test")
 	], true);
-	testLex("\r\ntest", [
+	_testLex("\r\ntest", [
 		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r\n"),
 		Token(symbol!"Ident", Location("filename", 1, 0, 2), Value(null), "test")
 	], true);
-	testLex("\r\n\ntest", [
+	_testLex("\r\n\ntest", [
 		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r\n"),
 		Token(symbol!"EOL", Location("filename", 1, 0, 2), Value(null), "\n"),
 		Token(symbol!"Ident", Location("filename", 2, 0, 3), Value(null), "test")
 	], true);
-	testLex("\r\r\ntest", [
+	_testLex("\r\r\ntest", [
 		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r"),
 		Token(symbol!"EOL", Location("filename", 1, 0, 1), Value(null), "\r\n"),
 		Token(symbol!"Ident", Location("filename", 2, 0, 3), Value(null), "test")
