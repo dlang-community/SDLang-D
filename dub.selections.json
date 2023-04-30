@@ -1,7 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"taggedalgebraic": "0.10.2",
-		"unit-threaded": "0.6.28"
+		"taggedalgebraic": "0.11.22",
+		"unit-threaded": "2.1.6"
 	}
 }

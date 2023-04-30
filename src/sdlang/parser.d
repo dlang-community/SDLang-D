@@ -113,7 +113,7 @@ unittest
 	{
 	case ParserEvent.Kind.tagStart:
 		auto e = cast(TagStartEvent) event;
-		writeln("TagStartEvent: ", e.namespace, ":", e.name, " @ ", e.location);
+		writeln("TagStartEvent: ", e.namespace, ":", e.name, " @ ", e.range.toString);
 		break;
 
 	case ParserEvent.Kind.tagEnd:
@@ -209,9 +209,15 @@ unittest
 /// Event: Start of tag
 struct TagStartEvent
 {
-	Location location;
+	Location[2] range;
 	string namespace;
 	string name;
+
+	deprecated("Access `range[0]` instead")
+	inout(Location) location() inout pure nothrow @nogc @safe
+	{
+		return range[0];
+	}
 }
 
 /// Event: End of tag
@@ -223,17 +229,29 @@ struct TagEndEvent
 /// Event: Found a Value in the current tag
 struct ValueEvent
 {
-	Location location;
+	Location[2] range;
 	Value value;
+
+	deprecated("Access `range[0]` instead")
+	inout(Location) location() inout pure nothrow @nogc @safe
+	{
+		return range[0];
+	}
 }
 
 /// Event: Found an Attribute in the current tag
 struct AttributeEvent
 {
-	Location location;
+	Location[2] range;
 	string namespace;
 	string name;
 	Value value;
+
+	deprecated("Access `range[0]` instead")
+	inout(Location) location() inout pure nothrow @nogc @safe
+	{
+		return range[0];
+	}
 }
 
 // The actual pull parser
@@ -249,12 +267,12 @@ private struct PullParser
 	
 	private void error(string msg)
 	{
-		error(lexer.front.location, msg);
+		error(lexer.front.range, msg);
 	}
 
-	private void error(Location loc, string msg)
+	private void error(Location[2] range, string msg)
 	{
-		throw new ParseException(loc, "Error: "~msg);
+		throw new ParseException(range, "Error: "~msg);
 	}
 	
 	private void emit(Event)(Event event)
@@ -337,13 +355,13 @@ private struct PullParser
 			//trace(__FUNCTION__, ": <Tag> ::= <IDFull> <Values> <Attributes> <OptChild> <TagTerminator>  (Lookaheads: Ident)");
 			//trace("Found tag named: ", tag.fullName);
 			auto id = parseIDFull();
-			emit( TagStartEvent(token.location, id.namespace, id.name) );
+			emit( TagStartEvent(token.range, id.namespace, id.name) );
 		}
 		else if(token.matches!"Value"())
 		{
 			//trace(__FUNCTION__, ": <Tag> ::= <Value>  <Values> <Attributes> <OptChild> <TagTerminator>  (Lookaheads: Value)");
 			//trace("Found anonymous tag.");
-			emit( TagStartEvent(token.location, null, null) );
+			emit( TagStartEvent(token.range, null, null) );
 		}
 		else
 			error("Expected tag name or value, not " ~ token.symbol.name);
@@ -437,7 +455,7 @@ private struct PullParser
 			//trace(__FUNCTION__, ": (Handle Value terminals that aren't part of an attribute)");
 			auto value = token.value;
 			//trace("In tag '", parent.fullName, "', found value: ", value);
-			emit( ValueEvent(token.location, value) );
+			emit( ValueEvent(token.range, value) );
 			
 			lexer.popFront();
 		}
@@ -487,7 +505,7 @@ private struct PullParser
 			error("Expected attribute value, not "~token.symbol.name);
 		
 		//trace("In tag '", parent.fullName, "', found attribute '", attr.fullName, "'");
-		emit( AttributeEvent(token.location, id.namespace, id.name, token.value) );
+		emit( AttributeEvent(token.range, id.namespace, id.name, token.value) );
 		
 		lexer.popFront();
 	}
@@ -549,7 +567,7 @@ private struct DOMParser
 	Tag parseRoot()
 	{
 		auto currTag = new Tag(null, null, "root");
-		currTag.location = Location(lexer.filename, 0, 0, 0);
+		currTag.nameRange[0].file = currTag.nameRange[1].file = lexer.filename;
 		
 		auto parser = PullParser(lexer);
 		auto eventRange = new Generator!ParserEvent({ parser.parseRoot; });
@@ -559,7 +577,7 @@ private struct DOMParser
 		{
 		case ParserEvent.Kind.tagStart:
 			auto newTag = new Tag(currTag, event.namespace, event.name);
-			newTag.location = event.location;
+			newTag.nameRange = event.range;
 			
 			currTag = newTag;
 			break;
@@ -577,7 +595,7 @@ private struct DOMParser
 
 		case ParserEvent.Kind.attribute:
 			auto e = cast(AttributeEvent) event;
-			auto attr = new Attribute(e.namespace, e.name, e.value, e.location);
+			auto attr = new Attribute(e.namespace, e.name, e.value, e.range);
 			currTag.add(attr);
 			break;
 		}

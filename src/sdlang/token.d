@@ -470,15 +470,15 @@ void toSDLString(Sink)(ubyte[] value, ref Sink sink) if(isOutputRange!(Sink,char
 struct Token
 {
 	Symbol symbol = sdlang.symbol.symbol!"Error"; /// The "type" of this token
-	Location location;
+	Location[2] range;
 	Value value; /// Only valid when `symbol` is `symbol!"Value"`, otherwise null
 	string data; /// Original text from source
 
 	@disable this();
-	this(Symbol symbol, Location location, Value value=Value(null), string data=null)
+	this(Symbol symbol, Location[2] range, Value value=Value(null), string data=null)
 	{
 		this.symbol   = symbol;
-		this.location = location;
+		this.range    = range;
 		this.value    = value;
 		this.data     = data;
 	}
@@ -512,13 +512,28 @@ struct Token
 	{
 		return this.symbol == .symbol!symbolName;
 	}
+
+	deprecated("Access `range[0]` instead")
+	inout(Location) location() inout pure nothrow @nogc @safe
+	{
+		return range[0];
+	}
+
+	string toRawString()
+	{
+		import std.conv : to;
+
+		return text("Token(`", symbol, "`, [",
+			range[0].toRawString, " .. ", range[1].toRawString,
+			"], ", value, ", ", [data].to!string[1 .. $ - 1], ")");
+	}
 }
 
 @("sdlang token")
 unittest
 {
-	auto loc  = Location("", 0, 0, 0);
-	auto loc2 = Location("a", 1, 1, 1);
+	Location[2] loc  = (Location[2]).init;
+	Location[2] loc2 = [Location.init, Location("a", 1, 1, 1)];
 
 	assert(Token(symbol!"EOL",loc) == Token(symbol!"EOL",loc ));
 	assert(Token(symbol!"EOL",loc) == Token(symbol!"EOL",loc2));
@@ -526,8 +541,8 @@ unittest
 	assert(Token(symbol!"EOL",loc) != Token(symbol!":",  loc ));
 	assert(Token(symbol!"EOL",loc,Value(null),"\n") == Token(symbol!"EOL",loc,Value(null),"\n"));
 
-	assert(Token(symbol!"EOL",loc,Value(null),"\n") == Token(symbol!"EOL",loc,Value(null),";" ));
-	assert(Token(symbol!"EOL",loc,Value(null),"A" ) == Token(symbol!"EOL",loc,Value(null),"B" ));
+	assert(Token(symbol!"EOL",loc,Value(null),"\n") != Token(symbol!"EOL",loc,Value(null),";" ));
+	assert(Token(symbol!"EOL",loc,Value(null),"A" ) != Token(symbol!"EOL",loc,Value(null),"B" ));
 	assert(Token(symbol!":",  loc,Value(null),"A" ) == Token(symbol!":",  loc,Value(null),"BB"));
 	assert(Token(symbol!"EOL",loc,Value(null),"A" ) != Token(symbol!":",  loc,Value(null),"A" ));
 

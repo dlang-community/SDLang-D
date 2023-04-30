@@ -15,8 +15,8 @@ import sdlang.util;
 
 class Attribute
 {
-	Value    value;
-	Location location;
+	Value       value;
+	Location[2] range;
 	
 	private Tag _parent;
 	/// Get parent tag. To set a parent, attach this Attribute to its intended
@@ -121,19 +121,19 @@ class Attribute
 		return FullName(_namespace, _name);
 	}
 
-	this(string namespace, string name, Value value, Location location = Location(0, 0, 0))
+	this(string namespace, string name, Value value, Location[2] range = (Location[2]).init)
 	{
 		this._namespace = namespace;
 		this._name      = name;
-		this.location   = location;
+		this.range      = range;
 		this.value      = value;
 	}
 	
-	this(string name, Value value, Location location = Location(0, 0, 0))
+	this(string name, Value value, Location[2] range = (Location[2]).init)
 	{
 		this._namespace = "";
 		this._name      = name;
-		this.location   = location;
+		this.range      = range;
 		this.value      = value;
 	}
 	
@@ -141,7 +141,7 @@ class Attribute
 	/// The clone does $(B $(I not)) have a parent, even if the original does.
 	Attribute clone()
 	{
-		return new Attribute(_namespace, _name, value, location);
+		return new Attribute(_namespace, _name, value, range);
 	}
 	
 	/// Removes `this` from its parent, if any. Returns `this` for chaining.
@@ -215,6 +215,12 @@ class Attribute
 		sink.put('=');
 		value.toSDLString(sink);
 	}
+
+	deprecated("Access `range[0]` instead")
+	inout(Location) location() inout pure nothrow @nogc @safe scope
+	{
+		return range[0];
+	}
 }
 
 /// Deep-copy an array of Tag or Attribute.
@@ -234,7 +240,7 @@ class Tag
 {
 	/// File/Line/Column/Index information for where this tag was located in
 	/// its original SDLang file.
-	Location location;
+	Location[2] nameRange;
 	
 	/// Access all this tag's values, as an array of type `sdlang.token.Value`.
 	Value[]  values;
@@ -388,8 +394,17 @@ class Tag
 	Tag clone()
 	{
 		auto newTag = new Tag(_namespace, _name, values.dup, allAttributes.clone(), allTags.clone());
-		newTag.location = location;
+		newTag.nameRange = nameRange;
 		return newTag;
+	}
+
+	deprecated("Access `nameRange[0]` instead")
+	alias location = nameLocation;
+
+	deprecated("Access `nameRange[0]` instead")
+	inout(Location) nameLocation() inout pure nothrow @nogc @safe scope
+	{
+		return nameRange[0];
 	}
 	
 	private Attribute[] allAttributes; // In same order as specified in SDL file.
@@ -1351,7 +1366,7 @@ class Tag
 		assert( foo.getValue!string() is null );
 
 		// No floats found
-		assert( foo.getValue!float(99.9).approxEqual(99.9) );
+		assert( foo.getValue!float(99.9).isClose(99.9) );
 		assert( foo.getValue!float().isNaN() );
 	}
 
@@ -1596,7 +1611,7 @@ class Tag
 		assert( foo.getAttribute!string("X") is null );
 
 		// No floats found
-		assert( foo.getAttribute!float("X", 99.9).approxEqual(99.9) );
+		assert( foo.getAttribute!float("X", 99.9).isClose(99.9) );
 		assert( foo.getAttribute!float("X").isNaN() );
 
 		
@@ -2901,7 +2916,7 @@ unittest
 	assert(rootClone.parent is null);
 	assert(rootClone.name      == root.name);
 	assert(rootClone.namespace == root.namespace);
-	assert(rootClone.location  == root.location);
+	assert(rootClone.nameRange == root.nameRange);
 	assert(rootClone.values    == root.values);
 	assert(rootClone.toSDLDocument() == root.toSDLDocument());
 
@@ -2910,7 +2925,7 @@ unittest
 	assert(peopleClone.parent is null);
 	assert(peopleClone.name      == people.name);
 	assert(peopleClone.namespace == people.namespace);
-	assert(peopleClone.location  == people.location);
+	assert(peopleClone.nameRange == people.nameRange);
 	assert(peopleClone.values    == people.values);
 	assert(peopleClone.toSDLString() == people.toSDLString());
 }
