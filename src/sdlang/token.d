@@ -1,4 +1,4 @@
-﻿// SDLang-D
+// SDLang-D
 // Written in the D programming language.
 
 module sdlang.token;
@@ -501,7 +501,8 @@ struct Token
 		)
 			return false;
 		
-		if(this.symbol == .symbol!"Ident")
+		if(this.symbol == .symbol!"Ident"
+			|| this.symbol == .symbol!"EOL")
 			return this.data == b.data;
 		
 		return true;
