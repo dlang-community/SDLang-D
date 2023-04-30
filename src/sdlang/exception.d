@@ -24,19 +24,29 @@ abstract class SDLangException : Exception
 /// Thrown when a syntax error is encounterd while parsing.
 class ParseException : SDLangException
 {
-	Location location;
-	bool hasLocation;
+	Location[2] range;
 
 	this(string msg, string file = __FILE__, size_t line = __LINE__)
 	{
-		hasLocation = false;
 		super(msg, file, line);
 	}
 
+	deprecated("Use the overload with a Location[2] range instead")
 	this(Location location, string msg, string file = __FILE__, size_t line = __LINE__)
 	{
-		hasLocation = true;
 		super("%s: %s".format(location.toString(), msg), file, line);
+		range[] = location;
+	}
+
+	this(Location[2] range, string msg, string file = __FILE__, size_t line = __LINE__)
+	{
+		super("%s: %s".format(range.toString(), msg), file, line);
+		this.range = range;
+	}
+
+	bool hasLocation() const pure nothrow @safe @nogc scope
+	{
+		return range[0] !is Location.init || range[1] !is Location.init;
 	}
 }
 
@@ -107,7 +117,7 @@ abstract class DOMException : SDLangException
 	{
 		if(base)
 		{
-			sink.put(base.location.toString());
+			sink.put(base.nameRange.toString());
 			sink.put(": ");
 			sink.put(msg);
 		}

@@ -108,7 +108,7 @@ version(sdlangCliApp)
 			
 			// Display
 			writeln(
-				tok.location.toString, ":\t",
+				tok.range.toString, ":\t",
 				tok.symbol.name, value,
 				data
 			);

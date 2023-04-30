@@ -63,11 +63,12 @@ private template accept(string symbolName, string value, string startLocation, s
 		{
 			_front = makeToken!"~symbolName.stringof~";
 			_front.value = "~value~";
-			_front.location = "~(startLocation==""? "tokenStart" : startLocation)~";
+			_front.range[0] = "~(startLocation==""? "tokenStart" : startLocation)~";
+			"~(endLocation==""? "" : "_front.range[1] = " ~ endLocation ~ ";")~"
 			_front.data = source[
-				"~(startLocation==""? "tokenStart.index" : startLocation)~"
+				"~(startLocation==""? "tokenStart.index" : (startLocation ~ ".index"))~"
 				..
-				"~(endLocation==""? "location.index" : endLocation)~"
+				"~(endLocation==""? "location.index" : (endLocation ~ ".index"))~"
 			];
 			return;
 		}
@@ -125,8 +126,10 @@ class Lexer
 	{
 		this.filename = filename;
 		this.source = source;
+
+		location = Location(filename, 0, 0, 0);
 		
-		_front = Token(symbol!"Error", Location());
+		_front = Token(symbol!"Error", [location, location]);
 		lookaheadTokenInfo = LookaheadTokenInfo.init;
 
 		if( source.startsWith( ByteOrderMarks[BOM.UTF8] ) )
@@ -134,10 +137,10 @@ class Lexer
 			source = source[ ByteOrderMarks[BOM.UTF8].length .. $ ];
 			this.source = source;
 		}
-		
+
 		foreach(bom; ByteOrderMarks)
 		if( source.startsWith(bom) )
-			error(Location(filename,0,0,0), "SDL spec only supports UTF-8, not UTF-16 or UTF-32");
+			error([location, location], "SDL spec only supports UTF-8, not UTF-16 or UTF-32");
 		
 		if(source == "")
 			mixin(accept!"EOF");
@@ -166,20 +169,15 @@ class Lexer
 		return location.index == source.length && !lookaheadTokenInfo.exists;
 	}
 
-	private void error(string msg)
-	{
-		error(location, msg);
-	}
-
 	//TODO: Take varargs and use output range sink.
-	private void error(Location loc, string msg)
+	private void error(Location[2] range, string msg)
 	{
-		throw new ParseException(loc, "Error: "~msg);
+		throw new ParseException(range, "Error: "~msg);
 	}
 
 	private Token makeToken(string symbolName)()
 	{
-		auto tok = Token(symbol!symbolName, tokenStart);
+		auto tok = Token(symbol!symbolName, [tokenStart, location]);
 		tok.data = tokenData;
 		return tok;
 	}
@@ -190,7 +188,7 @@ class Lexer
 	}
 	
 	/// Check the lookahead character
-	private bool lookahead(dchar ch)
+	private bool lookahead(dchar ch) const pure nothrow @nogc @safe scope
 	{
 		return hasNextCh && nextCh == ch;
 	}
@@ -210,7 +208,7 @@ class Lexer
 	///
 	/// Note that there are only single character sequences and the two
 	/// character sequence `\r\n` as used on Windows.
-	private size_t isAtNewline()
+	private size_t isAtNewline() const pure nothrow @nogc @safe scope
 	{
 		if(ch == '\n' || ch == lineSep || ch == paraSep) return 1;
 		else if(ch == '\r') return lookahead('\n') ? 2 : 1;
@@ -316,27 +314,32 @@ class Lexer
 
 	enum ErrorOnEOF { No, Yes }
 
-	/// Advance one code point.
-	private void advanceChar(ErrorOnEOF errorOnEOF)
+	private Location nextCharLocation() const pure nothrow @nogc @safe scope
 	{
+		Location next = location;
 		if(auto cnt = isAtNewline())
 		{
 			if (cnt == 1)
-				location.line++;
-			location.col = 0;
+				next.line++;
+			next.col = 0;
 		}
 		else
-			location.col++;
+			next.col++;
+		next.index = nextPos;
+		return next;
+	}
 
-		location.index = nextPos;
-
+	/// Advance one code point.
+	private void advanceChar(ErrorOnEOF errorOnEOF)
+	{
+		location = nextCharLocation();
 		nextPos = posAfterLookahead;
 		ch      = nextCh;
 
 		if(!hasNextCh)
 		{
 			if(errorOnEOF == ErrorOnEOF.Yes)
-				error("Unexpected end of file");
+				error([location, location], "Unexpected end of file");
 
 			return;
 		}
@@ -443,11 +446,11 @@ class Lexer
 		else
 		{
 			if(ch == ',')
-				error("Unexpected comma: SDLang is not a comma-separated format.");
+				error([location, nextCharLocation], "Unexpected comma: SDLang is not a comma-separated format.");
 			else if(std.ascii.isPrintable(ch))
-				error(text("Unexpected: ", ch));
+				error([location, nextCharLocation], text("Unexpected: '", ch, "'"));
 			else
-				error("Unexpected character code 0x%02X".format(ch));
+				error([location, nextCharLocation], "Unexpected character code 0x%02X".format(ch));
 
 			advanceChar(ErrorOnEOF.No);
 		}
@@ -584,7 +587,7 @@ class Lexer
 			}
 
 			else if(isNewline(ch))
-				error("Unescaped newlines are only allowed in raw strings, not regular strings.");
+				error([location, nextCharLocation], "Unescaped newlines are only allowed in raw strings, not regular strings.");
 
 			advanceChar(ErrorOnEOF.Yes);
 		}
@@ -624,11 +627,11 @@ class Lexer
 			case 't':  value = '\t'; break;
 			case '\'': value = '\''; break;
 			case '\\': value = '\\'; break;
-			default: error("Invalid escape sequence.");
+			default: error([tokenStart, nextCharLocation], "Invalid escape sequence.");
 			}
 		}
 		else if(isNewline(ch))
-			error("Newline not alowed in character literal.");
+			error([tokenStart, nextCharLocation], "Newline not alowed in character literal.");
 		else
 			value = ch;
 		advanceChar(ErrorOnEOF.Yes); // Skip the character itself
@@ -636,7 +639,7 @@ class Lexer
 		if(ch == '\'')
 			advanceChar(ErrorOnEOF.No); // Skip closing single-quote
 		else
-			error("Expected closing single-quote.");
+			error([tokenStart, nextCharLocation], "Expected closing single-quote.");
 
 		mixin(accept!("Value", "value"));
 	}
@@ -674,7 +677,9 @@ class Lexer
 				if(lexer.ch == ']')
 				{
 					if(numInputCharsMod4 != 0)
-						lexer.error("Length of Base64 encoding must be a multiple of 4. ("~to!string(numInputCharsMod4)~")");
+						lexer.error([lexer.tokenStart, lexer.nextCharLocation],
+							"Length of Base64 encoding must be a multiple of 4. ("
+							~to!string(numInputCharsMod4)~")");
 					
 					return true;
 				}
@@ -707,12 +712,14 @@ class Lexer
 				eatBase64Whitespace();
 				
 				if(lex.isEOF)
-					lex.error("Unexpected end of file.");
+					lex.error([lex.tokenStart, lex.location],
+						"Unexpected end of file.");
 
 				if(lex.ch != ']')
 				{
 					if(!lex.isBase64(lex.ch))
-						lex.error("Invalid character in base64 binary literal.");
+						lex.error([lex.tokenStart, lex.nextCharLocation],
+							"Invalid character in base64 binary literal.");
 					
 					numInputCharsMod4++;
 					numInputCharsMod4 %= 4;
@@ -741,7 +748,8 @@ class Lexer
 			Base64.decode(tmpBuf, OutputBuf());
 
 		catch(Base64Exception e)
-			error("Invalid character in base64 binary literal.");
+			error([tokenStart, location],
+				"Invalid character in base64 binary literal.");
 		
 		advanceChar(ErrorOnEOF.No); // Skip ']'
 		mixin(accept!("Value", "outputBuf.data"));
@@ -763,7 +771,7 @@ class Lexer
 	private string lexNumericFragment()
 	{
 		if(!isDigit(ch))
-			error("Expected a digit 0-9.");
+			error([location, nextCharLocation], "Expected a digit 0-9.");
 		
 		auto spanStart = location.index;
 		
@@ -812,7 +820,9 @@ class Lexer
 			// BigInt(long.min) is a workaround for DMD issue #9548
 			auto num = toBigInt(isNegative, firstFragment);
 			if(num < BigInt(long.min) || num > long.max)
-				error(tokenStart, "Value doesn't fit in 64-bit signed long integer: "~to!string(num));
+				error([tokenStart, location],
+					"Value doesn't fit in 64-bit signed long integer: "
+					~to!string(num));
 
 			mixin(accept!("Value", "num.toLong()"));
 		}
@@ -863,14 +873,16 @@ class Lexer
 		{
 			auto num = toBigInt(isNegative, firstFragment);
 			if(num < int.min || num > int.max)
-				error(tokenStart, "Value doesn't fit in 32-bit signed integer: "~to!string(num));
+				error([tokenStart, location],
+					"Value doesn't fit in 32-bit signed integer: "
+					~to!string(num));
 
 			mixin(accept!("Value", "num.toInt()"));
 		}
 
 		// Invalid suffix
 		else
-			error("Invalid integer suffix.");
+			error([location, nextCharLocation], "Invalid integer suffix.");
 	}
 	
 	/// Lex any floating-point literal (after the initial numeric fragment was lexed)
@@ -912,7 +924,7 @@ class Lexer
 						mixin(accept!("Value", "value"));
 				}
 
-				error("Invalid floating point suffix.");
+				error([location, nextCharLocation], "Invalid floating point suffix.");
 			}
 
 			// Double float (64-bit signed) without suffix?
@@ -924,10 +936,10 @@ class Lexer
 
 			// Invalid suffix
 			else
-				error("Invalid floating point suffix.");
+				error([location, nextCharLocation], "Invalid floating point suffix.");
 		}
 		catch(ConvException e)
-			error("Invalid floating point literal.");
+			error([tokenStart, location], "Invalid floating point literal.");
 	}
 
 	private Date makeDate(bool isNegative, string yearStr, string monthStr, string dayStr)
@@ -938,17 +950,18 @@ class Lexer
 		if(isNegative)
 			biTmp = -biTmp;
 		if(biTmp < int.min || biTmp > int.max)
-			error(tokenStart, "Date's year is out of range. (Must fit within a 32-bit signed int.)");
+			error([tokenStart, location],
+				"Date's year is out of range. (Must fit within a 32-bit signed int.)");
 		auto year = biTmp.toInt();
 
 		biTmp = BigInt(monthStr);
 		if(biTmp < 1 || biTmp > 12)
-			error(tokenStart, "Date's month is out of range.");
+			error([tokenStart, location], "Date's month is out of range.");
 		auto month = biTmp.toInt();
 		
 		biTmp = BigInt(dayStr);
 		if(biTmp < 1 || biTmp > 31)
-			error(tokenStart, "Date's month is out of range.");
+			error([tokenStart, location], "Date's month is out of range.");
 		auto day = biTmp.toInt();
 		
 		return Date(year, month, day);
@@ -963,12 +976,12 @@ class Lexer
 
 		biTmp = BigInt(hourStr);
 		if(biTmp < int.min || biTmp > int.max)
-			error(tokenStart, "Datetime's hour is out of range.");
+			error([tokenStart, location], "Datetime's hour is out of range.");
 		auto numHours = biTmp.toInt();
 		
 		biTmp = BigInt(minuteStr);
 		if(biTmp < 0 || biTmp > int.max)
-			error(tokenStart, "Datetime's minute is out of range.");
+			error([tokenStart, location], "Datetime's minute is out of range.");
 		auto numMinutes = biTmp.toInt();
 		
 		int numSeconds = 0;
@@ -976,7 +989,7 @@ class Lexer
 		{
 			biTmp = BigInt(secondStr);
 			if(biTmp < 0 || biTmp > int.max)
-				error(tokenStart, "Datetime's second is out of range.");
+				error([tokenStart, location], "Datetime's second is out of range.");
 			numSeconds = biTmp.toInt();
 		}
 		
@@ -985,7 +998,7 @@ class Lexer
 		{
 			biTmp = BigInt(millisecondStr);
 			if(biTmp < 0 || biTmp > int.max)
-				error(tokenStart, "Datetime's millisecond is out of range.");
+				error([tokenStart, location], "Datetime's millisecond is out of range.");
 			millisecond = biTmp.toInt();
 
 			if(millisecondStr.length == 1)
@@ -1020,23 +1033,23 @@ class Lexer
 		{
 			biTmp = BigInt(dayStr);
 			if(biTmp < long.min || biTmp > long.max)
-				error(tokenStart, "Time span's day is out of range.");
+				error([tokenStart, location], "Time span's day is out of range.");
 			day = biTmp.toLong();
 		}
 
 		biTmp = BigInt(hourStr);
 		if(biTmp < long.min || biTmp > long.max)
-			error(tokenStart, "Time span's hour is out of range.");
+			error([tokenStart, location], "Time span's hour is out of range.");
 		auto hour = biTmp.toLong();
 
 		biTmp = BigInt(minuteStr);
 		if(biTmp < long.min || biTmp > long.max)
-			error(tokenStart, "Time span's minute is out of range.");
+			error([tokenStart, location], "Time span's minute is out of range.");
 		auto minute = biTmp.toLong();
 
 		biTmp = BigInt(secondStr);
 		if(biTmp < long.min || biTmp > long.max)
-			error(tokenStart, "Time span's second is out of range.");
+			error([tokenStart, location], "Time span's second is out of range.");
 		auto second = biTmp.toLong();
 
 		long millisecond = 0;
@@ -1044,7 +1057,7 @@ class Lexer
 		{
 			biTmp = BigInt(millisecondStr);
 			if(biTmp < long.min || biTmp > long.max)
-				error(tokenStart, "Time span's millisecond is out of range.");
+				error([tokenStart, location], "Time span's millisecond is out of range.");
 			millisecond = biTmp.toLong();
 
 			if(millisecondStr.length == 1)
@@ -1161,14 +1174,14 @@ class Lexer
 
 		// Lex days
 		if(ch != '/')
-			error("Invalid date format: Missing days.");
+			error([location, nextCharLocation], "Invalid date format: Missing days.");
 		advanceChar(ErrorOnEOF.Yes); // Skip '/'
 		auto dayStr = lexNumericFragment();
 		
 		auto date = makeDate(isDateNegative, yearStr, monthStr, dayStr);
 
 		if(!isEndOfNumber() && ch != '/')
-			error("Dates cannot have suffixes.");
+			error([location, nextCharLocation], "Dates cannot have suffixes.");
 		
 		// Date?
 		if(isEOF)
@@ -1194,7 +1207,7 @@ class Lexer
 
 		// Date?
 		if(isEOF || (!isDigit(ch) && ch != '-'))
-			mixin(accept!("Value", "date", "", "endOfDate.index"));
+			mixin(accept!("Value", "date", "", "endOfDate"));
 		
 		auto startOfTime = location;
 
@@ -1215,7 +1228,7 @@ class Lexer
 			lookaheadTokenInfo.numericFragment = hourStr;
 			lookaheadTokenInfo.isNegative      = isTimeNegative;
 			lookaheadTokenInfo.tokenStart      = startOfTime;
-			mixin(accept!("Value", "date", "", "endOfDate.index"));
+			mixin(accept!("Value", "date", "", "endOfDate"));
 		}
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		auto minuteStr = lexNumericFragment();
@@ -1245,7 +1258,7 @@ class Lexer
 			auto timezoneStart = location;
 			
 			if(!isAlpha(ch))
-				error("Invalid timezone format.");
+				error([location, nextCharLocation], "Invalid timezone format.");
 			
 			while(!isEOF && !isWhite(ch))
 				advanceChar(ErrorOnEOF.No);
@@ -1290,7 +1303,7 @@ class Lexer
 		}
 
 		if(!isEndOfNumber())
-			error("Date-Times cannot have suffixes.");
+			error([location, nextCharLocation], "Date-Times cannot have suffixes.");
 
 		mixin(accept!("Value", "dateTimeFrac"));
 	}
@@ -1312,7 +1325,7 @@ class Lexer
 
 			// Lex hours
 			if(ch != ':')
-				error("Invalid time span format: Missing hours.");
+				error([location, nextCharLocation], "Invalid time span format: Missing hours.");
 			advanceChar(ErrorOnEOF.Yes); // Skip ':'
 			hourStr = lexNumericFragment();
 		}
@@ -1321,13 +1334,13 @@ class Lexer
 
 		// Lex minutes
 		if(ch != ':')
-			error("Invalid time span format: Missing minutes.");
+			error([location, nextCharLocation], "Invalid time span format: Missing minutes.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		auto minuteStr = lexNumericFragment();
 
 		// Lex seconds
 		if(ch != ':')
-			error("Invalid time span format: Missing seconds.");
+			error([location, nextCharLocation], "Invalid time span format: Missing seconds.");
 		advanceChar(ErrorOnEOF.Yes); // Skip ':'
 		auto secondStr = lexNumericFragment();
 		
@@ -1340,7 +1353,7 @@ class Lexer
 		}
 
 		if(!isEndOfNumber())
-			error("Time spans cannot have suffixes.");
+			error([location, nextCharLocation], "Time spans cannot have suffixes.");
 		
 		auto duration = makeDuration(isNegative, dayStr, hourStr, minuteStr, secondStr, millisecondStr);
 		mixin(accept!("Value", "duration"));
@@ -1361,7 +1374,7 @@ class Lexer
 		if(isEOF)
 			return;
 		
-		Location commentStart;
+		Location commentStart = location;
 		State state = State.normal;
 		bool consumeNewlines = false;
 		bool hasConsumedNewline = false;
@@ -1426,7 +1439,8 @@ class Lexer
 						if(hasConsumedNewline)
 							return; // Done
 						else
-							error("Only whitespace can come between a line-continuation backslash and the following newline.");
+							error([commentStart, location],
+								"Only whitespace can come between a line-continuation backslash and the following newline.");
 					}
 					else
 						return; // Done
@@ -1454,10 +1468,10 @@ class Lexer
 				// Reached EOF
 
 				if(consumeNewlines && !hasConsumedNewline)
-					error("Missing newline after line-continuation backslash.");
+					error([commentStart, location], "Missing newline after line-continuation backslash.");
 
 				else if(state == State.blockComment)
-					error(commentStart, "Unterminated block comment.");
+					error([commentStart, location], "Unterminated block comment.");
 
 				else
 					return; // Done, reached EOF
@@ -1469,23 +1483,38 @@ class Lexer
 version(unittest)
 {
 	import std.stdio;
+	import std.exception;
 
 	version(Have_unit_threaded) import unit_threaded;
-	else                        { enum DontTest; }
 
-	private auto loc  = Location("filename", 0, 0, 0);
-	private auto loc2 = Location("a", 1, 1, 1);
+	private Location[2] range(int endColumn=0, int endLine=0, int asciiCharCount=0)
+	{
+		if (asciiCharCount == 0)
+			asciiCharCount = endColumn;
+		return [Location("filename", 0, 0, 0), Location("filename", endLine, endColumn, asciiCharCount)];
+	}
+
+	private Location[2] atStart(Location[2] range, int startColumn=0, int startLine=0, int asciiCharCount=0)
+	{
+		if (asciiCharCount == 0)
+			asciiCharCount = startColumn;
+		range[0] = Location("filename", startLine, startColumn, asciiCharCount);
+		return range;
+	}
 
 	@("lexer: EOL")
 	unittest
 	{
+		auto loc = range(1);
 		assert([Token(symbol!"EOL",loc)             ] == [Token(symbol!"EOL",loc)              ] );
-		assert([Token(symbol!"EOL",loc,Value(7),"A")] == [Token(symbol!"EOL",loc2,Value(7),"B")] );
+		auto dummyLoc = range(2);
+		dummyLoc[0].file = dummyLoc[1].file = "a";
+		assert([Token(symbol!"EOL",loc,Value(7),"A")] == [Token(symbol!"EOL",dummyLoc,Value(7),"A")] );
+		assert([Token(symbol!"EOL",loc,Value(7),"A")] != [Token(symbol!"EOL",dummyLoc,Value(7),"B")] );
 	}
 
 	private int numErrors = 0;
-	@DontTest
-	private void testLex(string source, Token[] expected, bool test_locations = false, string file=__FILE__, size_t line=__LINE__)
+	private void testLex(string source, Token[] expected, bool test_locations = true, string file=__FILE__, size_t line=__LINE__)
 	{
 		Token[] actual;
 		try
@@ -1495,15 +1524,15 @@ version(unittest)
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
 			stderr.writeln("    Expected:");
-			stderr.writeln("        ", expected);
+			stderr.writeln("        ", expected.map!(a => a.toRawString).join(", "));
 			stderr.writeln("    Actual: ParseException thrown:");
 			stderr.writeln("        ", e.msg);
-			return;
+			enforce(false, "testLex failed", file, line);
 		}
 
 		bool is_same = actual == expected;
 		if (is_same && test_locations) {
-			is_same = actual.map!(t => t.location).equal(expected.map!(t => t.location));
+			is_same = actual.map!(t => t.range).equal(expected.map!(t => t.range));
 		}
 		
 		if(!is_same)
@@ -1511,9 +1540,9 @@ version(unittest)
 			numErrors++;
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
 			stderr.writeln("    Expected:");
-			stderr.writeln("        ", expected);
+			stderr.writeln("        ", expected.map!(a => a.toRawString).join(", "));
 			stderr.writeln("    Actual:");
-			stderr.writeln("        ", actual);
+			stderr.writeln("        ", actual.map!(a => a.toRawString).join(", "));
 
 			if(expected.length > 1 || actual.length > 1)
 			{
@@ -1526,11 +1555,12 @@ version(unittest)
 				{
 					stderr.writeln("    Unequal at index #", i, ":");
 					stderr.writeln("        Expected:");
-					stderr.writeln("            ", expected[i]);
+					stderr.writeln("            ", expected[i].toRawString);
 					stderr.writeln("        Actual:");
-					stderr.writeln("            ", actual[i]);
+					stderr.writeln("            ", actual[i].toRawString);
 				}
 			}
+			enforce(false, "testLex failed", file, line);
 		}
 	}
 
@@ -1549,7 +1579,8 @@ version(unittest)
 			stderr.writeln(file, "(", line, "): testLex failed on: ", source);
 			stderr.writeln("    Expected ParseException");
 			stderr.writeln("    Actual:");
-			stderr.writeln("        ", actual);
+			stderr.writeln("        ", actual.map!(a => a.toRawString).join(", "));
+			enforce(false, "testLexThrows didn't throw", file, line);
 		}
 	}
 }
@@ -1565,32 +1596,32 @@ unittest
 	testLex("/* * */", []);
 	testLexThrows("/* ");
 
-	testLex(":",  [ Token(symbol!":",  loc) ]);
-	testLex("=",  [ Token(symbol!"=",  loc) ]);
-	testLex("{",  [ Token(symbol!"{",  loc) ]);
-	testLex("}",  [ Token(symbol!"}",  loc) ]);
-	testLex(";",  [ Token(symbol!"EOL",loc) ]);
-	testLex("\n", [ Token(symbol!"EOL",loc) ]);
+	testLex(":",  [ Token(symbol!":",  range(1)) ]);
+	testLex("=",  [ Token(symbol!"=",  range(1)) ]);
+	testLex("{",  [ Token(symbol!"{",  range(1)) ]);
+	testLex("}",  [ Token(symbol!"}",  range(1)) ]);
+	testLex(";",  [ Token(symbol!"EOL",range(1),Value(null),";") ]);
+	testLex("\n", [ Token(symbol!"EOL",range(0, 1, 1),Value(null),"\n") ]);
 
-	testLex("foo",     [ Token(symbol!"Ident",loc,Value(null),"foo")     ]);
-	testLex("_foo",    [ Token(symbol!"Ident",loc,Value(null),"_foo")    ]);
-	testLex("foo.bar", [ Token(symbol!"Ident",loc,Value(null),"foo.bar") ]);
-	testLex("foo-bar", [ Token(symbol!"Ident",loc,Value(null),"foo-bar") ]);
-	testLex("foo.",    [ Token(symbol!"Ident",loc,Value(null),"foo.")    ]);
-	testLex("foo-",    [ Token(symbol!"Ident",loc,Value(null),"foo-")    ]);
+	testLex("foo",     [ Token(symbol!"Ident",range(3),Value(null),"foo")     ]);
+	testLex("_foo",    [ Token(symbol!"Ident",range(4),Value(null),"_foo")    ]);
+	testLex("foo.bar", [ Token(symbol!"Ident",range(7),Value(null),"foo.bar") ]);
+	testLex("foo-bar", [ Token(symbol!"Ident",range(7),Value(null),"foo-bar") ]);
+	testLex("foo.",    [ Token(symbol!"Ident",range(4),Value(null),"foo.")    ]);
+	testLex("foo-",    [ Token(symbol!"Ident",range(4),Value(null),"foo-")    ]);
 	testLexThrows(".foo");
 
 	testLex("foo bar", [
-		Token(symbol!"Ident",loc,Value(null),"foo"),
-		Token(symbol!"Ident",loc,Value(null),"bar"),
+		Token(symbol!"Ident",range(3),Value(null),"foo"),
+		Token(symbol!"Ident",range(7).atStart(4),Value(null),"bar"),
 	]);
 	testLex("foo \\  \n  \n  bar", [
-		Token(symbol!"Ident",loc,Value(null),"foo"),
-		Token(symbol!"Ident",loc,Value(null),"bar"),
+		Token(symbol!"Ident",range(3),Value(null),"foo"),
+		Token(symbol!"Ident",range(5, 2, 16).atStart(2, 2, 13),Value(null),"bar"),
 	]);
 	testLex("foo \\  \n \\ \n  bar", [
-		Token(symbol!"Ident",loc,Value(null),"foo"),
-		Token(symbol!"Ident",loc,Value(null),"bar"),
+		Token(symbol!"Ident",range(3),Value(null),"foo"),
+		Token(symbol!"Ident",range(5, 2, 17).atStart(2, 2, 14),Value(null),"bar"),
 	]);
 	testLexThrows("foo \\ ");
 	testLexThrows("foo \\ bar");
@@ -1598,15 +1629,15 @@ unittest
 	testLexThrows("foo \\  \n  \\ bar");
 
 	testLex("foo : = { } ; \n bar \n", [
-		Token(symbol!"Ident",loc,Value(null),"foo"),
-		Token(symbol!":",loc),
-		Token(symbol!"=",loc),
-		Token(symbol!"{",loc),
-		Token(symbol!"}",loc),
-		Token(symbol!"EOL",loc),
-		Token(symbol!"EOL",loc),
-		Token(symbol!"Ident",loc,Value(null),"bar"),
-		Token(symbol!"EOL",loc),
+		Token(symbol!"Ident",range(3),Value(null),"foo"),
+		Token(symbol!":",range(5).atStart(4)),
+		Token(symbol!"=",range(7).atStart(6)),
+		Token(symbol!"{",range(9).atStart(8)),
+		Token(symbol!"}",range(11).atStart(10)),
+		Token(symbol!"EOL",range(13).atStart(12),Value(null),";"),
+		Token(symbol!"EOL",range(0, 1, 15).atStart(14),Value(null),"\n"),
+		Token(symbol!"Ident",range(4, 1, 19).atStart(1, 1, 16),Value(null),"bar"),
+		Token(symbol!"EOL",range(0, 2, 21).atStart(5, 1, 20),Value(null),"\n"),
 	]);
 
 	testLexThrows("<");
@@ -1614,143 +1645,143 @@ unittest
 	testLexThrows(`\`);
 	
 	// Integers
-	testLex(  "7", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
-	testLex( "-7", [ Token(symbol!"Value",loc,Value(cast( int)-7)) ]);
-	testLex( "7L", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
-	testLex( "7l", [ Token(symbol!"Value",loc,Value(cast(long) 7)) ]);
-	testLex("-7L", [ Token(symbol!"Value",loc,Value(cast(long)-7)) ]);
-	testLex(  "0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
-	testLex( "-0", [ Token(symbol!"Value",loc,Value(cast( int) 0)) ]);
+	testLex(  "7", [ Token(symbol!"Value",range(1),Value(cast( int) 7)) ]);
+	testLex( "-7", [ Token(symbol!"Value",range(2),Value(cast( int)-7)) ]);
+	testLex( "7L", [ Token(symbol!"Value",range(2),Value(cast(long) 7)) ]);
+	testLex( "7l", [ Token(symbol!"Value",range(2),Value(cast(long) 7)) ]);
+	testLex("-7L", [ Token(symbol!"Value",range(3),Value(cast(long)-7)) ]);
+	testLex(  "0", [ Token(symbol!"Value",range(1),Value(cast( int) 0)) ]);
+	testLex( "-0", [ Token(symbol!"Value",range(2),Value(cast( int) 0)) ]);
 
-	testLex("7/**/", [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
-	testLex("7#",    [ Token(symbol!"Value",loc,Value(cast( int) 7)) ]);
+	testLex("7/**/", [ Token(symbol!"Value",range(1),Value(cast( int) 7)) ]);
+	testLex("7#",    [ Token(symbol!"Value",range(1),Value(cast( int) 7)) ]);
 
 	testLex("7 A", [
-		Token(symbol!"Value",loc,Value(cast(int)7)),
-		Token(symbol!"Ident",loc,Value(      null),"A"),
+		Token(symbol!"Value",range(1),Value(cast(int)7)),
+		Token(symbol!"Ident",range(3).atStart(2),Value(      null),"A"),
 	]);
 	testLexThrows("7A");
 	testLexThrows("-A");
 	testLexThrows(`-""`);
 	
 	testLex("7;", [
-		Token(symbol!"Value",loc,Value(cast(int)7)),
-		Token(symbol!"EOL",loc),
+		Token(symbol!"Value",range(1),Value(cast(int)7)),
+		Token(symbol!"EOL",range(2).atStart(1),Value(null),";"),
 	]);
 	
 	// Floats
-	testLex("1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
-	testLex("1.2f" , [ Token(symbol!"Value",loc,Value(cast( float)1.2)) ]);
-	testLex("1.2"  , [ Token(symbol!"Value",loc,Value(cast(double)1.2)) ]);
-	testLex("1.2D" , [ Token(symbol!"Value",loc,Value(cast(double)1.2)) ]);
-	testLex("1.2d" , [ Token(symbol!"Value",loc,Value(cast(double)1.2)) ]);
-	testLex("1.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
-	testLex("1.2bd", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
-	testLex("1.2Bd", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
-	testLex("1.2bD", [ Token(symbol!"Value",loc,Value(cast(  real)1.2)) ]);
+	testLex("1.2F" , [ Token(symbol!"Value",range(4),Value(cast( float)1.2)) ]);
+	testLex("1.2f" , [ Token(symbol!"Value",range(4),Value(cast( float)1.2)) ]);
+	testLex("1.2"  , [ Token(symbol!"Value",range(3),Value(cast(double)1.2)) ]);
+	testLex("1.2D" , [ Token(symbol!"Value",range(4),Value(cast(double)1.2)) ]);
+	testLex("1.2d" , [ Token(symbol!"Value",range(4),Value(cast(double)1.2)) ]);
+	testLex("1.2BD", [ Token(symbol!"Value",range(5),Value(cast(  real)1.2)) ]);
+	testLex("1.2bd", [ Token(symbol!"Value",range(5),Value(cast(  real)1.2)) ]);
+	testLex("1.2Bd", [ Token(symbol!"Value",range(5),Value(cast(  real)1.2)) ]);
+	testLex("1.2bD", [ Token(symbol!"Value",range(5),Value(cast(  real)1.2)) ]);
 
-	testLex(".2F" , [ Token(symbol!"Value",loc,Value(cast( float)0.2)) ]);
-	testLex(".2"  , [ Token(symbol!"Value",loc,Value(cast(double)0.2)) ]);
-	testLex(".2D" , [ Token(symbol!"Value",loc,Value(cast(double)0.2)) ]);
-	testLex(".2BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.2)) ]);
+	testLex(".2F" , [ Token(symbol!"Value",range(3),Value(cast( float)0.2)) ]);
+	testLex(".2"  , [ Token(symbol!"Value",range(2),Value(cast(double)0.2)) ]);
+	testLex(".2D" , [ Token(symbol!"Value",range(3),Value(cast(double)0.2)) ]);
+	testLex(".2BD", [ Token(symbol!"Value",range(4),Value(cast(  real)0.2)) ]);
 
-	testLex("-1.2F" , [ Token(symbol!"Value",loc,Value(cast( float)-1.2)) ]);
-	testLex("-1.2"  , [ Token(symbol!"Value",loc,Value(cast(double)-1.2)) ]);
-	testLex("-1.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-1.2)) ]);
-	testLex("-1.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-1.2)) ]);
+	testLex("-1.2F" , [ Token(symbol!"Value",range(5),Value(cast( float)-1.2)) ]);
+	testLex("-1.2"  , [ Token(symbol!"Value",range(4),Value(cast(double)-1.2)) ]);
+	testLex("-1.2D" , [ Token(symbol!"Value",range(5),Value(cast(double)-1.2)) ]);
+	testLex("-1.2BD", [ Token(symbol!"Value",range(6),Value(cast(  real)-1.2)) ]);
 
-	testLex("-.2F" , [ Token(symbol!"Value",loc,Value(cast( float)-0.2)) ]);
-	testLex("-.2"  , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
-	testLex("-.2D" , [ Token(symbol!"Value",loc,Value(cast(double)-0.2)) ]);
-	testLex("-.2BD", [ Token(symbol!"Value",loc,Value(cast(  real)-0.2)) ]);
+	testLex("-.2F" , [ Token(symbol!"Value",range(4),Value(cast( float)-0.2)) ]);
+	testLex("-.2"  , [ Token(symbol!"Value",range(3),Value(cast(double)-0.2)) ]);
+	testLex("-.2D" , [ Token(symbol!"Value",range(4),Value(cast(double)-0.2)) ]);
+	testLex("-.2BD", [ Token(symbol!"Value",range(5),Value(cast(  real)-0.2)) ]);
 
-	testLex( "0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
-	testLex( "0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
-	testLex( "0.0BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
-	testLex("-0.0"  , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
-	testLex("-0.0F" , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
-	testLex("-0.0BD", [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
-	testLex( "7F"   , [ Token(symbol!"Value",loc,Value(cast( float)7.0)) ]);
-	testLex( "7D"   , [ Token(symbol!"Value",loc,Value(cast(double)7.0)) ]);
-	testLex( "7BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)7.0)) ]);
-	testLex( "0F"   , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
-	testLex( "0D"   , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
-	testLex( "0BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
-	testLex("-0F"   , [ Token(symbol!"Value",loc,Value(cast( float)0.0)) ]);
-	testLex("-0D"   , [ Token(symbol!"Value",loc,Value(cast(double)0.0)) ]);
-	testLex("-0BD"  , [ Token(symbol!"Value",loc,Value(cast(  real)0.0)) ]);
+	testLex( "0.0"  , [ Token(symbol!"Value",range(3),Value(cast(double)0.0)) ]);
+	testLex( "0.0F" , [ Token(symbol!"Value",range(4),Value(cast( float)0.0)) ]);
+	testLex( "0.0BD", [ Token(symbol!"Value",range(5),Value(cast(  real)0.0)) ]);
+	testLex("-0.0"  , [ Token(symbol!"Value",range(4),Value(cast(double)0.0)) ]);
+	testLex("-0.0F" , [ Token(symbol!"Value",range(5),Value(cast( float)0.0)) ]);
+	testLex("-0.0BD", [ Token(symbol!"Value",range(6),Value(cast(  real)0.0)) ]);
+	testLex( "7F"   , [ Token(symbol!"Value",range(2),Value(cast( float)7.0)) ]);
+	testLex( "7D"   , [ Token(symbol!"Value",range(2),Value(cast(double)7.0)) ]);
+	testLex( "7BD"  , [ Token(symbol!"Value",range(3),Value(cast(  real)7.0)) ]);
+	testLex( "0F"   , [ Token(symbol!"Value",range(2),Value(cast( float)0.0)) ]);
+	testLex( "0D"   , [ Token(symbol!"Value",range(2),Value(cast(double)0.0)) ]);
+	testLex( "0BD"  , [ Token(symbol!"Value",range(3),Value(cast(  real)0.0)) ]);
+	testLex("-0F"   , [ Token(symbol!"Value",range(3),Value(cast( float)0.0)) ]);
+	testLex("-0D"   , [ Token(symbol!"Value",range(3),Value(cast(double)0.0)) ]);
+	testLex("-0BD"  , [ Token(symbol!"Value",range(4),Value(cast(  real)0.0)) ]);
 
 	testLex("1.2 F", [
-		Token(symbol!"Value",loc,Value(cast(double)1.2)),
-		Token(symbol!"Ident",loc,Value(           null),"F"),
+		Token(symbol!"Value",range(3),Value(cast(double)1.2)),
+		Token(symbol!"Ident",range(5).atStart(4),Value(           null),"F"),
 	]);
 	testLexThrows("1.2A");
 	testLexThrows("1.2B");
 	testLexThrows("1.2BDF");
 
 	testLex("1.2;", [
-		Token(symbol!"Value",loc,Value(cast(double)1.2)),
-		Token(symbol!"EOL",loc),
+		Token(symbol!"Value",range(3),Value(cast(double)1.2)),
+		Token(symbol!"EOL",range(4).atStart(3),Value(null),";"),
 	]);
 
 	testLex("1.2F;", [
-		Token(symbol!"Value",loc,Value(cast(float)1.2)),
-		Token(symbol!"EOL",loc),
+		Token(symbol!"Value",range(4),Value(cast(float)1.2)),
+		Token(symbol!"EOL",range(5).atStart(4),Value(null),";"),
 	]);
 
 	testLex("1.2BD;", [
-		Token(symbol!"Value",loc,Value(cast(real)1.2)),
-		Token(symbol!"EOL",loc),
+		Token(symbol!"Value",range(5),Value(cast(real)1.2)),
+		Token(symbol!"EOL",range(6).atStart(5),Value(null),";"),
 	]);
 
 	// Booleans and null
-	testLex("true",   [ Token(symbol!"Value",loc,Value( true)) ]);
-	testLex("false",  [ Token(symbol!"Value",loc,Value(false)) ]);
-	testLex("on",     [ Token(symbol!"Value",loc,Value( true)) ]);
-	testLex("off",    [ Token(symbol!"Value",loc,Value(false)) ]);
-	testLex("null",   [ Token(symbol!"Value",loc,Value( null)) ]);
+	testLex("true",   [ Token(symbol!"Value",range(4),Value( true)) ]);
+	testLex("false",  [ Token(symbol!"Value",range(5),Value(false)) ]);
+	testLex("on",     [ Token(symbol!"Value",range(2),Value( true)) ]);
+	testLex("off",    [ Token(symbol!"Value",range(3),Value(false)) ]);
+	testLex("null",   [ Token(symbol!"Value",range(4),Value( null)) ]);
 
-	testLex("TRUE",   [ Token(symbol!"Ident",loc,Value(null),"TRUE")  ]);
-	testLex("true ",  [ Token(symbol!"Value",loc,Value(true)) ]);
-	testLex("true  ", [ Token(symbol!"Value",loc,Value(true)) ]);
-	testLex("tru",    [ Token(symbol!"Ident",loc,Value(null),"tru")   ]);
-	testLex("truX",   [ Token(symbol!"Ident",loc,Value(null),"truX")  ]);
-	testLex("trueX",  [ Token(symbol!"Ident",loc,Value(null),"trueX") ]);
+	testLex("TRUE",   [ Token(symbol!"Ident",range(4),Value(null),"TRUE")  ]);
+	testLex("true ",  [ Token(symbol!"Value",range(4),Value(true)) ]);
+	testLex("true  ", [ Token(symbol!"Value",range(4),Value(true)) ]);
+	testLex("tru",    [ Token(symbol!"Ident",range(3),Value(null),"tru")   ]);
+	testLex("truX",   [ Token(symbol!"Ident",range(4),Value(null),"truX")  ]);
+	testLex("trueX",  [ Token(symbol!"Ident",range(5),Value(null),"trueX") ]);
 
 	// Raw Backtick Strings
-	testLex("`hello world`",      [ Token(symbol!"Value",loc,Value(`hello world`   )) ]);
-	testLex("` hello world `",    [ Token(symbol!"Value",loc,Value(` hello world ` )) ]);
-	testLex("`hello \\t world`",  [ Token(symbol!"Value",loc,Value(`hello \t world`)) ]);
-	testLex("`hello \\n world`",  [ Token(symbol!"Value",loc,Value(`hello \n world`)) ]);
-	testLex("`hello \n world`",   [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
-	testLex("`hello \r\n world`", [ Token(symbol!"Value",loc,Value("hello \r\n world")) ]);
-	testLex("`hello \"world\"`",  [ Token(symbol!"Value",loc,Value(`hello "world"` )) ]);
+	testLex("`hello world`",      [ Token(symbol!"Value",range(13),Value(`hello world`   )) ]);
+	testLex("` hello world `",    [ Token(symbol!"Value",range(15),Value(` hello world ` )) ]);
+	testLex("`hello \\t world`",  [ Token(symbol!"Value",range(16),Value(`hello \t world`)) ]);
+	testLex("`hello \\n world`",  [ Token(symbol!"Value",range(16),Value(`hello \n world`)) ]);
+	testLex("`hello \n world`",   [ Token(symbol!"Value",range(7, 1, 15),Value("hello \n world")) ]);
+	testLex("`hello \r\n world`", [ Token(symbol!"Value",range(7, 1, 16),Value("hello \r\n world")) ]);
+	testLex("`hello \"world\"`",  [ Token(symbol!"Value",range(15),Value(`hello "world"` )) ]);
 
 	testLexThrows("`foo");
 	testLexThrows("`");
 
 	// Double-Quote Strings
-	testLex(`"hello world"`,            [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
-	testLex(`" hello world "`,          [ Token(symbol!"Value",loc,Value(" hello world " )) ]);
-	testLex(`"hello \t world"`,         [ Token(symbol!"Value",loc,Value("hello \t world")) ]);
-	testLex(`"hello \n world"`,         [ Token(symbol!"Value",loc,Value("hello \n world")) ]);
-	testLex("\"hello \\\n world\"",     [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
-	testLex("\"hello \\  \n world\"",   [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
-	testLex("\"hello \\  \n\n world\"", [ Token(symbol!"Value",loc,Value("hello world"   )) ]);
-	testLex(`"\"hello world\""`,        [ Token(symbol!"Value",loc,Value(`"hello world"` )) ]);
-	testLex(`""`,                       [ Token(symbol!"Value",loc,Value(""              )) ]); // issue #34
+	testLex(`"hello world"`,            [ Token(symbol!"Value",range(13),Value("hello world"   )) ]);
+	testLex(`" hello world "`,          [ Token(symbol!"Value",range(15),Value(" hello world " )) ]);
+	testLex(`"hello \t world"`,         [ Token(symbol!"Value",range(16),Value("hello \t world")) ]);
+	testLex(`"hello \n world"`,         [ Token(symbol!"Value",range(16),Value("hello \n world")) ]);
+	testLex("\"hello \\\n world\"",     [ Token(symbol!"Value",range(7, 1, 16),Value("hello world"   )) ]);
+	testLex("\"hello \\  \n world\"",   [ Token(symbol!"Value",range(7, 1, 18),Value("hello world"   )) ]);
+	testLex("\"hello \\  \n\n world\"", [ Token(symbol!"Value",range(7, 2, 19),Value("hello world"   )) ]);
+	testLex(`"\"hello world\""`,        [ Token(symbol!"Value",range(17),Value(`"hello world"` )) ]);
+	testLex(`""`,                       [ Token(symbol!"Value",range(2),Value(""              )) ]); // issue #34
 
 	testLexThrows("\"hello \n world\"");
 	testLexThrows(`"foo`);
 	testLexThrows(`"`);
 
 	// Characters
-	testLex("'a'",   [ Token(symbol!"Value",loc,Value(cast(dchar) 'a')) ]);
-	testLex("'\\n'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\n')) ]);
-	testLex("'\\t'", [ Token(symbol!"Value",loc,Value(cast(dchar)'\t')) ]);
-	testLex("'\t'",  [ Token(symbol!"Value",loc,Value(cast(dchar)'\t')) ]);
-	testLex("'\\''", [ Token(symbol!"Value",loc,Value(cast(dchar)'\'')) ]);
-	testLex(`'\\'`,  [ Token(symbol!"Value",loc,Value(cast(dchar)'\\')) ]);
+	testLex("'a'",   [ Token(symbol!"Value",range(3),Value(cast(dchar) 'a')) ]);
+	testLex("'\\n'", [ Token(symbol!"Value",range(4),Value(cast(dchar)'\n')) ]);
+	testLex("'\\t'", [ Token(symbol!"Value",range(4),Value(cast(dchar)'\t')) ]);
+	testLex("'\t'",  [ Token(symbol!"Value",range(3),Value(cast(dchar)'\t')) ]);
+	testLex("'\\''", [ Token(symbol!"Value",range(4),Value(cast(dchar)'\'')) ]);
+	testLex(`'\\'`,  [ Token(symbol!"Value",range(4),Value(cast(dchar)'\\')) ]);
 
 	testLexThrows("'a");
 	testLexThrows("'aa'");
@@ -1762,57 +1793,57 @@ unittest
 	testLexThrows("'");
 	
 	// Unicode
-	testLex("日本語",         [ Token(symbol!"Ident",loc,Value(null), "日本語") ]);
-	testLex("`おはよう、日本。`", [ Token(symbol!"Value",loc,Value(`おはよう、日本。`)) ]);
-	testLex(`"おはよう、日本。"`, [ Token(symbol!"Value",loc,Value(`おはよう、日本。`)) ]);
-	testLex("'月'",           [ Token(symbol!"Value",loc,Value("月"d.dup[0]))   ]);
+	testLex("日本語",         [ Token(symbol!"Ident",range(3, 0, 9),Value(null), "日本語") ]);
+	testLex("`おはよう、日本。`", [ Token(symbol!"Value",range(10, 0, 26),Value(`おはよう、日本。`)) ]);
+	testLex(`"おはよう、日本。"`, [ Token(symbol!"Value",range(10, 0, 26),Value(`おはよう、日本。`)) ]);
+	testLex("'月'",           [ Token(symbol!"Value",range(3, 0, 5),Value("月"d.dup[0]))   ]);
 
 	// Base64 Binary
-	testLex("[aGVsbG8gd29ybGQ=]",              [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
-	testLex("[ aGVsbG8gd29ybGQ= ]",            [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
-	testLex("[\n aGVsbG8g \n \n d29ybGQ= \n]", [ Token(symbol!"Value",loc,Value(cast(ubyte[])"hello world".dup))]);
+	testLex("[aGVsbG8gd29ybGQ=]",              [ Token(symbol!"Value",range(18),Value(cast(ubyte[])"hello world".dup))]);
+	testLex("[ aGVsbG8gd29ybGQ= ]",            [ Token(symbol!"Value",range(20),Value(cast(ubyte[])"hello world".dup))]);
+	testLex("[\n aGVsbG8g \n \n d29ybGQ= \n]", [ Token(symbol!"Value",range(1, 4, 27),Value(cast(ubyte[])"hello world".dup))]);
 
 	testLexThrows("[aGVsbG8gd29ybGQ]"); // Ie: Not multiple of 4
 	testLexThrows("[ aGVsbG8gd29ybGQ ]");
 
 	// Date
-	testLex( "1999/12/5", [ Token(symbol!"Value",loc,Value(Date( 1999, 12, 5))) ]);
-	testLex( "2013/2/22", [ Token(symbol!"Value",loc,Value(Date( 2013, 2, 22))) ]);
-	testLex("-2013/2/22", [ Token(symbol!"Value",loc,Value(Date(-2013, 2, 22))) ]);
+	testLex( "1999/12/5", [ Token(symbol!"Value",range(9),Value(Date( 1999, 12, 5))) ]);
+	testLex( "2013/2/22", [ Token(symbol!"Value",range(9),Value(Date( 2013, 2, 22))) ]);
+	testLex("-2013/2/22", [ Token(symbol!"Value",range(10),Value(Date(-2013, 2, 22))) ]);
 
 	testLexThrows("7/");
 	testLexThrows("2013/2/22a");
 	testLexThrows("2013/2/22f");
 
 	testLex("1999/12/5\n", [
-		Token(symbol!"Value",loc,Value(Date(1999, 12, 5))),
-		Token(symbol!"EOL",loc),
+		Token(symbol!"Value",range(9),Value(Date(1999, 12, 5))),
+		Token(symbol!"EOL",range(0, 1, 10).atStart(9),Value(null),"\n"),
 	]);
 
 	// DateTime, no timezone
-	testLex( "2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 \t 07:53",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22/*foo*/07:53",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 /*foo*/ \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 /*foo*/ \\\n\n  \n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 /*foo*/ \\\n\\\n  \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22/*foo*/\\\n/*bar*/07:53",      [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
-	testLex("-2013/2/22 07:53",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 7, 53,  0)))) ]);
-	testLex( "2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
-	testLex("-2013/2/22 -07:53",       [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
-	testLex( "2013/2/22 07:53:34",     [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34)))) ]);
-	testLex( "2013/2/22 07:53:34.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs))) ]);
-	testLex( "2013/2/22 07:53:34.12",  [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 120.msecs))) ]);
-	testLex( "2013/2/22 07:53:34.1",   [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 100.msecs))) ]);
-	testLex( "2013/2/22 07:53.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs))) ]);
+	testLex( "2013/2/22 07:53",        [ Token(symbol!"Value",range(15),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 \t 07:53",     [ Token(symbol!"Value",range(17),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22/*foo*/07:53",  [ Token(symbol!"Value",range(21),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 /*foo*/ \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",range(15, 1, 35),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 /*foo*/ \\\n\n  \n  /*bar*/ 07:53", [ Token(symbol!"Value",range(15, 3, 39),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 /*foo*/ \\\n\\\n  \\\n  /*bar*/ 07:53", [ Token(symbol!"Value",range(15, 3, 41),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22/*foo*/\\\n/*bar*/07:53",      [ Token(symbol!"Value",range(12, 1, 30),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0)))) ]);
+	testLex("-2013/2/22 07:53",        [ Token(symbol!"Value",range(16),Value(DateTimeFrac(DateTime(-2013, 2, 22, 7, 53,  0)))) ]);
+	testLex( "2013/2/22 -07:53",       [ Token(symbol!"Value",range(16),Value(DateTimeFrac(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
+	testLex("-2013/2/22 -07:53",       [ Token(symbol!"Value",range(17),Value(DateTimeFrac(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53)))) ]);
+	testLex( "2013/2/22 07:53:34",     [ Token(symbol!"Value",range(18),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34)))) ]);
+	testLex( "2013/2/22 07:53:34.123", [ Token(symbol!"Value",range(22),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs))) ]);
+	testLex( "2013/2/22 07:53:34.12",  [ Token(symbol!"Value",range(21),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 120.msecs))) ]);
+	testLex( "2013/2/22 07:53:34.1",   [ Token(symbol!"Value",range(20),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53, 34), 100.msecs))) ]);
+	testLex( "2013/2/22 07:53.123",    [ Token(symbol!"Value",range(19),Value(DateTimeFrac(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs))) ]);
 
-	testLex( "2013/2/22 34:65",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0)))) ]);
-	testLex( "2013/2/22 34:65:77.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds(77), 123.msecs))) ]);
-	testLex( "2013/2/22 34:65.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0), 123.msecs))) ]);
+	testLex( "2013/2/22 34:65",        [ Token(symbol!"Value",range(15),Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0)))) ]);
+	testLex( "2013/2/22 34:65:77.123", [ Token(symbol!"Value",range(22),Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds(77), 123.msecs))) ]);
+	testLex( "2013/2/22 34:65.123",    [ Token(symbol!"Value",range(19),Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) + hours(34) + minutes(65) + seconds( 0), 123.msecs))) ]);
 
-	testLex( "2013/2/22 -34:65",        [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0)))) ]);
-	testLex( "2013/2/22 -34:65:77.123", [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds(77), -123.msecs))) ]);
-	testLex( "2013/2/22 -34:65.123",    [ Token(symbol!"Value",loc,Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0), -123.msecs))) ]);
+	testLex( "2013/2/22 -34:65",        [ Token(symbol!"Value",range(16),Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0)))) ]);
+	testLex( "2013/2/22 -34:65:77.123", [ Token(symbol!"Value",range(23),Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds(77), -123.msecs))) ]);
+	testLex( "2013/2/22 -34:65.123",    [ Token(symbol!"Value",range(20),Value(DateTimeFrac(DateTime( 2013, 2, 22, 0, 0, 0) - hours(34) - minutes(65) - seconds( 0), -123.msecs))) ]);
 
 	testLexThrows("2013/2/22 07:53a");
 	testLexThrows("2013/2/22 07:53f");
@@ -1821,53 +1852,53 @@ unittest
 	testLexThrows("2013/2/22a 07:53");
 
 	testLex(`2013/2/22 "foo"`, [
-		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
-		Token(symbol!"Value",loc,Value("foo")),
+		Token(symbol!"Value",range(9),Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",range(15).atStart(10),Value("foo")),
 	]);
 
 	testLex("2013/2/22 07", [
-		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
-		Token(symbol!"Value",loc,Value(cast(int)7)),
+		Token(symbol!"Value",range(9),Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",range(12).atStart(10),Value(cast(int)7)),
 	]);
 
 	testLex("2013/2/22 1.2F", [
-		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
-		Token(symbol!"Value",loc,Value(cast(float)1.2)),
+		Token(symbol!"Value",range(9),Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",range(14).atStart(10),Value(cast(float)1.2)),
 	]);
 
 	testLex("2013/2/22 .2F", [
-		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
-		Token(symbol!"Value",loc,Value(cast(float)0.2)),
+		Token(symbol!"Value",range(9),Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",range(13).atStart(10),Value(cast(float)0.2)),
 	]);
 
 	testLex("2013/2/22 -1.2F", [
-		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
-		Token(symbol!"Value",loc,Value(cast(float)-1.2)),
+		Token(symbol!"Value",range(9),Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",range(15).atStart(10),Value(cast(float)-1.2)),
 	]);
 
 	testLex("2013/2/22 -.2F", [
-		Token(symbol!"Value",loc,Value(Date(2013, 2, 22))),
-		Token(symbol!"Value",loc,Value(cast(float)-0.2)),
+		Token(symbol!"Value",range(9),Value(Date(2013, 2, 22))),
+		Token(symbol!"Value",range(14).atStart(10),Value(cast(float)-0.2)),
 	]);
 
 	// DateTime, with known timezone
-	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53-GMT+02:10",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53-GMT-05:30",        [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53:34-GMT+00:00",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53:34-GMT+02:10",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53:34-GMT-05:30",     [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT+00:00", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT+02:10", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53:34.123-GMT-05:30", [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
-	testLex( "2013/2/22 07:53.123-GMT+00:00",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone( hours(0)            )))) ]);
-	testLex( "2013/2/22 07:53.123-GMT+02:10",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
-	testLex( "2013/2/22 07:53.123-GMT-05:30",    [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",range(25),Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex("-2013/2/22 07:53-GMT+00:00",        [ Token(symbol!"Value",range(26),Value(SysTime(DateTime(-2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",range(26),Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex("-2013/2/22 -07:53-GMT+00:00",       [ Token(symbol!"Value",range(27),Value(SysTime(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53-GMT+02:10",        [ Token(symbol!"Value",range(25),Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53-GMT-05:30",        [ Token(symbol!"Value",range(25),Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53:34-GMT+00:00",     [ Token(symbol!"Value",range(28),Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53:34-GMT+02:10",     [ Token(symbol!"Value",range(28),Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53:34-GMT-05:30",     [ Token(symbol!"Value",range(28),Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53:34.123-GMT+00:00", [ Token(symbol!"Value",range(32),Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53:34.123-GMT+02:10", [ Token(symbol!"Value",range(32),Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53:34.123-GMT-05:30", [ Token(symbol!"Value",range(32),Value(SysTime(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 07:53.123-GMT+00:00",    [ Token(symbol!"Value",range(29),Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone( hours(0)            )))) ]);
+	testLex( "2013/2/22 07:53.123-GMT+02:10",    [ Token(symbol!"Value",range(29),Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone( hours(2)+minutes(10))))) ]);
+	testLex( "2013/2/22 07:53.123-GMT-05:30",    [ Token(symbol!"Value",range(29),Value(SysTime(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
 
-	testLex( "2013/2/22 -34:65-GMT-05:30",       [ Token(symbol!"Value",loc,Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(34) - minutes(65) - seconds( 0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
+	testLex( "2013/2/22 -34:65-GMT-05:30",       [ Token(symbol!"Value",range(26),Value(SysTime(DateTime( 2013, 2, 22, 0,  0,  0) - hours(34) - minutes(65) - seconds( 0), new immutable SimpleTimeZone(-hours(5)-minutes(30))))) ]);
 
 	// DateTime, with Java SDLang's occasionally weird interpretation of some
 	// "not quite ISO" variations of the "GMT with offset" timezone strings.
@@ -1875,71 +1906,71 @@ unittest
 	{
 		auto dateTime = DateTime(2013, 2, 22, 7, 53, 0);
 		auto tz = new immutable SimpleTimeZone(d);
-		return Token( symbol!"Value", loc, Value(SysTime(dateTime,tz)) );
+		return Token( symbol!"Value", range, Value(SysTime(dateTime,tz)) );
 	}
 	Token testTokenUnknownTimeZone(string tzName)
 	{
 		auto dateTime = DateTime(2013, 2, 22, 7, 53, 0);
 		auto frac = 0.msecs;
-		return Token( symbol!"Value", loc, Value(DateTimeFracUnknownZone(dateTime,frac,tzName)) );
+		return Token( symbol!"Value", range, Value(DateTimeFracUnknownZone(dateTime,frac,tzName)) );
 	}
-	testLex("2013/2/22 07:53-GMT+",          [ testTokenUnknownTimeZone("GMT+")     ]);
-	testLex("2013/2/22 07:53-GMT+:",         [ testTokenUnknownTimeZone("GMT+:")    ]);
-	testLex("2013/2/22 07:53-GMT+:3",        [ testTokenUnknownTimeZone("GMT+:3")   ]);
-	testLex("2013/2/22 07:53-GMT+:03",       [ testTokenSimpleTimeZone(minutes(3))  ]);
-	testLex("2013/2/22 07:53-GMT+:003",      [ testTokenUnknownTimeZone("GMT+:003") ]);
+	testLex("2013/2/22 07:53-GMT+",          [ testTokenUnknownTimeZone("GMT+")     ], false);
+	testLex("2013/2/22 07:53-GMT+:",         [ testTokenUnknownTimeZone("GMT+:")    ], false);
+	testLex("2013/2/22 07:53-GMT+:3",        [ testTokenUnknownTimeZone("GMT+:3")   ], false);
+	testLex("2013/2/22 07:53-GMT+:03",       [ testTokenSimpleTimeZone(minutes(3))  ], false);
+	testLex("2013/2/22 07:53-GMT+:003",      [ testTokenUnknownTimeZone("GMT+:003") ], false);
 
-	testLex("2013/2/22 07:53-GMT+4",         [ testTokenSimpleTimeZone(hours(4))            ]);
-	testLex("2013/2/22 07:53-GMT+4:",        [ testTokenUnknownTimeZone("GMT+4:")           ]);
-	testLex("2013/2/22 07:53-GMT+4:3",       [ testTokenUnknownTimeZone("GMT+4:3")          ]);
-	testLex("2013/2/22 07:53-GMT+4:03",      [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ]);
-	testLex("2013/2/22 07:53-GMT+4:003",     [ testTokenUnknownTimeZone("GMT+4:003")        ]);
+	testLex("2013/2/22 07:53-GMT+4",         [ testTokenSimpleTimeZone(hours(4))            ], false);
+	testLex("2013/2/22 07:53-GMT+4:",        [ testTokenUnknownTimeZone("GMT+4:")           ], false);
+	testLex("2013/2/22 07:53-GMT+4:3",       [ testTokenUnknownTimeZone("GMT+4:3")          ], false);
+	testLex("2013/2/22 07:53-GMT+4:03",      [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ], false);
+	testLex("2013/2/22 07:53-GMT+4:003",     [ testTokenUnknownTimeZone("GMT+4:003")        ], false);
 
-	testLex("2013/2/22 07:53-GMT+04",        [ testTokenSimpleTimeZone(hours(4))            ]);
-	testLex("2013/2/22 07:53-GMT+04:",       [ testTokenUnknownTimeZone("GMT+04:")          ]);
-	testLex("2013/2/22 07:53-GMT+04:3",      [ testTokenUnknownTimeZone("GMT+04:3")         ]);
-	testLex("2013/2/22 07:53-GMT+04:03",     [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ]);
-	testLex("2013/2/22 07:53-GMT+04:03abc",  [ testTokenUnknownTimeZone("GMT+04:03abc")     ]);
-	testLex("2013/2/22 07:53-GMT+04:003",    [ testTokenUnknownTimeZone("GMT+04:003")       ]);
+	testLex("2013/2/22 07:53-GMT+04",        [ testTokenSimpleTimeZone(hours(4))            ], false);
+	testLex("2013/2/22 07:53-GMT+04:",       [ testTokenUnknownTimeZone("GMT+04:")          ], false);
+	testLex("2013/2/22 07:53-GMT+04:3",      [ testTokenUnknownTimeZone("GMT+04:3")         ], false);
+	testLex("2013/2/22 07:53-GMT+04:03",     [ testTokenSimpleTimeZone(hours(4)+minutes(3)) ], false);
+	testLex("2013/2/22 07:53-GMT+04:03abc",  [ testTokenUnknownTimeZone("GMT+04:03abc")     ], false);
+	testLex("2013/2/22 07:53-GMT+04:003",    [ testTokenUnknownTimeZone("GMT+04:003")       ], false);
 
-	testLex("2013/2/22 07:53-GMT+004",       [ testTokenSimpleTimeZone(minutes(4))     ]);
-	testLex("2013/2/22 07:53-GMT+004:",      [ testTokenUnknownTimeZone("GMT+004:")    ]);
-	testLex("2013/2/22 07:53-GMT+004:3",     [ testTokenUnknownTimeZone("GMT+004:3")   ]);
-	testLex("2013/2/22 07:53-GMT+004:03",    [ testTokenUnknownTimeZone("GMT+004:03")  ]);
-	testLex("2013/2/22 07:53-GMT+004:003",   [ testTokenUnknownTimeZone("GMT+004:003") ]);
+	testLex("2013/2/22 07:53-GMT+004",       [ testTokenSimpleTimeZone(minutes(4))     ], false);
+	testLex("2013/2/22 07:53-GMT+004:",      [ testTokenUnknownTimeZone("GMT+004:")    ], false);
+	testLex("2013/2/22 07:53-GMT+004:3",     [ testTokenUnknownTimeZone("GMT+004:3")   ], false);
+	testLex("2013/2/22 07:53-GMT+004:03",    [ testTokenUnknownTimeZone("GMT+004:03")  ], false);
+	testLex("2013/2/22 07:53-GMT+004:003",   [ testTokenUnknownTimeZone("GMT+004:003") ], false);
 
-	testLex("2013/2/22 07:53-GMT+0004",      [ testTokenSimpleTimeZone(minutes(4))      ]);
-	testLex("2013/2/22 07:53-GMT+0004:",     [ testTokenUnknownTimeZone("GMT+0004:")    ]);
-	testLex("2013/2/22 07:53-GMT+0004:3",    [ testTokenUnknownTimeZone("GMT+0004:3")   ]);
-	testLex("2013/2/22 07:53-GMT+0004:03",   [ testTokenUnknownTimeZone("GMT+0004:03")  ]);
-	testLex("2013/2/22 07:53-GMT+0004:003",  [ testTokenUnknownTimeZone("GMT+0004:003") ]);
+	testLex("2013/2/22 07:53-GMT+0004",      [ testTokenSimpleTimeZone(minutes(4))      ], false);
+	testLex("2013/2/22 07:53-GMT+0004:",     [ testTokenUnknownTimeZone("GMT+0004:")    ], false);
+	testLex("2013/2/22 07:53-GMT+0004:3",    [ testTokenUnknownTimeZone("GMT+0004:3")   ], false);
+	testLex("2013/2/22 07:53-GMT+0004:03",   [ testTokenUnknownTimeZone("GMT+0004:03")  ], false);
+	testLex("2013/2/22 07:53-GMT+0004:003",  [ testTokenUnknownTimeZone("GMT+0004:003") ], false);
 
-	testLex("2013/2/22 07:53-GMT+00004",     [ testTokenSimpleTimeZone(minutes(4))       ]);
-	testLex("2013/2/22 07:53-GMT+00004:",    [ testTokenUnknownTimeZone("GMT+00004:")    ]);
-	testLex("2013/2/22 07:53-GMT+00004:3",   [ testTokenUnknownTimeZone("GMT+00004:3")   ]);
-	testLex("2013/2/22 07:53-GMT+00004:03",  [ testTokenUnknownTimeZone("GMT+00004:03")  ]);
-	testLex("2013/2/22 07:53-GMT+00004:003", [ testTokenUnknownTimeZone("GMT+00004:003") ]);
+	testLex("2013/2/22 07:53-GMT+00004",     [ testTokenSimpleTimeZone(minutes(4))       ], false);
+	testLex("2013/2/22 07:53-GMT+00004:",    [ testTokenUnknownTimeZone("GMT+00004:")    ], false);
+	testLex("2013/2/22 07:53-GMT+00004:3",   [ testTokenUnknownTimeZone("GMT+00004:3")   ], false);
+	testLex("2013/2/22 07:53-GMT+00004:03",  [ testTokenUnknownTimeZone("GMT+00004:03")  ], false);
+	testLex("2013/2/22 07:53-GMT+00004:003", [ testTokenUnknownTimeZone("GMT+00004:003") ], false);
 
 	// DateTime, with unknown timezone
-	testLex( "2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0),   0.msecs, "Bogus/Foo")), "2013/2/22 07:53-Bogus/Foo") ]);
-	testLex("-2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 7, 53,  0),   0.msecs, "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), 0.msecs, "Bogus/Foo"))) ]);
-	testLex("-2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), 0.msecs, "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 07:53:34-Bogus/Foo",     [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34),   0.msecs, "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 07:53:34.123-Bogus/Foo", [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, "Bogus/Foo"))) ]);
-	testLex( "2013/2/22 07:53.123-Bogus/Foo",    [ Token(symbol!"Value",loc,Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",range(25),Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0),   0.msecs, "Bogus/Foo")), "2013/2/22 07:53-Bogus/Foo") ]);
+	testLex("-2013/2/22 07:53-Bogus/Foo",        [ Token(symbol!"Value",range(26),Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 7, 53,  0),   0.msecs, "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",range(26),Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), 0.msecs, "Bogus/Foo"))) ]);
+	testLex("-2013/2/22 -07:53-Bogus/Foo",       [ Token(symbol!"Value",range(27),Value(DateTimeFracUnknownZone(DateTime(-2013, 2, 22, 0,  0,  0) - hours(7) - minutes(53), 0.msecs, "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 07:53:34-Bogus/Foo",     [ Token(symbol!"Value",range(28),Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34),   0.msecs, "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 07:53:34.123-Bogus/Foo", [ Token(symbol!"Value",range(32),Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53, 34), 123.msecs, "Bogus/Foo"))) ]);
+	testLex( "2013/2/22 07:53.123-Bogus/Foo",    [ Token(symbol!"Value",range(29),Value(DateTimeFracUnknownZone(DateTime( 2013, 2, 22, 7, 53,  0), 123.msecs, "Bogus/Foo"))) ]);
 
 	// Time Span
-	testLex( "12:14:42",         [ Token(symbol!"Value",loc,Value( days( 0)+hours(12)+minutes(14)+seconds(42)+msecs(  0))) ]);
-	testLex("-12:14:42",         [ Token(symbol!"Value",loc,Value(-days( 0)-hours(12)-minutes(14)-seconds(42)-msecs(  0))) ]);
-	testLex( "00:09:12",         [ Token(symbol!"Value",loc,Value( days( 0)+hours( 0)+minutes( 9)+seconds(12)+msecs(  0))) ]);
-	testLex( "00:00:01.023",     [ Token(symbol!"Value",loc,Value( days( 0)+hours( 0)+minutes( 0)+seconds( 1)+msecs( 23))) ]);
-	testLex( "23d:05:21:23.532", [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(532))) ]);
-	testLex( "23d:05:21:23.53",  [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(530))) ]);
-	testLex( "23d:05:21:23.5",   [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(500))) ]);
-	testLex("-23d:05:21:23.532", [ Token(symbol!"Value",loc,Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(532))) ]);
-	testLex("-23d:05:21:23.5",   [ Token(symbol!"Value",loc,Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(500))) ]);
-	testLex( "23d:05:21:23",     [ Token(symbol!"Value",loc,Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(  0))) ]);
+	testLex( "12:14:42",         [ Token(symbol!"Value",range(8),Value( days( 0)+hours(12)+minutes(14)+seconds(42)+msecs(  0))) ]);
+	testLex("-12:14:42",         [ Token(symbol!"Value",range(9),Value(-days( 0)-hours(12)-minutes(14)-seconds(42)-msecs(  0))) ]);
+	testLex( "00:09:12",         [ Token(symbol!"Value",range(8),Value( days( 0)+hours( 0)+minutes( 9)+seconds(12)+msecs(  0))) ]);
+	testLex( "00:00:01.023",     [ Token(symbol!"Value",range(12),Value( days( 0)+hours( 0)+minutes( 0)+seconds( 1)+msecs( 23))) ]);
+	testLex( "23d:05:21:23.532", [ Token(symbol!"Value",range(16),Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(532))) ]);
+	testLex( "23d:05:21:23.53",  [ Token(symbol!"Value",range(15),Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(530))) ]);
+	testLex( "23d:05:21:23.5",   [ Token(symbol!"Value",range(14),Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(500))) ]);
+	testLex("-23d:05:21:23.532", [ Token(symbol!"Value",range(17),Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(532))) ]);
+	testLex("-23d:05:21:23.5",   [ Token(symbol!"Value",range(15),Value(-days(23)-hours( 5)-minutes(21)-seconds(23)-msecs(500))) ]);
+	testLex( "23d:05:21:23",     [ Token(symbol!"Value",range(12),Value( days(23)+hours( 5)+minutes(21)+seconds(23)+msecs(  0))) ]);
 
 	testLexThrows("12:14:42a");
 	testLexThrows("23d:05:21:23.532a");
@@ -1947,8 +1978,8 @@ unittest
 
 	// Combination
 	testLex("foo. 7", [
-		Token(symbol!"Ident",loc,Value(      null),"foo."),
-		Token(symbol!"Value",loc,Value(cast(int)7))
+		Token(symbol!"Ident",range(4),Value(      null),"foo."),
+		Token(symbol!"Value",range(6).atStart(5),Value(cast(int)7))
 	]);
 	
 	testLex(`
@@ -1962,53 +1993,53 @@ unittest
 		}
 	`,
 	[
-		Token(symbol!"EOL",loc,Value(null),"\n"),
+		Token(symbol!"EOL",range,Value(null),"\n"),
 
-		Token(symbol!"Ident", loc, Value(         null ), "namespace"),
-		Token(symbol!":",     loc, Value(         null ), ":"),
-		Token(symbol!"Ident", loc, Value(         null ), "person"),
-		Token(symbol!"Value", loc, Value(        "foo" ), `"foo"`),
-		Token(symbol!"Value", loc, Value(        "bar" ), `"bar"`),
-		Token(symbol!"Value", loc, Value( cast( int) 1 ), "1"),
-		Token(symbol!"Value", loc, Value( cast(long)23 ), "23L"),
-		Token(symbol!"Ident", loc, Value(         null ), "name.first"),
-		Token(symbol!"=",     loc, Value(         null ), "="),
-		Token(symbol!"Value", loc, Value(       "ひとみ" ), `"ひとみ"`),
-		Token(symbol!"Ident", loc, Value(         null ), "name.last"),
-		Token(symbol!"=",     loc, Value(         null ), "="),
-		Token(symbol!"Value", loc, Value(      "Smith" ), `"Smith"`),
-		Token(symbol!"{",     loc, Value(         null ), "{"),
-		Token(symbol!"EOL",   loc, Value(         null ), "\n"),
+		Token(symbol!"Ident", range, Value(         null ), "namespace"),
+		Token(symbol!":",     range, Value(         null ), ":"),
+		Token(symbol!"Ident", range, Value(         null ), "person"),
+		Token(symbol!"Value", range, Value(        "foo" ), `"foo"`),
+		Token(symbol!"Value", range, Value(        "bar" ), `"bar"`),
+		Token(symbol!"Value", range, Value( cast( int) 1 ), "1"),
+		Token(symbol!"Value", range, Value( cast(long)23 ), "23L"),
+		Token(symbol!"Ident", range, Value(         null ), "name.first"),
+		Token(symbol!"=",     range, Value(         null ), "="),
+		Token(symbol!"Value", range, Value(       "ひとみ" ), `"ひとみ"`),
+		Token(symbol!"Ident", range, Value(         null ), "name.last"),
+		Token(symbol!"=",     range, Value(         null ), "="),
+		Token(symbol!"Value", range, Value(      "Smith" ), `"Smith"`),
+		Token(symbol!"{",     range, Value(         null ), "{"),
+		Token(symbol!"EOL",   range, Value(         null ), "\n"),
 
-		Token(symbol!"Ident", loc, Value(        null ), "namespace"),
-		Token(symbol!":",     loc, Value(        null ), ":"),
-		Token(symbol!"Ident", loc, Value(        null ), "age"),
-		Token(symbol!"Value", loc, Value( cast(int)37 ), "37"),
-		Token(symbol!"EOL",   loc, Value(        null ), ";"),
-		Token(symbol!"Ident", loc, Value(        null ), "namespace"),
-		Token(symbol!":",     loc, Value(        null ), ":"),
-		Token(symbol!"Ident", loc, Value(        null ), "favorite_color"),
-		Token(symbol!"Value", loc, Value(      "blue" ), `"blue"`),
-		Token(symbol!"EOL",   loc, Value(        null ), "\n"),
+		Token(symbol!"Ident", range, Value(        null ), "namespace"),
+		Token(symbol!":",     range, Value(        null ), ":"),
+		Token(symbol!"Ident", range, Value(        null ), "age"),
+		Token(symbol!"Value", range, Value( cast(int)37 ), "37"),
+		Token(symbol!"EOL",   range, Value(        null ), ";"),
+		Token(symbol!"Ident", range, Value(        null ), "namespace"),
+		Token(symbol!":",     range, Value(        null ), ":"),
+		Token(symbol!"Ident", range, Value(        null ), "favorite_color"),
+		Token(symbol!"Value", range, Value(      "blue" ), `"blue"`),
+		Token(symbol!"EOL",   range, Value(        null ), "\n"),
 
-		Token(symbol!"Ident", loc, Value( null ), "somedate"),
-		Token(symbol!"Value", loc, Value( DateTimeFrac(DateTime(2013, 2, 22, 7, 53, 0)) ), "2013/2/22  07:53"),
-		Token(symbol!"EOL",   loc, Value( null ), "\n"),
-		Token(symbol!"EOL",   loc, Value( null ), "\n"),
+		Token(symbol!"Ident", range, Value( null ), "somedate"),
+		Token(symbol!"Value", range, Value( DateTimeFrac(DateTime(2013, 2, 22, 7, 53, 0)) ), "2013/2/22  07:53"),
+		Token(symbol!"EOL",   range, Value( null ), "\n"),
+		Token(symbol!"EOL",   range, Value( null ), "\n"),
 
-		Token(symbol!"Ident", loc, Value(null), "inventory"),
-		Token(symbol!"{",     loc, Value(null), "{"),
-		Token(symbol!"EOL",   loc, Value(null), "\n"),
+		Token(symbol!"Ident", range, Value(null), "inventory"),
+		Token(symbol!"{",     range, Value(null), "{"),
+		Token(symbol!"EOL",   range, Value(null), "\n"),
 
-		Token(symbol!"Ident", loc, Value(null), "socks"),
-		Token(symbol!"EOL",   loc, Value(null), "\n"),
+		Token(symbol!"Ident", range, Value(null), "socks"),
+		Token(symbol!"EOL",   range, Value(null), "\n"),
 
-		Token(symbol!"}",     loc, Value(null), "}"),
-		Token(symbol!"EOL",   loc, Value(null), "\n"),
+		Token(symbol!"}",     range, Value(null), "}"),
+		Token(symbol!"EOL",   range, Value(null), "\n"),
 
-		Token(symbol!"}",     loc, Value(null), "}"),
-		Token(symbol!"EOL",   loc, Value(null), "\n"),
-	]);
+		Token(symbol!"}",     range, Value(null), "}"),
+		Token(symbol!"EOL",   range, Value(null), "\n"),
+	], false); // TODO: check ranges
 	
 	if(numErrors > 0)
 		stderr.writeln(numErrors, " failed test(s)");
@@ -2017,9 +2048,9 @@ unittest
 @("lexer: Regression test issue #8")
 unittest
 {
-	testLex(`"\n \n"`, [ Token(symbol!"Value",loc,Value("\n \n"),`"\n \n"`) ]);
-	testLex(`"\t\t"`, [ Token(symbol!"Value",loc,Value("\t\t"),`"\t\t"`) ]);
-	testLex(`"\n\n"`, [ Token(symbol!"Value",loc,Value("\n\n"),`"\n\n"`) ]);
+	testLex(`"\n \n"`, [ Token(symbol!"Value",range(7),Value("\n \n"),`"\n \n"`) ]);
+	testLex(`"\t\t"`, [ Token(symbol!"Value",range(6),Value("\t\t"),`"\t\t"`) ]);
+	testLex(`"\n\n"`, [ Token(symbol!"Value",range(6),Value("\n\n"),`"\n\n"`) ]);
 }
 
 @("lexer: Regression test issue #11")
@@ -2030,9 +2061,10 @@ unittest
 		testLex(
 			input,
 			[
-				Token(symbol!"EOL", loc, Value(null), "\n"),
-				Token(symbol!"Ident",loc,Value(null), "a")
-			]
+				Token(symbol!"EOL", range, Value(null), "\n"),
+				Token(symbol!"Ident", range,Value(null), "a")
+			],
+			false
 		);
 	}
 
@@ -2047,28 +2079,28 @@ unittest
 {
 	enum offset = 1; // workaround for an of-by-one error for line numbers
 	testLex("test", [
-		Token(symbol!"Ident", Location("filename", 0, 0, 0), Value(null), "test")
-	], true);
+		Token(symbol!"Ident", range(4), Value(null), "test")
+	]);
 	testLex("\ntest", [
-		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\n"),
-		Token(symbol!"Ident", Location("filename", 1, 0, 1), Value(null), "test")
-	], true);
+		Token(symbol!"EOL", range(0, 1, 1), Value(null), "\n"),
+		Token(symbol!"Ident", range(4, 1, 5).atStart(0, 1, 1), Value(null), "test")
+	]);
 	testLex("\rtest", [
-		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r"),
-		Token(symbol!"Ident", Location("filename", 1, 0, 1), Value(null), "test")
-	], true);
+		Token(symbol!"EOL", range(0, 1, 1), Value(null), "\r"),
+		Token(symbol!"Ident", range(4, 1, 5).atStart(0, 1, 1), Value(null), "test")
+	]);
 	testLex("\r\ntest", [
-		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r\n"),
-		Token(symbol!"Ident", Location("filename", 1, 0, 2), Value(null), "test")
-	], true);
+		Token(symbol!"EOL", range(0, 1, 2), Value(null), "\r\n"),
+		Token(symbol!"Ident", range(4, 1, 6).atStart(0, 1, 2), Value(null), "test")
+	]);
 	testLex("\r\n\ntest", [
-		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r\n"),
-		Token(symbol!"EOL", Location("filename", 1, 0, 2), Value(null), "\n"),
-		Token(symbol!"Ident", Location("filename", 2, 0, 3), Value(null), "test")
-	], true);
+		Token(symbol!"EOL", range(0, 1, 2), Value(null), "\r\n"),
+		Token(symbol!"EOL", range(0, 2, 3).atStart(0, 1, 2), Value(null), "\n"),
+		Token(symbol!"Ident", range(4, 2, 7).atStart(0, 2, 3), Value(null), "test")
+	]);
 	testLex("\r\r\ntest", [
-		Token(symbol!"EOL", Location("filename", 0, 0, 0), Value(null), "\r"),
-		Token(symbol!"EOL", Location("filename", 1, 0, 1), Value(null), "\r\n"),
-		Token(symbol!"Ident", Location("filename", 2, 0, 3), Value(null), "test")
-	], true);
+		Token(symbol!"EOL", range(0, 1, 1), Value(null), "\r"),
+		Token(symbol!"EOL", range(0, 2, 3).atStart(0, 1, 1), Value(null), "\r\n"),
+		Token(symbol!"Ident", range(4, 2, 7).atStart(0, 2, 3), Value(null), "test")
+	]);
 }

@@ -61,9 +61,42 @@ struct Location
 		sink.put("(");
 		sink.put(to!string(line+1));
 		sink.put(":");
-		sink.put(to!string(col+1));
+		sink.put(to!string(col));
 		sink.put(")");
 	}
+
+	string toRawString()
+	{
+		return format!"Location(`%s`, line=%s, col=%s, i=%s)"(file, line, col, index);
+	}
+}
+
+string toString(scope const Location[2] range) pure @safe nothrow
+{
+	assert(range[0].file == range[1].file);
+	Appender!string sink;
+	sink.put(range[0].file);
+	sink.put("(");
+	sink.put(to!string(range[0].line+1));
+	sink.put(":");
+	sink.put(to!string(range[0].col));
+	if (range[0].line == range[1].line)
+	{
+		if (range[0].col != range[1].col)
+		{
+			sink.put("..");
+			sink.put(to!string(range[1].col+1));
+		}
+	}
+	else
+	{
+		sink.put("-");
+		sink.put(to!string(range[1].line+1));
+		sink.put(":");
+		sink.put(to!string(range[1].col+1));
+	}
+	sink.put(")");
+	return sink.data;
 }
 
 struct FullName
